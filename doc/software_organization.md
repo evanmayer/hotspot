@@ -47,10 +47,12 @@
 - visualization
 
 ## Processor Requirements
-Main program handles cmdline parsing, then event/state machine loop. Spawns:
+Main program handles cmdline parsing, then starts state machine/event loop. Spawns:
 - subprocess 0: 
-    - human input, motor 0, motor 1, motor 2, motor 3
-    - motor cmds may need to be async, depending on library/hwif speed
-- subprocess 1: 
-    - thread 0: TM output
-    - thread 1: viz
+    - thread 0: control alg: (motor 0, motor 1, motor 2, motor 3)
+        - motor cmds may need to be async, depending on library/hwif speed
+        - dumps TM to a buffer for output
+    - thread 1: human input
+        - keypresses buffered for handling during event loop
+- subprocess 1:
+    - thread 0: TM output, then viz
