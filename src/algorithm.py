@@ -16,11 +16,11 @@ class TestSurface(object):
     Contains the mirror-dependent geometry of attachment points, 
     as-constructed/measured, relative to the mirror origin.
     '''
-    def __init__(self, nw: tuple, ne: tuple, se: tuple, sw=(0.,0.)):
-        # Define the sw corner as the origin, so default (0,0).
+    def __init__(self, sw=(0.,0.), se=(1.,0.), nw=(0.,1.), ne=(1.,1.)):
+        # Define the sw corner as the origin, should always be (0,0)
         for inp in [nw, ne, se, sw]:
-            assert(len(inp) == 2,
-                'This module is 2D planar only, so points should be 2-vectors.')
+            assert len(inp) == 2, \
+                f'This module is 2D planar only, so points should be 2-vectors instead of {inp}.'
         # Corner points are expressed as x,y offsets in mirror coordinate frame
         self.corners = np.array([[sw, nw], [se, ne]])
         self.sw = self.corners[0,0]
@@ -35,9 +35,9 @@ class Raft(object):
     Contains the payload-dependent geometry of attachment points,
     as-constructed/measured, relative to the payload origin.
     '''
-    def __init__(self, width: float, height: float, position: tuple):
-        assert(len(position) == 2,
-                'This module is 2D planar only, so points should be 2-vectors.')
+    def __init__(self, position: tuple, width: float, height: float):
+        assert len(position) == 2, \
+            f'This module is 2D planar only, so points should be 2-vectors instead of {position}.'
         # locations of attachment points in raft coordinate frame
         self.corners = np.array(
             [[(-width / 2., -height / 2), (-width / 2.,  height / 2)],
