@@ -1,0 +1,6 @@
+name: hotspot
+channels:
+  - defaults
+dependencies:
+  - numpy
+prefix: /home/evanmayer/miniconda3/envs/hotspot
