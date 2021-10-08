@@ -18,9 +18,13 @@ class TestSurface(object):
     '''
     def __init__(self, sw=(0.,0.), se=(1.,0.), nw=(0.,1.), ne=(1.,1.)):
         # Define the sw corner as the origin, should always be (0,0)
-        for inp in [nw, ne, se, sw]:
+        corner_list = [nw, ne, se, sw]
+        for inp in corner_list:
             assert len(inp) == 2, \
                 f'This module is 2D planar only, so points should be 2-vectors instead of {inp}.'
+        # Corners should not share locations
+        assert len({elem for elem in corner_list}) == len(corner_list), f'Vertices should be unique: {corner_list}'
+
         # Corner points are expressed as x,y offsets in mirror coordinate frame
         self.corners = np.array([[sw, nw], [se, ne]])
         self.sw = self.corners[0,0]
@@ -28,7 +32,7 @@ class TestSurface(object):
         self.nw = self.corners[0,1]
         self.ne = self.corners[1,1]
         self.origin = self.sw
-    
+
 
     def is_inbounds(self, pos: tuple):
         '''
@@ -37,20 +41,31 @@ class TestSurface(object):
         positions close to edges (angle ~= 180 deg).
         '''
         # ECM: Might be able to exploit matrix math to make faster
+        # e.g. make two arrays of vertices and vectorize the for loop
+        eps = np.finfo(float).eps
         result = True
         ang_tot_rad = 0.
         vertex_seq = [self.sw, self.nw, self.ne, self.se, self.sw]
         for i in range(len(vertex_seq) - 1):
             if i < len(vertex_seq):
-                v0_hat = (vertex_seq[i]   - pos) / np.linalg.norm(vertex_seq[i]   - pos)
-                v1_hat = (vertex_seq[i+1] - pos) / np.linalg.norm(vertex_seq[i+1] - pos)
+                disp0 = vertex_seq[i] - pos
+                disp1 = vertex_seq[i+1] - pos
+                mag0 = np.linalg.norm(disp0)
+                mag1 = np.linalg.norm(disp1)
+                # pos is too close to a vertex (protect against divide by 0)
+                if (mag0 < eps or mag1 < eps):
+                    result = False
+                    break
+
+                v0_hat = disp0 / mag0
+                v1_hat = disp1 / mag1
                 ang = np.arccos(np.dot(v0_hat, v1_hat))
-                if np.abs(ang - np.pi) < np.finfo(float).eps:
+                if np.abs(ang - np.pi) < eps:
                     result = False
                     break
                 ang_tot_rad += ang
                 
-        if np.abs(ang_tot_rad - 2. * np.pi) > np.finfo(float).eps:
+        if np.abs(ang_tot_rad - 2. * np.pi) > eps:
             result = False
 
         return result
@@ -71,15 +86,7 @@ class Raft(object):
              [( width / 2., -height / 2.), ( width / 2.,  height / 2.)]]
         )
         # position of the raft origin in mirror coordinate frame
-        self._position = position
-
-    @property
-    def position(self):
-        return self._position
-
-    @position.setter
-    def position(self, new_pos):
-        '''Reject position input if outside convex hull of surface vertices'''
+        self.position = position
 
 
     @property
@@ -102,14 +109,36 @@ class Robot(object):
     commands into a set of cable length deltas and velocities.
     '''
     def __init__(self, surf: TestSurface, raft: Raft, cmd_sequence: list):
+        # Geometry
         self.surf = surf
         self.raft = raft
+        # Control algorithm settings
         self.dt = 1.
         self.sequence_start_time = 0.
         self.sequence_start_elapsed = 0.
         self.move_start_time = 0.
         self.move_time_elapsed = 0.
         self.cmd_sequence = cmd_sequence
+        # Start off cmd in a "safe" place, geometric mean in x,y
+        surf_mid_x = surf.corners[:,:,0].mean()
+        surf_mid_y = surf.corners[:,:,1].mean()
+        self._pos_cmd = (surf_mid_x, surf_mid_y)
+        # Init home to that pos until robot is homed
+        self.home = self._pos_cmd
+
+
+    @property
+    def pos_cmd(self):
+        return self._pos_cmd
+
+
+    @pos_cmd.setter
+    def pos_cmd(self, new_pos):
+        inbounds = self.surf.is_inbounds(new_pos)
+        if inbounds:
+            self._pos_cmd = new_pos
+        else:
+            raise ValueError(f'Position command {new_pos} is outside of bounds for surface {self.surf}')
 
 
     def calc_lengths(self):
