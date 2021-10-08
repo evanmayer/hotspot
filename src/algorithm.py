@@ -47,23 +47,22 @@ class TestSurface(object):
         ang_tot_rad = 0.
         vertex_seq = [self.sw, self.nw, self.ne, self.se, self.sw]
         for i in range(len(vertex_seq) - 1):
-            if i < len(vertex_seq):
-                disp0 = vertex_seq[i] - pos
-                disp1 = vertex_seq[i+1] - pos
-                mag0 = np.linalg.norm(disp0)
-                mag1 = np.linalg.norm(disp1)
-                # pos is too close to a vertex (protect against divide by 0)
-                if (mag0 < eps or mag1 < eps):
-                    result = False
-                    break
+            disp0 = vertex_seq[i] - pos
+            disp1 = vertex_seq[i+1] - pos
+            mag0 = np.linalg.norm(disp0)
+            mag1 = np.linalg.norm(disp1)
+            # pos is too close to a vertex (protect against divide by 0)
+            if (mag0 < eps or mag1 < eps):
+                result = False
+                break
 
-                v0_hat = disp0 / mag0
-                v1_hat = disp1 / mag1
-                ang = np.arccos(np.dot(v0_hat, v1_hat))
-                if np.abs(ang - np.pi) < eps:
-                    result = False
-                    break
-                ang_tot_rad += ang
+            v0_hat = disp0 / mag0
+            v1_hat = disp1 / mag1
+            ang = np.arccos(np.dot(v0_hat, v1_hat))
+            if np.abs(ang - np.pi) < eps:
+                result = False
+                break
+            ang_tot_rad += ang
                 
         if np.abs(ang_tot_rad - 2. * np.pi) > eps:
             result = False
