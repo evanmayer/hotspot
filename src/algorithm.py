@@ -31,7 +31,6 @@ class TestSurface(object):
         self.se = self.corners[1,0]
         self.nw = self.corners[0,1]
         self.ne = self.corners[1,1]
-        self.origin = self.sw
 
 
     def is_inbounds(self, pos: tuple):
@@ -68,7 +67,6 @@ class TestSurface(object):
             result = False
 
         return result
-
 
 
 class Raft(object):
@@ -111,20 +109,39 @@ class Robot(object):
         # Geometry
         self.surf = surf
         self.raft = raft
+        # Map surface attachmentpoints to raft attachmentpoints
+        self.surf_to_raft = {
+            'sw' : raft.sw,
+            'nw' : raft.nw,
+            'ne' : raft.ne,
+            'se' : raft.se
+        }
         # Control algorithm settings
         self.dt = 1.
-        self.sequence_start_time = 0.
-        self.sequence_start_elapsed = 0.
-        self.move_start_time = 0.
-        self.move_time_elapsed = 0.
+        self.sequence_start_time = -1.
+        self.sequence_start_elapsed = -1.
+        self.move_start_time = -1.
+        self.move_time_elapsed = -1.
         self.cmd_sequence = cmd_sequence
-        # Start off cmd in a "safe" place, geometric mean in x,y
-        surf_mid_x = surf.corners[:,:,0].mean()
-        surf_mid_y = surf.corners[:,:,1].mean()
-        self._pos_cmd = (surf_mid_x, surf_mid_y)
-        # Init home to that pos until robot is homed
-        self.home = self._pos_cmd
+        # Init home to an invalid position until we are homed
+        self._home = (-np.inf, -np.inf)
+        self.current_pos = self._home
+        # Start off pos_cmd in an error state, hoping an error will occur
+        # If we attempt to move before issuing a real pos_cmd
+        self._pos_cmd = self._home
 
+
+    @property
+    def home(self):
+        return self._home
+
+    @home.setter
+    def home(self, home_pos):
+        inbounds = self.surf.is_inbounds(home_pos)
+        if inbounds:
+            self._home = home_pos
+        else:
+            raise ValueError(f'Home location {home_pos} is outside of bounds for surface {self.surf}')
 
     @property
     def pos_cmd(self):
@@ -142,7 +159,7 @@ class Robot(object):
 
     def calc_lengths(self):
         '''
-        Calculates the final lengths of each leg given the commanded
+        Calculates the final lengths of each leg given the current commanded
         position.
         '''
         return
@@ -150,8 +167,8 @@ class Robot(object):
 
     def calc_length_rates(self):
         '''
-        Calculates the rates of change of each leg length given the commanded
-        position and allowed time.
+        Calculates the rates of change of each leg length given the curernt
+        commanded position and allowed time.
         '''
         return
 
@@ -170,3 +187,10 @@ class Robot(object):
         and time elapsed since start.
         '''
         return
+    
+
+    def run():
+        '''
+        The function that runs the algorithm in the overall state machine.
+        '''
+        pass

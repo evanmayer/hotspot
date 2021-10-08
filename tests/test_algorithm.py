@@ -23,9 +23,6 @@ def test_TestSurface_init():
         # public-facing accessors
         assert all(a == b for a,b in zip(coord, accessor_list[i])), \
             f'{coord} != {accessor_list[i]}'
-    
-    # test origin assignment
-    assert all(a == b for a,b in zip(surf.origin, sw))
 
 
 def test_TestSurface_is_inbounds():
@@ -90,13 +87,8 @@ def robot():
 class TestDefault(object):
     def test_Robot_init(self, robot):
         # Test pre-home init of safe pos_cmd and home locs
-        expected = (.5,.5)
-        assert all(np.abs(a - b) < np.finfo(float).eps for a,b in zip(robot.home, expected)), \
-            f'{robot.home} != {expected}'
-        # belt and suspenders: test should fail when we don't give it what we expect
-        expected = (-100,-100)
-        assert not all(np.abs(a - b) < np.finfo(float).eps for a,b in zip(robot.home, expected)), \
-            f'{robot.home} != {expected}'
+        assert all(np.isinf(robot.pos_cmd))
+        assert all(np.isinf(robot.home))
 
 
     @pytest.mark.parametrize('pos_cmd', [(.1,.1), (.9,.1), (.1,.9), (.5,.5), (.9,.9)])
@@ -105,7 +97,7 @@ class TestDefault(object):
 
 
     @pytest.mark.parametrize('pos_cmd',
-        [( 0.0, 0.0), ( 0.0, 1.0), ( 1.0, 1.0), ( 1.0, 0.0), #edges
+        [( 0.0, 0.0), ( 0.0, 1.0), ( 1.0, 1.0), ( 1.0, 0.0), # edges
          (-1.0,-1.0), (-1.0, 0.5), (-1.0, 1.5), ( 0.5, 1.5), # outside quadrants
          ( 1.5, 1.5), ( 1.5, 0.5), ( 1.5,-1.0), ( 0.5,-1.0)])
     def test_Robot_bounds_check_bad(self, robot, pos_cmd):
