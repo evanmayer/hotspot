@@ -28,6 +28,33 @@ class TestSurface(object):
         self.nw = self.corners[0,1]
         self.ne = self.corners[1,1]
         self.origin = self.sw
+    
+
+    def is_inbounds(self, pos: tuple):
+        '''
+        Interior/exterior test: sum angles between pos and successive pairs of
+        vertices. If they sum to 360, you're inside the shape. Do not allow 
+        positions close to edges (angle ~= 180 deg).
+        '''
+        # ECM: Might be able to exploit matrix math to make faster
+        result = True
+        ang_tot_rad = 0.
+        vertex_seq = [self.sw, self.nw, self.ne, self.se, self.sw]
+        for i in range(len(vertex_seq) - 1):
+            if i < len(vertex_seq):
+                v0_hat = (vertex_seq[i]   - pos) / np.linalg.norm(vertex_seq[i]   - pos)
+                v1_hat = (vertex_seq[i+1] - pos) / np.linalg.norm(vertex_seq[i+1] - pos)
+                ang = np.arccos(np.dot(v0_hat, v1_hat))
+                if np.abs(ang - np.pi) < np.finfo(float).eps:
+                    result = False
+                    break
+                ang_tot_rad += ang
+                
+        if np.abs(ang_tot_rad - 2. * np.pi) > np.finfo(float).eps:
+            result = False
+
+        return result
+
 
 
 class Raft(object):
@@ -40,11 +67,20 @@ class Raft(object):
             f'This module is 2D planar only, so points should be 2-vectors instead of {position}.'
         # locations of attachment points in raft coordinate frame
         self.corners = np.array(
-            [[(-width / 2., -height / 2), (-width / 2.,  height / 2)],
-             [( width / 2., -height / 2), ( width / 2.,  height / 2)]]
+            [[(-width / 2., -height / 2.), (-width / 2.,  height / 2.)],
+             [( width / 2., -height / 2.), ( width / 2.,  height / 2.)]]
         )
         # position of the raft origin in mirror coordinate frame
-        self.position = position
+        self._position = position
+
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, new_pos):
+        '''Reject position input if outside convex hull of surface vertices'''
+
 
     @property
     def sw(self):
