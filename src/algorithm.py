@@ -2,6 +2,7 @@
 # quantities.
 # MKS units only.
 import numpy as np
+import constants as const
 
 
 def rot(theta):
@@ -17,12 +18,10 @@ class TestSurface(object):
     as-constructed/measured, relative to the mirror origin.
     '''
     def __init__(self, sw=(0.,0.), se=(1.,0.), nw=(0.,1.), ne=(1.,1.)):
-        # Define the sw corner as the origin, should always be (0,0)
         corner_list = [nw, ne, se, sw]
         for inp in corner_list:
             assert len(inp) == 2, \
                 f'This module is 2D planar only, so points should be 2-vectors instead of {inp}.'
-        # Corners should not share locations
         assert len({elem for elem in corner_list}) == len(corner_list), f'Vertices should be unique: {corner_list}'
 
         # Corner points are expressed as x,y offsets in mirror coordinate frame
@@ -36,8 +35,7 @@ class TestSurface(object):
     def is_inbounds(self, pos: tuple):
         '''
         Interior/exterior test: sum angles between pos and successive pairs of
-        vertices. If they sum to 360, you're inside the shape. Do not allow 
-        positions close to edges (angle ~= 180 deg).
+        vertices. If they sum to 360, you're inside the shape.
         '''
         # ECM: Might be able to exploit matrix math to make faster
         # e.g. make two arrays of vertices and vectorize the for loop
@@ -50,19 +48,19 @@ class TestSurface(object):
             disp1 = vertex_seq[i+1] - pos
             mag0 = np.linalg.norm(disp0)
             mag1 = np.linalg.norm(disp1)
-            # pos is too close to a vertex (protect against divide by 0)
+            # is pos too close to a vertex (protect against divide by 0)
             if (mag0 < eps or mag1 < eps):
                 result = False
                 break
-
             v0_hat = disp0 / mag0
             v1_hat = disp1 / mag1
             ang = np.arccos(np.dot(v0_hat, v1_hat))
+            # is pos too close to an edge
             if np.abs(ang - np.pi) < eps:
                 result = False
                 break
             ang_tot_rad += ang
-                
+        # is pos inside shape
         if np.abs(ang_tot_rad - 2. * np.pi) > eps:
             result = False
 
@@ -78,6 +76,7 @@ class Raft(object):
         assert len(position) == 2, \
             f'This module is 2D planar only, so points should be 2-vectors instead of {position}.'
         # locations of attachment points in raft coordinate frame
+        # origin implicit at centroid of rectangle
         self.corners = np.array(
             [[(-width / 2., -height / 2.), (-width / 2.,  height / 2.)],
              [( width / 2., -height / 2.), ( width / 2.,  height / 2.)]]
@@ -86,6 +85,7 @@ class Raft(object):
         self.position = position
 
 
+    # vertex accessors provide coordinates in mirror coodinate frame
     @property
     def sw(self):
         return self.corners[0,0] + self.position
@@ -103,7 +103,8 @@ class Raft(object):
 class Robot(object):
     '''
     Contains all information and functions needed to translate a sequence of 
-    commands into a set of cable length deltas and velocities.
+    commands into a set of cable length deltas and velocities, and then into
+    a set of motor commands.
     '''
     def __init__(self, surf: TestSurface, raft: Raft, cmd_sequence: list):
         # Geometry
@@ -118,10 +119,12 @@ class Robot(object):
         }
         # Control algorithm settings
         self.dt = 1.
+
         self.sequence_start_time = -1.
         self.sequence_start_elapsed = -1.
         self.move_start_time = -1.
         self.move_time_elapsed = -1.
+        
         self.cmd_sequence = cmd_sequence
         # Init home to an invalid position until we are homed
         self._home = (-np.inf, -np.inf)
@@ -133,6 +136,10 @@ class Robot(object):
 
     @property
     def home(self):
+        '''
+        The location in mirror coordinate frame the robot will guide to
+        when commanded home
+        '''
         return self._home
 
     @home.setter
@@ -143,8 +150,13 @@ class Robot(object):
         else:
             raise ValueError(f'Home location {home_pos} is outside of bounds for surface {self.surf}')
 
+
     @property
     def pos_cmd(self):
+        '''
+        The location in mirror coordinate frame the robot will guide to for the 
+        next move
+        '''
         return self._pos_cmd
 
 
@@ -187,10 +199,3 @@ class Robot(object):
         and time elapsed since start.
         '''
         return
-    
-
-    def run():
-        '''
-        The function that runs the algorithm in the overall state machine.
-        '''
-        pass

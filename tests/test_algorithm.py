@@ -18,6 +18,7 @@ def test_TestSurface_init():
     accessor_list = [surf.sw, surf.nw, surf.se, surf.ne]
     for i, coord in enumerate([sw, nw, se, ne]):
         # underlying matrix
+        # This pattern tests for agreement in both elements of the tuple
         assert all(a == b for a,b in zip(coord, corner_list[i])), \
             f'{coord} != {corner_list[i]}'
         # public-facing accessors
@@ -25,7 +26,7 @@ def test_TestSurface_init():
             f'{coord} != {accessor_list[i]}'
 
 
-def test_TestSurface_is_inbounds():
+def test_TestSurface_is_inbounds_good():
     sw = (0,0)
     nw = (0,1)
     ne = (1,1)
@@ -45,7 +46,7 @@ def test_Raft_init():
     raft = alg.Raft(pos, w, h)
 
     input_list = [(-w / 2., -h / 2.), (-w / 2.,  h / 2.),
-                ( w / 2., -h / 2.), ( w / 2.,  h / 2.)]
+                  ( w / 2., -h / 2.), ( w / 2.,  h / 2.)]
     # test corner assignment
     corner_list = raft.corners.reshape(4,2)
     accessor_list = [raft.sw, raft.nw, raft.se, raft.ne]
@@ -65,7 +66,6 @@ def test_Raft_init():
 def robot():
     # Class scope cuts down on time spent init-ing
     # Used by any test function that needs a default robot instance
-    print('New Robot instance')
     sw = (0,0)
     nw = (0,1)
     ne = (1,1)
@@ -76,6 +76,7 @@ def robot():
     h = 3
     pos = (0,0)
     raft = alg.Raft(pos, w, h)
+    # TODO: update with a default cmd sequence when that stuff is ready
     robot = alg.Robot(surf, raft, [])
     yield robot
 
@@ -86,7 +87,6 @@ def robot():
 @ pytest.mark.usefixtures('robot')
 class TestDefault(object):
     def test_Robot_init(self, robot):
-        # Test pre-home init of safe pos_cmd and home locs
         assert all(np.isinf(robot.pos_cmd))
         assert all(np.isinf(robot.home))
 
