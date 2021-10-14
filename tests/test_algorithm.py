@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from context import algorithm as alg
+from context import constants as const
 
 
 # ------------------------------------------------------------------------------
@@ -103,4 +104,17 @@ class TestDefault(object):
     def test_Robot_bounds_check_bad(self, robot, pos_cmd):
         with pytest.raises(ValueError):
             robot.pos_cmd = pos_cmd
+    
+
+    @pytest.mark.parametrize('length, expected', 
+        [ # stepper has 200 steps per full rotation
+            (-2. * np.pi * const.PULLEY_RADIUS, -200.),
+            (-np.pi * const.PULLEY_RADIUS, -100.),
+            (0., 0.),
+            (np.pi * const.PULLEY_RADIUS, 100.)
+        ]
+    )
+    def test_Robot_length_to_steps(self, robot, length, expected):
+        eps = np.finfo(float).eps
+        assert np.abs(expected - robot.length_to_steps(length)) < eps
         

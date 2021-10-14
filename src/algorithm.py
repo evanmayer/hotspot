@@ -169,6 +169,13 @@ class Robot(object):
             raise ValueError(f'Position command {new_pos} is outside of bounds for surface {self.surf}')
 
 
+    def length_to_steps(self, length):
+        '''arc length = radius * theta'''
+        theta = length / const.PULLEY_RADIUS
+        steps = theta * const.DEG_PER_RAD / const.DEG_PER_STEP
+        return steps
+
+
     def calc_lengths(self):
         '''
         Calculates the final lengths of each leg given the current commanded
