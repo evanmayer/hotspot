@@ -1,7 +1,12 @@
 name: hotspot
 channels:
+  - conda-forge
   - defaults
 dependencies:
+  - python=3.6
   - numpy
   - pytest
-prefix: /home/evanmayer/miniconda3/envs/hotspot
+  - pip:
+    - adafruit-circuitpython-motorkit
+
+prefix: /home/pi/miniconda3/envs/hotspot
