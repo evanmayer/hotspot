@@ -1,6 +1,7 @@
 # This file houses the algorithms necessary for calculating the control
 # quantities.
 # MKS units only.
+from multiprocessing import Queue
 import numpy as np
 import constants as const
 
@@ -106,7 +107,7 @@ class Robot(object):
     commands into a set of cable length deltas and velocities, and then into
     a set of motor commands.
     '''
-    def __init__(self, surf: TestSurface, raft: Raft, cmd_sequence: list):
+    def __init__(self, surf: TestSurface, raft: Raft, cmd_sequence: Queue):
         # Geometry
         self.surf = surf
         self.raft = raft
@@ -118,8 +119,6 @@ class Robot(object):
             'se' : raft.se
         }
         # Control algorithm settings
-        self.dt = 1.
-
         self.sequence_start_time = -1.
         self.sequence_start_elapsed = -1.
         self.move_start_time = -1.
@@ -186,7 +185,7 @@ class Robot(object):
 
     def calc_length_rates(self):
         '''
-        Calculates the rates of change of each leg length given the curernt
+        Calculates the rates of change of each leg length given the current
         commanded position and allowed time.
         '''
         return
