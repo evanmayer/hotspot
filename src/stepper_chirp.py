@@ -57,4 +57,4 @@ ax.legend(loc='best')
 ax.grid(True)
 plt.show()
 
-np.savetxt('freq_vs_omega.csv', np.array([deg_sec_cmd[1:], deg_sec_est[1:]]).T)
+np.savetxt('../doc/cmd_vs_est.csv', np.array([deg_sec_cmd[1:], deg_sec_est[1:]]).T)
