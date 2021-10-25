@@ -107,11 +107,11 @@ class TestDefault(object):
     
 
     @pytest.mark.parametrize('length, expected', 
-        [ # stepper has 200 steps per full rotation
-            (-2. * np.pi * const.PULLEY_RADIUS, -200.),
-            (-np.pi * const.PULLEY_RADIUS, -100.),
+        [ # stepper has 200 steps per full rotation * a microstepping factor
+            (-2. * np.pi * const.PULLEY_RADIUS, -200. * const.MICROSTEP_NUM),
+            (-np.pi * const.PULLEY_RADIUS, -100. * const.MICROSTEP_NUM),
             (0., 0.),
-            (np.pi * const.PULLEY_RADIUS, 100.)
+            (np.pi * const.PULLEY_RADIUS, 100. * const.MICROSTEP_NUM)
         ]
     )
     def test_Robot_length_to_steps(self, robot, length, expected):
