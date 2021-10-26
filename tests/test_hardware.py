@@ -41,13 +41,21 @@ class TestDefault(object):
 
     # Cases that are expected to throw an error
     @pytest.mark.parametrize('radians, rad_per_sec', 
-        [( np.pi/4.,   0.),
-         (-np.pi / 4., np.inf),
-        ]
+        [( np.pi/4.,   0.)]
     )
     def test_move_motor_bad(self, stepper, radians, rad_per_sec): 
         try:
             with pytest.raises(ValueError):
                 hw.move_motor(stepper, radians, rad_per_sec) 
+        finally:
+            stepper.release()
+    
+
+    def test_motor_chirp(self, stepper):
+        speeds = np.linspace(.5, 2.4, num=50)
+        try:
+            for speed in speeds:
+                hw.move_motor(stepper, np.pi / 32., speed)
+            hw.move_motor(stepper, 2. * np.pi, speed)
         finally:
             stepper.release()

@@ -5,14 +5,20 @@
 from adafruit_motorkit import MotorKit
 from adafruit_motor import stepper
 import constants as const
+import logging
 import numpy as np
 import time
+
 
 # Conventions:
 # - positive steps/angular rates (stepper.FORWARD) spin the motor shaft 
 #     clockwise (CW) when viewed from the rear.
 # - negative steps/angular rates (stepper.BACKWARD) spin the motor shaft 
 #     counterclockwise (CCW) when viewed from the rear.
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(getattr(logging, 'WARNING'))
 
 
 def move_motor(stepper_n, radians: float, rad_per_sec: float):
@@ -51,5 +57,7 @@ def move_motor(stepper_n, radians: float, rad_per_sec: float):
         # sleep for the remaining time to keep issuing steps at proper rate.
         time_rem = 1./(deg_per_sec / const.DEG_PER_STEP) - (time.time() - loop_start)
         if time_rem <= 0.:
-            raise ValueError('Commanded angular rate exceeds what can be reliably commanded.')
+            logger.warning('Commanded angular rate exceeds what can be commanded'
+                + ' reliably.')
+            continue
         time.sleep(time_rem)
