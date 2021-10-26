@@ -71,34 +71,42 @@ class TestSurface(object):
 class Raft(object):
     '''
     Contains the payload-dependent geometry of attachment points,
-    as-constructed/measured, relative to the payload origin.
+    as-constructed/measured.
     '''
     def __init__(self, position: tuple, width: float, height: float):
         assert len(position) == 2, \
             f'This module is 2D planar only, so points should be 2-vectors instead of {position}.'
-        # locations of attachment points in raft coordinate frame
+        # Private attribute maintains coords in raft frame
         # origin implicit at centroid of rectangle
-        self.corners = np.array(
+        self._corners_priv = np.array(
             [[(-width / 2., -height / 2.), (-width / 2.,  height / 2.)],
              [( width / 2., -height / 2.), ( width / 2.,  height / 2.)]]
         )
+        # Public attribute maintains coords in mirror frame
+        self.corners = self._corners_priv + position
         # position of the raft origin in mirror coordinate frame
-        self.position = position
+        self._position = position
+        
+        self.sw = self.corners[0,0]
+        self.se = self.corners[1,0]
+        self.nw = self.corners[0,1]
+        self.ne = self.corners[1,1]
 
 
-    # vertex accessors provide coordinates in mirror coodinate frame
     @property
-    def sw(self):
-        return self.corners[0,0] + self.position
-    @property
-    def se(self):
-        return self.corners[1,0] + self.position
-    @property
-    def nw(self):
-        return self.corners[0,1] + self.position
-    @property
-    def ne(self):
-        return self.corners[1,1] + self.position
+    def position(self):
+        '''Accessor for raft origin position in mirror coordinate frame'''
+        return self._position
+
+    @position.setter
+    def position(self, new_pos):
+        '''
+        Setter for raft origin position ensures the raft corners follow when
+        position is updated
+        '''
+        self.corners = self._corners_priv + new_pos
+        self._position = new_pos
+
 
 
 class Robot(object):
@@ -168,35 +176,54 @@ class Robot(object):
             raise ValueError(f'Position command {new_pos} is outside of bounds for surface {self.surf}')
 
 
-    def length_to_steps(self, length):
-        '''arc length = radius * theta'''
-        theta = length / const.PULLEY_RADIUS
-        steps = theta * const.DEG_PER_RAD / const.DEG_PER_STEP
-        return steps
-
-
-    def calc_lengths(self):
+    def process_input(self, pos_cmd: tuple, speed: float):
         '''
-        Calculates the final lengths of each leg given the current commanded
-        position.
-        '''
-        return
+        Translate a move command into 4 motor commands
 
+        Parameters
+        ----------
+        pos_cmd
+            the position command in the frame of the surface
+        speed
+            the linear speed to travel from the current position to the 
+            commanded position, in the frame of the surface
+        
+        Returns
+        -------
+        cmds : dict of tuples
+            dict containing pairs of (radians, rad_per_sec) motor commands. 
+        '''
+        cmds = {
+            'sw': (0., 0.),
+            'nw': (0., 0.),
+            'ne': (0., 0.),
+            'se': (0., 0.)
+        }
 
-    def calc_length_rates(self):
-        '''
-        Calculates the rates of change of each leg length given the current
-        commanded position and allowed time.
-        '''
-        return
+        # Input checking
+        eps = np.finfo(float).eps
+        distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
+        if (speed <= eps) or (distance <= eps):
+            return cmds
 
+        lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
+        # update the commanded position
+        self.pos_cmd = pos_cmd
+        # update the raft's position to move its corners
+        self.raft.position = pos_cmd
+        lengths_after = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
 
-    def calc_move_progress(self):
-        '''
-        Estimates the progress through the current move, given the allowed time
-        and time elapsed since start.
-        '''
-        return
+        delta_lengths = lengths_after - lengths_before
+        time_allowed = distance / speed
+        delta_angles = delta_lengths / const.PULLEY_RADIUS
+        ang_rates = delta_angles / time_allowed
+
+        cmds['sw'] = (delta_angles[0, 0], ang_rates[0, 0])
+        cmds['se'] = (delta_angles[1, 0], ang_rates[1, 0])
+        cmds['nw'] = (delta_angles[0, 1], ang_rates[0, 1])
+        cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
+
+        return cmds
 
 
     def calc_sequence_progress(self):

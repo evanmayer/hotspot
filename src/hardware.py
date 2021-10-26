@@ -51,6 +51,5 @@ def move_motor(stepper_n, radians: float, rad_per_sec: float):
         # sleep for the remaining time to keep issuing steps at proper rate.
         time_rem = 1./(deg_per_sec / const.DEG_PER_STEP) - (time.time() - loop_start)
         if time_rem <= 0.:
-            time_rem = 0
             raise ValueError('Commanded angular rate exceeds what can be reliably commanded.')
         time.sleep(time_rem)

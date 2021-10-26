@@ -4,6 +4,8 @@ from context import algorithm as alg
 from context import constants as const
 
 
+EPS = 1e-9
+
 # ------------------------------------------------------------------------------
 # Low-level object testing
 # ------------------------------------------------------------------------------
@@ -41,8 +43,8 @@ def test_TestSurface_is_inbounds_good():
 
 
 def test_Raft_init():
-    w = 2
-    h = 3
+    w = .2
+    h = .3
     pos = (0,0)
     raft = alg.Raft(pos, w, h)
 
@@ -73,9 +75,9 @@ def robot():
     se = (1,0)
     surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
 
-    w = 2
-    h = 3
-    pos = (0,0)
+    w = .1
+    h = .1
+    pos = (0.5,0.5)
     raft = alg.Raft(pos, w, h)
     # TODO: update with a default cmd sequence when that stuff is ready
     robot = alg.Robot(surf, raft, [])
@@ -104,17 +106,68 @@ class TestDefault(object):
     def test_Robot_bounds_check_bad(self, robot, pos_cmd):
         with pytest.raises(ValueError):
             robot.pos_cmd = pos_cmd
-    
 
-    @pytest.mark.parametrize('length, expected', 
-        [ # stepper has 200 steps per full rotation * a microstepping factor
-            (-2. * np.pi * const.PULLEY_RADIUS, -200. * const.MICROSTEP_NUM),
-            (-np.pi * const.PULLEY_RADIUS, -100. * const.MICROSTEP_NUM),
-            (0., 0.),
-            (np.pi * const.PULLEY_RADIUS, 100. * const.MICROSTEP_NUM)
-        ]
-    )
-    def test_Robot_length_to_steps(self, robot, length, expected):
-        eps = np.finfo(float).eps
-        assert np.abs(expected - robot.length_to_steps(length)) < eps
+
+    def test_Robot_process_input_sw(self, robot):
+        robot.raft.position = (.5, .5)
+        pos_cmd = (
+            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
+            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
+        )
+        speed = 2. * const.PULLEY_RADIUS * np.pi
         
+        cmds = robot.process_input(pos_cmd, speed)
+
+        assert (abs(cmds['sw'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['sw'][0]}"
+        assert (abs(cmds['sw'][1] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['sw'][1]}"
+        assert (abs(cmds['ne'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['ne'][0]}"
+        assert (abs(cmds['ne'][1] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['ne'][1]}"
+
+
+    def test_Robot_process_input_nw(self, robot):
+        robot.raft.position = (.5, .5)
+        pos_cmd = (
+            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
+            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
+        )
+        speed = 2. * const.PULLEY_RADIUS * np.pi
+        
+        cmds = robot.process_input(pos_cmd, speed)
+
+        assert (abs(cmds['se'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['se'][0]}"
+        assert (abs(cmds['se'][1] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['se'][1]}"
+        assert (abs(cmds['nw'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['nw'][0]}"
+        assert (abs(cmds['nw'][1] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['nw'][1]}"
+
+
+    def test_Robot_process_input_ne(self, robot):
+        robot.raft.position = (.5, .5)
+        pos_cmd = (
+            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
+            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
+        )
+        speed = 2. * const.PULLEY_RADIUS * np.pi
+        
+        cmds = robot.process_input(pos_cmd, speed)
+
+        assert (abs(cmds['sw'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['sw'][0]}"
+        assert (abs(cmds['sw'][1] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['sw'][1]}"
+        assert (abs(cmds['ne'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['ne'][0]}"
+        assert (abs(cmds['ne'][1] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['ne'][1]}"
+
+
+    def test_Robot_process_input_se(self, robot):
+        robot.raft.position = (.5, .5)
+        pos_cmd = (
+            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
+            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
+        )
+        speed = 2. * const.PULLEY_RADIUS * np.pi
+        
+        cmds = robot.process_input(pos_cmd, speed)
+
+        assert (abs(cmds['se'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['se'][0]}"
+        assert (abs(cmds['se'][1] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['se'][1]}"
+        assert (abs(cmds['nw'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['nw'][0]}"
+        assert (abs(cmds['nw'][1] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['nw'][1]}"
+
