@@ -6,13 +6,6 @@ import numpy as np
 import constants as const
 
 
-def rot(theta):
-    '''2D rotation matrix in the plane'''
-    # rotations are done like pts_mtx @ rot_mtx
-    return np.array([[np.cos(theta), -np.sin(theta)],
-                     [np.sin(theta),  np.cos(theta)]])
-
-
 class TestSurface(object):
     '''
     Contains the mirror-dependent geometry of attachment points, 
@@ -119,19 +112,11 @@ class Robot(object):
         # Geometry
         self.surf = surf
         self.raft = raft
-        # Map surface attachmentpoints to raft attachmentpoints
-        self.surf_to_raft = {
-            'sw' : raft.sw,
-            'nw' : raft.nw,
-            'ne' : raft.ne,
-            'se' : raft.se
-        }
+
         # Control algorithm settings
         self.sequence_start_time = -1.
         self.sequence_start_elapsed = -1.
-        self.move_start_time = -1.
-        self.move_time_elapsed = -1.
-        
+
         self.cmd_sequence = cmd_sequence
         # Init home to an invalid position until we are homed
         self._home = (-np.inf, -np.inf)
