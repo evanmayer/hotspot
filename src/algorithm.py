@@ -9,7 +9,6 @@ import numpy as np
 logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, 'WARNING'))
 
-
 class TestSurface(object):
     '''
     Contains the mirror-dependent geometry of attachment points, 
@@ -177,10 +176,10 @@ class Robot(object):
         
         Returns
         -------
-        cmds : dict of tuples
+        motor_cmds : dict of tuples
             dict containing pairs of (radians, rad_per_sec) motor commands. 
         '''
-        cmds = {
+        motor_cmds = {
             'sw': (0., 0.),
             'nw': (0., 0.),
             'ne': (0., 0.),
@@ -192,7 +191,7 @@ class Robot(object):
         distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
         if (speed <= eps) or (distance <= eps):
             logger.warning('Position command malformed: distance: {distance} speed: {speed}')
-            return cmds
+            return motor_cmds
 
         lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
         # update the commanded position
@@ -206,9 +205,9 @@ class Robot(object):
         delta_angles = delta_lengths / const.PULLEY_RADIUS
         ang_rates = delta_angles / time_allowed
 
-        cmds['sw'] = (delta_angles[0, 0], ang_rates[0, 0])
-        cmds['se'] = (delta_angles[1, 0], ang_rates[1, 0])
-        cmds['nw'] = (delta_angles[0, 1], ang_rates[0, 1])
-        cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
+        motor_cmds['sw'] = (delta_angles[0, 0], ang_rates[0, 0])
+        motor_cmds['se'] = (delta_angles[1, 0], ang_rates[1, 0])
+        motor_cmds['nw'] = (delta_angles[0, 1], ang_rates[0, 1])
+        motor_cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
 
-        return cmds
+        return motor_cmds

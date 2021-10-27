@@ -13,7 +13,7 @@ from context import constants as const
 def executive():
     # Class scope cuts down on time spent init-ing
     # Used by any test function that needs a default motorkit instance
-    executive = ex.Executive()
+    executive = ex.Executive('geometry.txt')
     yield executive
 
 
@@ -23,4 +23,4 @@ def executive():
 @ pytest.mark.usefixtures('executive')
 class TestDefault(object):
     def test_Executive_init(self, executive):
-        executive.run(os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'test.csv'))
+        pass

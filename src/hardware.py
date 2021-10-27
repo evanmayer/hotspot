@@ -17,7 +17,7 @@ import time
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'WARNING'))
+logger.setLevel(getattr(logging, 'DEBUG'))
 
 
 def move_motor(stepper_n, radians: float, rad_per_sec: float):
@@ -60,3 +60,5 @@ def move_motor(stepper_n, radians: float, rad_per_sec: float):
                 + ' reliably.')
             continue
         time.sleep(time_rem)
+
+    logger.info(f'Stepper {stepper_n} move complete.')
