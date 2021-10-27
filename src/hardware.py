@@ -2,7 +2,6 @@
 # "dummy" versions of the interfaces for use in test environments without the
 # hardware.
 
-from adafruit_motorkit import MotorKit
 from adafruit_motor import stepper
 import constants as const
 import logging

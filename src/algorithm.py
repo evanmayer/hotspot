@@ -1,9 +1,13 @@
 # This file houses the algorithms necessary for calculating the control
 # quantities.
 # MKS units only.
-from multiprocessing import Queue
-import numpy as np
 import constants as const
+import logging
+import numpy as np
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(getattr(logging, 'WARNING'))
 
 
 class TestSurface(object):
@@ -108,16 +112,11 @@ class Robot(object):
     commands into a set of cable length deltas and velocities, and then into
     a set of motor commands.
     '''
-    def __init__(self, surf: TestSurface, raft: Raft, cmd_sequence: Queue):
+    def __init__(self, surf: TestSurface, raft: Raft):
         # Geometry
         self.surf = surf
         self.raft = raft
 
-        # Control algorithm settings
-        self.sequence_start_time = -1.
-        self.sequence_start_elapsed = -1.
-
-        self.cmd_sequence = cmd_sequence
         # Init home to an invalid position until we are homed
         self._home = (-np.inf, -np.inf)
         self.current_pos = self._home
@@ -163,7 +162,10 @@ class Robot(object):
 
     def process_input(self, pos_cmd: tuple, speed: float):
         '''
-        Translate a move command into 4 motor commands
+        Translate a move command into 4 motor commands. Motors should be
+        attached to cables such that increasing the length of the cable played
+        out requires a positive-valued rotation (motor shaft spins clockwise)
+        from rear.
 
         Parameters
         ----------
@@ -185,10 +187,11 @@ class Robot(object):
             'se': (0., 0.)
         }
 
-        # Input checking
+        # Input checking, this is just in case of malformed inputs.
         eps = np.finfo(float).eps
         distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
         if (speed <= eps) or (distance <= eps):
+            logger.warning('Position command malformed: distance: {distance} speed: {speed}')
             return cmds
 
         lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
@@ -209,11 +212,3 @@ class Robot(object):
         cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
 
         return cmds
-
-
-    def calc_sequence_progress(self):
-        '''
-        Estimates the progress through the current sequence, given the allowed time
-        and time elapsed since start.
-        '''
-        return

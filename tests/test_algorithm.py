@@ -79,8 +79,7 @@ def robot():
     h = .1
     pos = (0.5,0.5)
     raft = alg.Raft(pos, w, h)
-    # TODO: update with a default cmd sequence when that stuff is ready
-    robot = alg.Robot(surf, raft, [])
+    robot = alg.Robot(surf, raft)
     yield robot
 
 
