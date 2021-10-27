@@ -41,16 +41,15 @@ class Executive(object):
 
         if const.MICROSTEP_NUM > 1:
             kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
-            # kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+            kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
         else:
             kit0 = MotorKit(address=const.HAT_0_ADDR)
-            # kit1 = MotorKit(address=const.HAT_1_ADDR)
-        # HACK TODO FIXME ECM: Need to dupe some motors until second HAT connected
+            kit1 = MotorKit(address=const.HAT_1_ADDR)
         self.steppers = {
             'sw': kit0.stepper1,
             'ne': kit0.stepper2,
-            'nw': kit0.stepper1,
-            'se': kit0.stepper2
+            'nw': kit1.stepper1,
+            'se': kit1.stepper2
         }
 
 
@@ -177,12 +176,10 @@ class Executive(object):
         motor_threads = []
         if cmd['move_mode'] == 'move':
             motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
+            print(motor_cmds)
             # Dish out motor commands to each motor
             futures = []
             for key in motor_cmds.keys():
-                # HACK TODO FIXME ECM: Need to skip some keys until both HATs connected
-                if key in ['nw', 'se']:
-                    continue
                 futures.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
             loop = asyncio.get_event_loop()
             result = loop.run_until_complete(asyncio.gather(*futures))
@@ -198,8 +195,4 @@ class Executive(object):
 
 
     def close(self):
-        # HACK TODO FIXME ECM: When all steppers addressable, release all of them.
-        for key in self.steppers.keys():
-            if key in ['nw', 'se']:
-                continue
-            self.steppers[key].release()
+        [self.steppers[key].release() for key in self.steppers.keys()] 

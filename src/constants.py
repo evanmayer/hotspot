@@ -6,7 +6,7 @@ import os
 
 # Adafruit stacking motor driver hats are addressable.
 HAT_0_ADDR = 0x60
-HAT_1_ADDR = None
+HAT_1_ADDR = 0x61
 
 # Adafruit stepper style. Used to enable/disable microstepping.
 # options: MICROSTEP, INTERLEAVE, DOUBLE, SINGLE
