@@ -3,6 +3,7 @@
 
 from adafruit_motorkit import MotorKit
 import algorithm as alg
+import asyncio
 import constants as const
 import hardware as hw
 import logging
@@ -38,8 +39,12 @@ class Executive(object):
         raft = alg.Raft(pos, w, h)
         self.robot = alg.Robot(surf, raft)
 
-        kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
-        # kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+        if const.MICROSTEP_NUM > 1:
+            kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+            # kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+        else:
+            kit0 = MotorKit(address=const.HAT_0_ADDR)
+            # kit1 = MotorKit(address=const.HAT_1_ADDR)
         # HACK TODO FIXME ECM: Need to dupe some motors until second HAT connected
         self.steppers = {
             'sw': kit0.stepper1,
@@ -173,21 +178,16 @@ class Executive(object):
         if cmd['move_mode'] == 'move':
             motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
             # Dish out motor commands to each motor
+            futures = []
             for key in motor_cmds.keys():
                 # HACK TODO FIXME ECM: Need to skip some keys until both HATs connected
                 if key in ['nw', 'se']:
                     continue
-                stepper = self.steppers[key]
-                print(*motor_cmds[key])
-                thread = threading.Thread(target=hw.move_motor, args=(stepper, *motor_cmds[key]), daemon=True)
-                thread.start()
-                motor_threads.append(thread)
+                futures.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
+            loop = asyncio.get_event_loop()
+            result = loop.run_until_complete(asyncio.gather(*futures))
 
         # If move mode is dwell, just do whatever the LabJack needs to do.
-
-        # Join all threads
-        [thread.join() for thread in motor_threads]
-
 
     def jog(self):
         pass

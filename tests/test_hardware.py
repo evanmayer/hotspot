@@ -1,4 +1,5 @@
 from adafruit_motorkit import MotorKit
+import asyncio
 import numpy as np
 import pytest
 
@@ -35,7 +36,8 @@ class TestDefault(object):
     )
     def test_move_motor_good(self, stepper, radians, rad_per_sec): 
         try:
-            hw.move_motor(stepper, radians, rad_per_sec)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, radians, rad_per_sec)))
         finally:
             stepper.release()
 
@@ -46,7 +48,9 @@ class TestDefault(object):
     def test_move_motor_bad(self, stepper, radians, rad_per_sec): 
         try:
             with pytest.raises(ValueError):
-                hw.move_motor(stepper, radians, rad_per_sec) 
+                loop = asyncio.get_event_loop()
+                loop.set_debug(True) # necessary to get exception out of subprocess
+                loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, radians, rad_per_sec)))
         finally:
             stepper.release()
     
@@ -55,7 +59,8 @@ class TestDefault(object):
         speeds = np.linspace(.5, 2.4, num=50)
         try:
             for speed in speeds:
-                hw.move_motor(stepper, np.pi / 32., speed)
-            hw.move_motor(stepper, 2. * np.pi, speed)
+                loop = asyncio.get_event_loop()
+                result = loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, np.pi / 32., speed)))
+            result = loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, 2. * np.pi, speed)))
         finally:
             stepper.release()

@@ -3,6 +3,7 @@
 # hardware.
 
 from adafruit_motor import stepper
+import asyncio
 import constants as const
 import logging
 import numpy as np
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, 'DEBUG'))
 
 
-def move_motor(stepper_n, radians: float, rad_per_sec: float):
+async def move_motor(stepper_n, radians: float, rad_per_sec: float):
     '''
     Perform a timed while loop to move the commanded angle at the commanded
     rate.
@@ -48,17 +49,16 @@ def move_motor(stepper_n, radians: float, rad_per_sec: float):
     if direction == -1:
         stepper_dir = stepper.BACKWARD
 
-    while steps_to_go:
+    for i in range(steps_to_go):
         # fudge more accurate steps/sec by subtracting off execution time of non-sleeping part of loop.
         loop_start = time.time()
         stepper_n.onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
-        steps_to_go -= 1
         # sleep for the remaining time to keep issuing steps at proper rate.
         time_rem = 1./(deg_per_sec / const.DEG_PER_STEP) - (time.time() - loop_start)
         if time_rem <= 0.:
             logger.warning('Commanded angular rate exceeds what can be commanded'
                 + ' reliably.')
             continue
-        time.sleep(time_rem)
+        await asyncio.sleep(time_rem)
 
     logger.info(f'Stepper {stepper_n} move complete.')
