@@ -18,7 +18,7 @@ import time
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'DEBUG'))
+logger.setLevel(getattr(logging, 'WARNING'))
 
 
 async def move_motor(stepper_n, radians: float, rad_per_sec: float):
@@ -43,12 +43,14 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
     deg_per_sec = abs(rad_per_sec) * const.DEG_PER_RAD
     
     if deg_per_sec < np.finfo(float).eps:
-        raise ValueError('Angular rate must be greater than zero.') 
+        logger.debug('Commanded angular rate close to zero. Motor doesn\'t move.')
+        return
     
     stepper_dir = stepper.FORWARD
     if direction == -1:
         stepper_dir = stepper.BACKWARD
 
+    logger.debug(f'([{time.time()}]: Stepper {stepper_n} move started.')
     for i in range(steps_to_go):
         # fudge more accurate steps/sec by subtracting off execution time of non-sleeping part of loop.
         loop_start = time.time()
@@ -61,4 +63,4 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
             continue
         await asyncio.sleep(time_rem)
 
-    logger.info(f'Stepper {stepper_n} move complete.')
+    logger.debug(f'([{time.time()}]: Stepper {stepper_n} move complete.')

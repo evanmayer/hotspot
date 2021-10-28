@@ -11,6 +11,7 @@ import multiprocessing as mp
 import os
 import sys
 import threading
+import time
 import numpy as np
 
 
@@ -33,18 +34,18 @@ class Executive(object):
         ne = (1,1)
         se = (1,0)
         surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
-        w = .1
-        h = .1
+        w = .01
+        h = .01
         pos = (0.5,0.5)
         raft = alg.Raft(pos, w, h)
         self.robot = alg.Robot(surf, raft)
 
         if const.MICROSTEP_NUM > 1:
-            kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
-            kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+            kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+            kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         else:
-            kit0 = MotorKit(address=const.HAT_0_ADDR)
-            kit1 = MotorKit(address=const.HAT_1_ADDR)
+            kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
+            kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
             'ne': kit0.stepper2,
@@ -170,20 +171,21 @@ class Executive(object):
             return
         else:
             cmd = self.cmd_queue.get(timeout=1)
+            logger.debug(f'Move cmd: {cmd}')
         # TODO: Process LabJack commands
 
         # Process move commands if necessary
         motor_threads = []
         if cmd['move_mode'] == 'move':
             motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
-            print(motor_cmds)
             # Dish out motor commands to each motor
             futures = []
             for key in motor_cmds.keys():
                 futures.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
             loop = asyncio.get_event_loop()
             result = loop.run_until_complete(asyncio.gather(*futures))
-
+        else:
+            time.sleep(.1)
         # If move mode is dwell, just do whatever the LabJack needs to do.
 
     def jog(self):

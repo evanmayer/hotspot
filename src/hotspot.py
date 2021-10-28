@@ -9,4 +9,4 @@ logging.basicConfig()
 
 if __name__ == "__main__":
     executive = ex.Executive('geometry.txt')
-    executive.run(os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'test.csv'))
+    executive.run(os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'box.csv'))

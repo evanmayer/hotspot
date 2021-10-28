@@ -41,19 +41,6 @@ class TestDefault(object):
         finally:
             stepper.release()
 
-    # Cases that are expected to throw an error
-    @pytest.mark.parametrize('radians, rad_per_sec', 
-        [( np.pi/4.,   0.)]
-    )
-    def test_move_motor_bad(self, stepper, radians, rad_per_sec): 
-        try:
-            with pytest.raises(ValueError):
-                loop = asyncio.get_event_loop()
-                loop.set_debug(True) # necessary to get exception out of subprocess
-                loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, radians, rad_per_sec)))
-        finally:
-            stepper.release()
-    
 
     def test_motor_chirp(self, stepper):
         speeds = np.linspace(.5, 2.4, num=50)

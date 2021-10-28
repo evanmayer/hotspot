@@ -7,7 +7,7 @@ import numpy as np
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'WARNING'))
+logger.setLevel(getattr(logging, 'DEBUG'))
 
 class TestSurface(object):
     '''
@@ -36,10 +36,11 @@ class TestSurface(object):
         '''
         # ECM: Might be able to exploit matrix math to make faster
         # e.g. make two arrays of vertices and vectorize the for loop
-        eps = np.finfo(float).eps
+        eps = 1e-9
         result = True
         ang_tot_rad = 0.
         vertex_seq = [self.sw, self.nw, self.ne, self.se, self.sw]
+        reason = None
         for i in range(len(vertex_seq) - 1):
             disp0 = vertex_seq[i] - pos
             disp1 = vertex_seq[i+1] - pos
@@ -48,6 +49,7 @@ class TestSurface(object):
             # is pos too close to a vertex (protect against divide by 0)
             if (mag0 < eps or mag1 < eps):
                 result = False
+                reason = 'Too close to corner'
                 break
             v0_hat = disp0 / mag0
             v1_hat = disp1 / mag1
@@ -55,11 +57,16 @@ class TestSurface(object):
             # is pos too close to an edge
             if np.abs(ang - np.pi) < eps:
                 result = False
+                reason = 'Too close to edge'
                 break
             ang_tot_rad += ang
         # is pos inside shape
         if np.abs(ang_tot_rad - 2. * np.pi) > eps:
             result = False
+            reason = f'Outside shape: {np.abs(ang_tot_rad - 2. * np.pi)}'
+
+        if reason:
+            logger.debug(f'Bounds check failed: {reason}')
 
         return result
 
@@ -210,4 +217,6 @@ class Robot(object):
         motor_cmds['nw'] = (delta_angles[0, 1], ang_rates[0, 1])
         motor_cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
 
+        logger.debug(f'Motor commands: {motor_cmds}')
+        
         return motor_cmds
