@@ -51,6 +51,7 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
         stepper_dir = stepper.BACKWARD
 
     logger.debug(f'([{time.time()}]: Stepper {stepper_n} move started.')
+    
     for i in range(steps_to_go):
         # fudge more accurate steps/sec by subtracting off execution time of non-sleeping part of loop.
         loop_start = time.time()

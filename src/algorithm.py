@@ -125,7 +125,6 @@ class Robot(object):
 
         # Init home to an invalid position until we are homed
         self._home = (-np.inf, -np.inf)
-        self.current_pos = self._home
         # Start off pos_cmd in an error state, hoping an error will occur
         # If we attempt to move before issuing a real pos_cmd
         self._pos_cmd = self._home
@@ -197,7 +196,7 @@ class Robot(object):
         eps = np.finfo(float).eps
         distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
         if (speed <= eps) or (distance <= eps):
-            logger.warning('Position command malformed: distance: {distance} speed: {speed}')
+            logger.warning(f'Position command malformed: distance: {distance} speed: {speed}')
             return motor_cmds
 
         lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)

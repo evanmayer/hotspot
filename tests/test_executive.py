@@ -13,7 +13,7 @@ from context import constants as const
 def executive():
     # Class scope cuts down on time spent init-ing
     # Used by any test function that needs a default motorkit instance
-    executive = ex.Executive('geometry.txt')
+    executive = ex.Executive(os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'test_surface.csv'))
     yield executive
 
 

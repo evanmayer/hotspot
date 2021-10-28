@@ -27,6 +27,8 @@ DEG_PER_RAD = 180. / np.pi
 # Used for converting linear distances into rotational ones
 PULLEY_RADIUS = 0.03
 
+DEFAULT_SPEED = 0.01 # m/s linear speed
+
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
 MAX_COMMANDS = 2**17
