@@ -195,7 +195,7 @@ class Executive(object):
 
     def home(self):
         '''
-        Clear all commands in the queue drive to the home position.
+        Clear all commands in the queue and drive to the home position.
         '''
         # If not already home, go there.
         eps = np.finfo(float).eps
