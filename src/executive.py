@@ -22,13 +22,27 @@ MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'j': 'JOG', 'w': 'WAIT'}
 HR = '-' * 80
 
 class Executive(object):
-    '''Handles control flow with a state machine.'''
+    '''
+    Handles control flow with a state machine, initializes the algorithm's
+    Robot class, ingests command files to process and dispatch tasks to
+    hardware, and outputs telemetry.
+
+    Parameters
+    ----------
+    geometry_file
+        Text file with 10 cols specifying the geometry of the robot for a given
+        surface. This file defines 4 pairs of points describing cable endpoints
+        where they are attached to the mirror, in the mirror coordinate frame,
+        and the rectangular geometry of the central effector as a width and
+        height.
+    '''
     def __init__(self, geometry_file: str):
         # Set defaults
         self.mode = 'CAL_HOME'
         self.last_mode = 'CAL_HOME'
         self.kbd_queue = mp.Queue(1)
-        self.cmd_queue = mp.Queue(const.MAX_COMMANDS)
+        self.cmd_queue = mp.Queue(const.MAX_QLEN)
+        self.tm_queue = mp.Queue(const.MAX_QLEN)
         self.sequence_len = 0.
         # Read in positions of cable endpoints and raft dimensions
         (sw_0, sw_1,
@@ -47,7 +61,7 @@ class Executive(object):
         se = (se_0,se_1)
         ne = (ne_0,ne_1)
         surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
-        # Starting the raft at 0,0 until homed.
+        # Initialize the raft to 0,0 until homed.
         raft = alg.Raft((0,0), w, h)
         self.robot = alg.Robot(surf, raft)
 
@@ -66,6 +80,12 @@ class Executive(object):
         '''
         Helper function to run in a separate thread and add user input chars 
         to a buffer.
+
+        Parameters
+        ----------
+        queue
+            Threadsafe structure for handling user keyboard input for mode
+            switching
         '''
         while True:
             queue.put(sys.stdin.read(1))
@@ -74,6 +94,12 @@ class Executive(object):
     def add_cmds(self, fname: str):
         '''
         Read command input file and add commands to the command queue.
+
+        Parameters
+        ----------
+        fname
+            .csv-formatted file containing a sequence of commands, one per col.
+            Data spec described in docstring of sequence() function.
         '''
         logger.info(f'Parsing command sequence: {fname}')
         rows = np.genfromtxt(
@@ -85,8 +111,8 @@ class Executive(object):
             )
 
         self.sequence_len = len(rows)
-        assert (self.sequence_len <= const.MAX_COMMANDS), ('Input command number exceeds'
-            + ' command queue length. Increase const.MAX_COMMANDS.')
+        assert (self.sequence_len <= const.MAX_QLEN), ('Input command number exceeds'
+            + ' command queue length. Increase const.MAX_QLEN.')
 
         for i in range(self.sequence_len):
             cmd = {}
@@ -96,19 +122,33 @@ class Executive(object):
             cmd['pos_cmd']      = (rows[i][3], rows[i][4])
             cmd['speed_cmd']    = rows[i][5]
             self.cmd_queue.put(cmd)
-        
         return
 
 
     def empty_queue(self, queue: mp.Queue):
+        '''
+        Completely empty the given Queue object.
+
+        Parameters
+        ----------
+        queue
+            Any queue
+        '''
         while not queue.empty():
             queue.get()
+        return
 
 
     def run(self, fname: str):
         '''
         Main run function, including processing human input to switch between
         states.
+
+        Parameters
+        ----------
+        fname
+            .csv-formatted file containing a sequence of commands, one per col.
+            Data spec described in docstring of sequence() function.
         '''
         # First, require that a home position be set. This also tells the 
         # robot where the raft starts at.
@@ -189,7 +229,6 @@ class Executive(object):
         self.robot.home = pos
         self.robot.raft.position = pos
         logger.info(f'Home position set: {self.robot.home}')
-
         return
 
 
@@ -209,13 +248,8 @@ class Executive(object):
             cmd['pos_cmd']      = self.robot.home
             cmd['speed_cmd']    = const.DEFAULT_SPEED
 
-            logger.debug(f'Move cmd: {cmd}')
-            futures = []
-            motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
-            for key in motor_cmds.keys():
-                futures.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
-            loop = asyncio.get_event_loop()
-            result = loop.run_until_complete(asyncio.gather(*futures))
+            tasks = self._get_motor_tasks(cmd)
+            result = self._dispatch_tasks(tasks)
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
@@ -226,7 +260,19 @@ class Executive(object):
     def sequence(self, fname: str):
         '''
         On each call, pop a new command off of the command queue and dispatch
-        it to motors/ LabJack.
+        it to motors/LabJack.
+
+        Parameters
+        ----------
+        fname
+            .csv-formatted file containing a sequence of commands, one per col:
+            - flasher_modes: TODO: not sure how LabJack wants command info
+            - flasher_cmds: TODO:  not sure how LabJack wants command info
+            - move_modes: if 'move', issue motor commands to achieve move
+                spec'd by pos_cmds and speed_cmds
+            - pos_cmd_0s: 0th element of position command coordinate
+            - pos_cmd_1s: 1st element of position command coordinate
+            - speed_cmds: linear travel speed command
         '''
         # If we are changing to sequence from another mode, ensure we start
         # fresh
@@ -243,22 +289,13 @@ class Executive(object):
             logger.info(f'Sequence progress: {progress:.2f} %')
             cmd = self.cmd_queue.get(timeout=1)
         
-        # Add functions to call concurrently to this list.
-        futures = []
-        # TODO: Process LabJack commands
-        
-        # Process move commands if necessary
-        if cmd['move_mode'] == 'move': # If move mode is dwell, just do whatever the LabJack needs to do.
-            logger.debug(f'Move cmd: {cmd}')
-            motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
-            for key in motor_cmds.keys():
-                futures.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
-        
-        # Run everything we're supposed to.
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(asyncio.gather(*futures))
-        logger.debug('cmd completed')
+        # Get any motor move tasks
+        tasks = self._get_motor_tasks(cmd)
+        # Get any LabJack tasks
+        tasks += self._get_labjack_tasks(cmd)
+        self._dispatch_tasks(tasks)
 
+        logger.debug('cmd completed')
         return
 
 
@@ -268,6 +305,59 @@ class Executive(object):
 
     def wait(self):
         return
+
+
+    def _get_motor_tasks(self, cmd: dict) -> list:
+        '''
+        Transform the move command into a list of motor tasks to dispatch
+        concurrently.
+
+        Parameters
+        ----------
+        cmd:
+            Command packet dictionary with keys for position command and speed
+                command, to pass to control algorithm
+
+        Returns
+        -------
+        tasks:
+            mutable iterable of tasks to dispatch using some concurrent
+            execution method
+        '''
+        tasks = []
+        # If move mode is not 'move', no motor tasks to do, so do whatever the
+        # LabJack needs to do.
+        if cmd['move_mode'] == 'move':
+            logger.debug(f'Move cmd: {cmd}')
+            motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
+            for key in motor_cmds.keys():
+                tasks.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
+        return tasks
+
+
+    def _get_labjack_tasks(self, cmd: dict):
+        return []
+
+
+    def _dispatch_tasks(self, tasks: list):
+        '''
+        Abstracts the dispatching of a list of tasks into whatever concurrent
+        execution method is desired.
+
+        Parameters
+        ----------
+        tasks:
+            Iterable of all tasks to run concurrently
+
+        Returns
+        -------
+        result:
+            return value of concurrent execution, e.g. for extracting
+            exceptions
+        '''
+        loop = asyncio.get_event_loop()
+        result = loop.run_until_complete(asyncio.gather(*tasks))
+        return result
 
 
     def close(self):

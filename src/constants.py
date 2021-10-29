@@ -31,7 +31,7 @@ DEFAULT_SPEED = 0.01 # m/s linear speed
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
-MAX_COMMANDS = 2**17
+MAX_QLEN = 2**16
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
