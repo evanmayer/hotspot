@@ -18,7 +18,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, const.LOGLEVEL))
 
-MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'j': 'JOG', 'w': 'WAIT'}
+MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT'}
 HR = '-' * 80
 
 class Executive(object):
@@ -187,9 +187,6 @@ class Executive(object):
                     elif 's' == kbd_in:
                         logger.info('Sequence run requested.')
                         self.mode = 'SEQ'
-                    elif 'j' == kbd_in:
-                        logger.info('Jog mode requested.')
-                        self.mode = 'JOG'
                     elif 'w' == kbd_in:
                         logger.info('Wait mode requested.')
                         self.mode = 'WAIT'
@@ -204,8 +201,6 @@ class Executive(object):
                     self.mode = 'WAIT'
                 elif self.mode == 'SEQ':
                     self.sequence(fname)
-                elif self.mode == 'JOG':
-                    self.jog()
                 elif self.mode == 'WAIT':
                     self.wait()
                 else:
@@ -299,10 +294,6 @@ class Executive(object):
         self.dispatch_tasks(tasks)
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
-        return
-
-
-    def jog(self):
         return
 
 

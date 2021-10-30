@@ -62,7 +62,7 @@ class Visualizer(object):
         else:
             logger.warn(f'[{varname}] Plotting data of shape {data.shape} not implemented.')
         
-        plt.pause(1. / 60.)
+        plt.pause(1e-9)
         return
 
 
@@ -122,11 +122,11 @@ class DataRouter(object):
         Function to continuously log TM to file and update plots as TM comes in.
         '''
         while True:
-            if self.tm_queue.empty():
-                time.sleep(.2)
-            else:
+            if not self.tm_queue.empty():
                 self.process_packet(self.tm_queue.get())
                 self.update_display()
+            time.sleep(1e-9)
+
 
     
     def update_display(self):
