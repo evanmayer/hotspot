@@ -25,6 +25,7 @@ class Visualizer(object):
 
         fig, axes = plt.subplots(nrows=len(file_handle[source].keys()))
         fig.suptitle(source)
+        fig.tight_layout()
         self.fig = fig
 
         self.var_axes = {key: axes[i] for i, key in enumerate(file_handle[source].keys())}
@@ -61,8 +62,7 @@ class Visualizer(object):
                 ax.plot(time, data[:,j])
         else:
             logger.warn(f'[{varname}] Plotting data of shape {data.shape} not implemented.')
-        
-        plt.pause(1e-9)
+        ax.grid(True)
         return
 
 
@@ -125,6 +125,7 @@ class DataRouter(object):
             if not self.tm_queue.empty():
                 self.process_packet(self.tm_queue.get())
                 self.update_display()
+            plt.pause(1e-9)
             time.sleep(1e-9)
 
 
