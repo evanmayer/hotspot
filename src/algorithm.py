@@ -3,11 +3,13 @@
 # MKS units only.
 import constants as const
 import logging
+import multiprocessing as mp
 import numpy as np
+import time
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'DEBUG'))
+logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 class TestSurface(object):
     '''
@@ -118,7 +120,7 @@ class Robot(object):
     commands into a set of cable length deltas and velocities, and then into
     a set of motor commands.
     '''
-    def __init__(self, surf: TestSurface, raft: Raft):
+    def __init__(self, surf: TestSurface, raft: Raft, tm_queue: mp.Queue):
         # Geometry
         self.surf = surf
         self.raft = raft
@@ -128,6 +130,9 @@ class Robot(object):
         # Start off pos_cmd in an error state, hoping an error will occur
         # If we attempt to move before issuing a real pos_cmd
         self._pos_cmd = self._home
+
+        # A handle to the queue for outputting TM packets for vis and logging
+        self.tm_queue = tm_queue
 
 
     @property
@@ -218,4 +223,16 @@ class Robot(object):
 
         logger.debug(f'Motor commands: {motor_cmds}')
         
+        packet = {'algorithm':
+            {
+                'Time UTC (s)': time.time(),
+                'Position Command (m)' : pos_cmd,
+                # 'Cable Lengths Command (m)' : lengths_after,
+                # 'Delta Cable Lengths Command (m)' : delta_lengths,
+                'Motor Delta Angles Command (rad)' : delta_angles,
+                'Motor Angular Rate Command (rad per s)' : ang_rates
+            }
+        }
+        self.tm_queue.put(packet)
+
         return motor_cmds

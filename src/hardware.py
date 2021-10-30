@@ -18,7 +18,7 @@ import time
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'WARNING'))
+logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 
 async def move_motor(stepper_n, radians: float, rad_per_sec: float):
@@ -59,7 +59,7 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
         # sleep for the remaining time to keep issuing steps at proper rate.
         time_rem = 1./(deg_per_sec / const.DEG_PER_STEP) - (time.time() - loop_start)
         if time_rem <= 0.:
-            logger.warning('Commanded angular rate exceeds what can be commanded'
+            logger.warning('Commanded angular rate exceeded what can be commanded'
                 + ' reliably.')
             continue
         await asyncio.sleep(time_rem)

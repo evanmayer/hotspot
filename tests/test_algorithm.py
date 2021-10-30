@@ -1,5 +1,7 @@
+import multiprocessing as mp
 import numpy as np
 import pytest
+
 from context import algorithm as alg
 from context import constants as const
 
@@ -79,7 +81,7 @@ def robot():
     h = .1
     pos = (0.5,0.5)
     raft = alg.Raft(pos, w, h)
-    robot = alg.Robot(surf, raft)
+    robot = alg.Robot(surf, raft, mp.Queue())
     yield robot
 
 

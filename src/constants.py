@@ -35,3 +35,6 @@ MAX_QLEN = 2**16
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
+
+# all file loggers listen to this. switch to 'DEBUG' for more verbose output
+LOGLEVEL = 'INFO'

@@ -16,7 +16,7 @@ import numpy as np
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'DEBUG'))
+logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'j': 'JOG', 'w': 'WAIT'}
 HR = '-' * 80
@@ -35,15 +35,18 @@ class Executive(object):
         where they are attached to the mirror, in the mirror coordinate frame,
         and the rectangular geometry of the central effector as a width and
         height.
+    tm_queue
+        multiprocessing.Queue object to place telemetry packets in.
     '''
-    def __init__(self, geometry_file: str):
+    def __init__(self, geometry_file: str, tm_queue: mp.Queue):
         # Set defaults
         self.mode = 'CAL_HOME'
         self.last_mode = 'CAL_HOME'
         self.kbd_queue = mp.Queue(1)
         self.cmd_queue = mp.Queue(const.MAX_QLEN)
-        self.tm_queue = mp.Queue(const.MAX_QLEN)
+        self.tm_queue = tm_queue
         self.sequence_len = 0.
+
         # Read in positions of cable endpoints and raft dimensions
         (sw_0, sw_1,
          nw_0, nw_1,
@@ -63,7 +66,7 @@ class Executive(object):
         surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
         # Initialize the raft to 0,0 until homed.
         raft = alg.Raft((0,0), w, h)
-        self.robot = alg.Robot(surf, raft)
+        self.robot = alg.Robot(surf, raft, tm_queue)
 
         kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
@@ -111,8 +114,10 @@ class Executive(object):
             )
 
         self.sequence_len = len(rows)
-        assert (self.sequence_len <= const.MAX_QLEN), ('Input command number exceeds'
-            + ' command queue length. Increase const.MAX_QLEN.')
+        if (self.sequence_len > const.MAX_QLEN):
+            logger.warn(f'Input command number {len(rows)} exceeds command'
+                + ' queue length {const.MAX_QLEN}. Increase'
+                + ' constants.MAX_QLEN.')
 
         for i in range(self.sequence_len):
             cmd = {}
@@ -248,8 +253,8 @@ class Executive(object):
             cmd['pos_cmd']      = self.robot.home
             cmd['speed_cmd']    = const.DEFAULT_SPEED
 
-            tasks = self._get_motor_tasks(cmd)
-            result = self._dispatch_tasks(tasks)
+            tasks = self.get_motor_tasks(cmd)
+            result = self.dispatch_tasks(tasks)
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
@@ -285,17 +290,15 @@ class Executive(object):
         if num_remaining < 1:
             return
         else:
-            progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
-            logger.info(f'Sequence progress: {progress:.2f} %')
-            cmd = self.cmd_queue.get(timeout=1)
+            cmd = self.cmd_queue.get()
         
         # Get any motor move tasks
-        tasks = self._get_motor_tasks(cmd)
+        tasks = self.get_motor_tasks(cmd)
         # Get any LabJack tasks
-        tasks += self._get_labjack_tasks(cmd)
-        self._dispatch_tasks(tasks)
-
-        logger.debug('cmd completed')
+        tasks += self.get_labjack_tasks(cmd)
+        self.dispatch_tasks(tasks)
+        progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
+        logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
         return
 
 
@@ -307,7 +310,7 @@ class Executive(object):
         return
 
 
-    def _get_motor_tasks(self, cmd: dict) -> list:
+    def get_motor_tasks(self, cmd: dict) -> list:
         '''
         Transform the move command into a list of motor tasks to dispatch
         concurrently.
@@ -325,8 +328,6 @@ class Executive(object):
             execution method
         '''
         tasks = []
-        # If move mode is not 'move', no motor tasks to do, so do whatever the
-        # LabJack needs to do.
         if cmd['move_mode'] == 'move':
             logger.debug(f'Move cmd: {cmd}')
             motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
@@ -335,14 +336,14 @@ class Executive(object):
         return tasks
 
 
-    def _get_labjack_tasks(self, cmd: dict):
+    def get_labjack_tasks(self, cmd: dict):
         return []
 
 
-    def _dispatch_tasks(self, tasks: list):
+    def dispatch_tasks(self, tasks: list):
         '''
-        Abstracts the dispatching of a list of tasks into whatever concurrent
-        execution method is desired.
+        Abstracts the dispatching of a list of tasks into the desired
+        concurrent execution method.
 
         Parameters
         ----------

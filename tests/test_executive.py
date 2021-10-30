@@ -1,5 +1,6 @@
-import os
+import multiprocessing as mp
 import numpy as np
+import os
 import pytest
 
 from context import executive as ex
@@ -13,7 +14,9 @@ from context import constants as const
 def executive():
     # Class scope cuts down on time spent init-ing
     # Used by any test function that needs a default motorkit instance
-    executive = ex.Executive(os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'test_surface.csv'))
+    geometry_file = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'test_surface.csv')
+    tm_queue = mp.Queue(const.MAX_QLEN)
+    executive = ex.Executive(geometry_file, tm_queue)
     yield executive
 
 
