@@ -17,7 +17,7 @@ PWM_FREQ = 2400
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.
 # Even numbers from 2-8.
-MICROSTEP_NUM = 8
+MICROSTEP_NUM = 2
 
 # Used for converting rotational changes into stepper commands
 DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
@@ -25,9 +25,9 @@ DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
 DEG_PER_RAD = 180. / np.pi
 
 # Used for converting linear distances into rotational ones
-PULLEY_RADIUS = 0.03
+PULLEY_RADIUS = 0.03 / 2.
 
-DEFAULT_SPEED = 0.01 # m/s linear speed
+DEFAULT_SPEED = 0.02 # m/s linear speed
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.

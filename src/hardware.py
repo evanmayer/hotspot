@@ -7,7 +7,7 @@ import asyncio
 import constants as const
 import logging
 import numpy as np
-import time
+from time import time, sleep
 
 
 # Conventions:
@@ -18,7 +18,7 @@ import time
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, const.LOGLEVEL))
+logger.setLevel(getattr(logging, 'DEBUG'))#const.LOGLEVEL))
 
 
 async def move_motor(stepper_n, radians: float, rad_per_sec: float):
@@ -50,18 +50,19 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
     if direction == -1:
         stepper_dir = stepper.BACKWARD
 
-    logger.debug(f'([{time.time()}]: Stepper {stepper_n} move started.')
-    
+    logger.debug(f'([{time()}]: Stepper {stepper_n} move started.')
+    deg_per_step = const.DEG_PER_STEP
+    style = const.STEPPER_STYLE
     for i in range(steps_to_go):
         # fudge more accurate steps/sec by subtracting off execution time of non-sleeping part of loop.
-        loop_start = time.time()
-        stepper_n.onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
+        loop_start = time()
+        stepper_n.onestep(style=style, direction=stepper_dir)
         # sleep for the remaining time to keep issuing steps at proper rate.
-        time_rem = 1./(deg_per_sec / const.DEG_PER_STEP) - (time.time() - loop_start)
+        time_rem = deg_per_step / deg_per_sec - (time() - loop_start)
         if time_rem <= 0.:
             logger.warning('Commanded angular rate exceeded what can be commanded'
                 + ' reliably.')
             continue
         await asyncio.sleep(time_rem)
 
-    logger.debug(f'([{time.time()}]: Stepper {stepper_n} move complete.')
+    logger.debug(f'([{time()}]: Stepper {stepper_n} move complete.')
