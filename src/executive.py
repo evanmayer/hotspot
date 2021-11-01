@@ -10,6 +10,7 @@ import logging
 import multiprocessing as mp
 import os
 import sys
+import telemetry as tm
 import threading
 import time
 import numpy as np
@@ -35,17 +36,18 @@ class Executive(object):
         where they are attached to the mirror, in the mirror coordinate frame,
         and the rectangular geometry of the central effector as a width and
         height.
-    tm_queue
-        multiprocessing.Queue object to place telemetry packets in.
     '''
-    def __init__(self, geometry_file: str, tm_queue: mp.Queue):
+    def __init__(self, geometry_file: str):
         # Set defaults
         self.mode = 'CAL_HOME'
         self.last_mode = 'CAL_HOME'
         self.kbd_queue = mp.Queue(1)
         self.cmd_queue = mp.Queue(const.MAX_QLEN)
-        self.tm_queue = tm_queue
+        self.tm_queue = mp.Queue(const.MAX_QLEN)
         self.sequence_len = 0.
+
+        # Handle telemetry output and display
+        self.router = tm.DataRouter(self.tm_queue)
 
         # Read in positions of cable endpoints and raft dimensions
         (sw_0, sw_1,
@@ -66,7 +68,7 @@ class Executive(object):
         surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
         # Initialize the raft to 0,0 until homed.
         raft = alg.Raft((0,0), w, h)
-        self.robot = alg.Robot(surf, raft, tm_queue)
+        self.robot = alg.Robot(surf, raft, self.tm_queue)
 
         kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
@@ -294,6 +296,10 @@ class Executive(object):
         self.dispatch_tasks(tasks)
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
+
+        # take time to log TM and update display before doing next cmd
+        self.router.process_tm()
+
         return
 
 

@@ -121,12 +121,10 @@ class DataRouter(object):
         '''
         Function to continuously log TM to file and update plots as TM comes in.
         '''
-        while True:
-            if not self.tm_queue.empty():
-                self.process_packet(self.tm_queue.get())
-                # self.update_display()
-            # plt.pause(1e-9)
-            time.sleep(1e-30)
+        while not self.tm_queue.empty():
+            self.process_packet(self.tm_queue.get())
+            self.update_display()
+            plt.pause(1e-9)
 
 
     
