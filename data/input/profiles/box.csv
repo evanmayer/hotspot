@@ -1,5 +1,5 @@
 flasher_modes,flasher_cmds,move_modes,pos_cmd_0s,pos_cmd_1s,speed_cmds
-notimplemented,notimplemented,move,.6,.6,.015
-notimplemented,notimplemented,move,.4,.6,.015
-notimplemented,notimplemented,move,.4,.4,.015
-notimplemented,notimplemented,move,.6,.4,.015
+notimplemented,notimplemented,move,.0974,.0974,.015
+notimplemented,notimplemented,move,.0466,.0974,.015
+notimplemented,notimplemented,move,.0466,.0466,.015
+notimplemented,notimplemented,move,.0974,.0466,.015

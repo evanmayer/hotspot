@@ -221,7 +221,7 @@ class Robot(object):
         motor_cmds['nw'] = (delta_angles[0, 1], ang_rates[0, 1])
         motor_cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
 
-        logger.debug(f'Motor commands: {motor_cmds}')
+        logger.debug(f'Motor commands: {motor_cmds}\nDelta lengths:{delta_lengths}')
         
         packet = {'algorithm':
             {

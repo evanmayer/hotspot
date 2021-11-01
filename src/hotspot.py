@@ -11,8 +11,8 @@ import threading
 logging.basicConfig()
 
 if __name__ == "__main__":
-    geometry_file = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'test_surface.csv')
-    command_profile = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles', 'circle_r5cm.csv')
+    geometry_file = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'lab_bench.csv')
+    command_profile = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles', 'box.csv')
 
     # Being awaiting telemetry
     tm_queue = mp.Queue(const.MAX_QLEN)
