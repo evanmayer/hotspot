@@ -299,7 +299,7 @@ class Executive(object):
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
 
         # take time to log TM and update display before doing next cmd
-        self.router.process_tm()
+        # self.router.process_tm()
 
         return
 
@@ -329,8 +329,13 @@ class Executive(object):
         if cmd['move_mode'] == 'move':
             logger.debug(f'Move cmd: {cmd}')
             motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
-            for key in motor_cmds.keys():
-                tasks.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
+            # for key in motor_cmds.keys():
+                # tasks.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
+
+            # testing: command all motors in one thread
+            angs = [cmd[0] for cmd in motor_cmds.values()]
+            rates = [cmd[1] for cmd in motor_cmds.values()]
+            hw.all_steppers(self.steppers.values(), angs, rates)
         return tasks
 
 

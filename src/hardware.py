@@ -66,3 +66,50 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
         await asyncio.sleep(time_rem)
 
     logger.debug(f'([{time()}]: Stepper {stepper_n} move complete.')
+
+
+def all_steppers(steppers: list, radians: list, rad_per_secs: list):
+    '''
+    Perform a timed while loop to move the commanded angle at the commanded
+    rate.
+
+    Parameters
+    ----------
+    steppers
+        iterable of 4x Adafruit MotorKit stepper instances 
+        (not adafruit_motor.stepper module)
+    radians
+        iterable of signed angle to move each stepper (radians)
+    rad_per_secs
+        iterable of unsigned angular rates (radians per second)
+    
+    Returns
+    -------
+    '''
+    deg_per_step = const.DEG_PER_STEP
+    style = const.STEPPER_STYLE
+    
+    directions = np.sign(radians)
+    steps_to_go = np.round(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
+    deg_per_secs = np.abs(rad_per_secs) * const.DEG_PER_RAD
+    
+    stepper_dirs = [stepper.FORWARD] * 4
+    for j, direction in enumerate(directions):
+        if direction == -1:
+            stepper_dirs[j] = stepper.BACKWARD
+
+    # determine the minimum number of steps any motor must take
+    min_steps = np.min(steps_to_go)
+    steps_per_iter = np.round(steps_to_go / min_steps).astype(int)
+    print(steps_to_go, min_steps, steps_per_iter)
+    # and the amount of time it has to take them
+    # then execute a loop of that many steps, adding steps as necessary in
+    # order to make all steppers move the required number of steps.
+    for i in range(min_steps):
+        for j, stepper_n in enumerate(steppers):
+            # print(f'stepping stepper {j} {steps_per_iter[j]} steps')
+            for k in range(steps_per_iter[j]):
+                stepper_n.onestep(style=style, direction=stepper_dirs[j])
+                sleep(1e-9)
+
+    # logger.debug(f'([{time()}]: Stepper {stepper_n} move complete.')
