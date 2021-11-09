@@ -54,9 +54,12 @@ For testing the software and hardware together, we set up the raspberry pi and t
 
 Steppers are attached to the optics bench via 3D-printed brackets. 1/4-20 socket head cap screws affix the bracket to the bench, and M3 screws affix the steppers to the brackets.
 
+<img src="img/spool_side_view.jpg" alt="drawing" width="200"/> <img src="img/spool_bench_mounted.jpg" alt="drawing" width="200"/>
+
 ## Spools
 
 The spools are each attached to the 5mm stepper motor shaft via one M3 setscrew. The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Motors should be oriented relative to the cable such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
+
 
 ## Power
 
@@ -65,3 +68,31 @@ The motor driver board must be powered via its own power supply, since the raspb
 
 ### LabJack
 The LabJack board also needs its own power supply to drive the voltage/current that is switched via the breakout board. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. The voltage of this power supply will depend on what is hooked up to the switchable terminals. In this case, we are using LEDs to stand in for Hawkeye IR sources, so 3.3V is fine.
+
+## Communication
+
+### Raspberry Pi
+You can log in to the raspberry pi via `ssh`. In order for you computer to "see" the raspberry pi, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
+1. By connecting both computers to a router or network switch that can assigns each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
+1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
+1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.
+
+The first option is the easiest, but depends on having access to an exisitng network, so limits your connectivity options. If you have access to you are on a Linux machine, the second option is about as easy and more flexible, in my opinion.
+
+ The hostname and password are printed on the bottom of the white plastic case. Once connection is sorted out, ping the pi to make sure:
+ 
+ ```ping timepi.local```
+ 
+ The ssh command goes like this:
+
+ ```ssh -X pi@timepi.local```
+
+ `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic raspberry pi case.
+
+### Motors
+
+Motors should be connected to the screw terminals of the pi's stepper hat like this:
+
+<img src="img/stepper_wiring.jpg" alt="drawing" width="200"/>
+
+Getting the order right ensures the stepper's coils are energized in the correct sequence to get it to rotate.
