@@ -74,8 +74,8 @@ class Executive(object):
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
-            'ne': kit1.stepper2,
-            'nw': kit1.stepper1,
+            'ne': kit1.stepper1,
+            'nw': kit1.stepper2,
             'se': kit0.stepper2
         }
 
@@ -299,7 +299,7 @@ class Executive(object):
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
 
         # take time to log TM and update display before doing next cmd
-        # self.router.process_tm()
+        self.router.process_tm()
 
         return
 

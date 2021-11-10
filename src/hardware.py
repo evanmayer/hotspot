@@ -68,10 +68,13 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
     logger.debug(f'([{time()}]: Stepper {stepper_n} move complete.')
 
 
-def all_steppers(steppers: list, radians: list, rad_per_secs: list):
+def all_steppers(steppers: list, radians: list):
     '''
-    Perform a timed while loop to move the commanded angle at the commanded
-    rate.
+    The number of steps any motor must take on each loop execution can be cast
+    as a special case of Bresenham's Line Algorithm, in the pos quadrant only,
+    with all lines starting at (0, 0).
+    All motors will either step or not according to the algorithm.
+    (We are kind of forgoing linear travel speed control here)
 
     Parameters
     ----------
@@ -80,36 +83,39 @@ def all_steppers(steppers: list, radians: list, rad_per_secs: list):
         (not adafruit_motor.stepper module)
     radians
         iterable of signed angle to move each stepper (radians)
-    rad_per_secs
-        iterable of unsigned angular rates (radians per second)
     
     Returns
     -------
     '''
-    deg_per_step = const.DEG_PER_STEP
     style = const.STEPPER_STYLE
     
     directions = np.sign(radians)
     steps_to_go = np.round(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
-    deg_per_secs = np.abs(rad_per_secs) * const.DEG_PER_RAD
     
     stepper_dirs = [stepper.FORWARD] * 4
-    for j, direction in enumerate(directions):
+    for i, direction in enumerate(directions):
         if direction == -1:
-            stepper_dirs[j] = stepper.BACKWARD
+            stepper_dirs[i] = stepper.BACKWARD
 
-    # determine the minimum number of steps any motor must take
-    min_steps = np.min(steps_to_go)
-    steps_per_iter = np.round(steps_to_go / min_steps).astype(int)
-    print(steps_to_go, min_steps, steps_per_iter)
-    # and the amount of time it has to take them
-    # then execute a loop of that many steps, adding steps as necessary in
-    # order to make all steppers move the required number of steps.
-    for i in range(min_steps):
-        for j, stepper_n in enumerate(steppers):
-            # print(f'stepping stepper {j} {steps_per_iter[j]} steps')
-            for k in range(steps_per_iter[j]):
-                stepper_n.onestep(style=style, direction=stepper_dirs[j])
-                sleep(1e-9)
+    # Normalize the slopes of the lines by making the motor that must take
+    # the most total steps have a slope = 1, or 1 step per loop cycle.
+    dx = np.max(steps_to_go)
+    dy = steps_to_go
+    steps_taken = [0] * 4
+    deltas = 2 * dy - dx # 2x to allow integer arithmetic
+    for _ in range(dx):
+        for i, stepper_n in enumerate(steppers):
+            # decide whether to step or not
+            if deltas[i] > 0:
+                # stepper_n.onestep(style=style, direction=stepper_dirs[i])
+                steps_taken[i] += 1
+                deltas[i] -= 2 * dx
+                # print('stepping:' + ' ' * i + f'{i}')
+            deltas[i] += 2 * dy[i]
 
-    # logger.debug(f'([{time()}]: Stepper {stepper_n} move complete.')
+        sleep(1e-9)
+        print(steps_taken)
+
+
+if __name__ == '__main__':
+    all_steppers([None] * 4, [(4 - i+1) * np.pi / 8 for i in range(4)])

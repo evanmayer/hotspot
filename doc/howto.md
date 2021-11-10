@@ -96,3 +96,14 @@ Motors should be connected to the screw terminals of the pi's stepper hat like t
 <img src="img/stepper_wiring.jpg" alt="drawing" width="200"/>
 
 Getting the order right ensures the stepper's coils are energized in the correct sequence to get it to rotate.
+
+On the lab bench in SO168, I wired them up like this:
+
+```
+'sw': kit0.stepper1,
+'ne': kit1.stepper1,
+'nw': kit1.stepper2,
+'se': kit0.stepper2
+```
+
+where kit0 is the bottom driver board, and stepper1 uses M1 & M2 terminal block on the driver board. Then I made sure that the roles coded in `Executive.__init__()` matched how the motors and drive cables were configured.

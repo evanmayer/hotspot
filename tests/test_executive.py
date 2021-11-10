@@ -16,7 +16,7 @@ def executive():
     # Used by any test function that needs a default motorkit instance
     geometry_file = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'test_surface.csv')
     tm_queue = mp.Queue(const.MAX_QLEN)
-    executive = ex.Executive(geometry_file, tm_queue)
+    executive = ex.Executive(geometry_file)
     yield executive
 
 
