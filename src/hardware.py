@@ -70,11 +70,11 @@ async def move_motor(stepper_n, radians: float, rad_per_sec: float):
 
 def all_steppers(steppers: list, radians: list):
     '''
-    The number of steps any motor must take on each loop execution is a
-    special case of Bresenham's Line Algorithm, in the pos quadrant only,
+    The number of steps any motor must take on each loop execution can be cast
+    as a special case of Bresenham's Line Algorithm, in the pos quadrant only,
     with all lines starting at (0, 0).
     All motors will either step or not according to the algorithm.
-    (We are forgoing linear speed control here)
+    (We are kind of forgoing linear travel speed control here)
 
     Parameters
     ----------
