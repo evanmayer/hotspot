@@ -9,10 +9,9 @@ HAT_0_ADDR = 0x60
 HAT_1_ADDR = 0x61
 
 # Adafruit stepper style. Used to enable/disable microstepping.
-# options: MICROSTEP, INTERLEAVE, DOUBLE, SINGLE
 STEPPER_STYLE = stepper.MICROSTEP
 
-PWM_FREQ = 2400
+PWM_FREQ = 2000
 
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.

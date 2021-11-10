@@ -21,53 +21,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, 'DEBUG'))#const.LOGLEVEL))
 
 
-async def move_motor(stepper_n, radians: float, rad_per_sec: float):
-    '''
-    Perform a timed while loop to move the commanded angle at the commanded
-    rate.
-
-    Parameters
-    ----------
-    stepper_n
-        Adafruit MotorKit stepper instance (not adafruit_motor.stepper module)
-    radians
-        Signed angle to move stepper (radians)
-    rad_per_sec
-        Unsigned angular rate (radians per second)
-    
-    Returns
-    -------
-    '''
-    direction = np.sign(radians)
-    steps_to_go = np.round(abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
-    deg_per_sec = abs(rad_per_sec) * const.DEG_PER_RAD
-    
-    if deg_per_sec < np.finfo(float).eps:
-        logger.debug('Commanded angular rate close to zero. Motor doesn\'t move.')
-        return
-    
-    stepper_dir = stepper.FORWARD
-    if direction == -1:
-        stepper_dir = stepper.BACKWARD
-
-    logger.debug(f'([{time()}]: Stepper {stepper_n} move started.')
-    deg_per_step = const.DEG_PER_STEP
-    style = const.STEPPER_STYLE
-    for i in range(steps_to_go):
-        # fudge more accurate steps/sec by subtracting off execution time of non-sleeping part of loop.
-        loop_start = time()
-        stepper_n.onestep(style=style, direction=stepper_dir)
-        # sleep for the remaining time to keep issuing steps at proper rate.
-        time_rem = deg_per_step / deg_per_sec - (time() - loop_start)
-        if time_rem <= 0.:
-            logger.warning('Commanded angular rate exceeded what can be commanded'
-                + ' reliably.')
-            continue
-        await asyncio.sleep(time_rem)
-
-    logger.debug(f'([{time()}]: Stepper {stepper_n} move complete.')
-
-
 def all_steppers(steppers: list, radians: list):
     '''
     The number of steps any motor must take on each loop execution can be cast
@@ -107,14 +60,16 @@ def all_steppers(steppers: list, radians: list):
         for i, stepper_n in enumerate(steppers):
             # decide whether to step or not
             if deltas[i] > 0:
-                # stepper_n.onestep(style=style, direction=stepper_dirs[i])
-                steps_taken[i] += 1
+                stepper_n.onestep(style=style, direction=stepper_dirs[i])
+                # steps_taken[i] += 1
                 deltas[i] -= 2 * dx
                 # print('stepping:' + ' ' * i + f'{i}')
+                # sleep(1e-4)
+
             deltas[i] += 2 * dy[i]
 
-        sleep(1e-9)
-        print(steps_taken)
+        # sleep(1e-9)
+        # print(steps_taken)
 
 
 if __name__ == '__main__':

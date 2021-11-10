@@ -170,7 +170,7 @@ class Robot(object):
             raise ValueError(f'Position command {new_pos} is outside of bounds for surface {self.surf}')
 
 
-    def process_input(self, pos_cmd: tuple, speed: float):
+    def process_input(self, pos_cmd: tuple):
         '''
         Translate a move command into 4 motor commands. Motors should be
         attached to cables such that increasing the length of the cable played
@@ -181,9 +181,6 @@ class Robot(object):
         ----------
         pos_cmd
             the position command in the frame of the surface
-        speed
-            the linear speed to travel from the current position to the 
-            commanded position, in the frame of the surface
         
         Returns
         -------
@@ -200,8 +197,8 @@ class Robot(object):
         # Input checking, this is just in case of malformed inputs.
         eps = np.finfo(float).eps
         distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
-        if (speed <= eps) or (distance <= eps):
-            logger.warning(f'Position command malformed: distance: {distance} speed: {speed}')
+        if distance <= eps:
+            logger.warning(f'Position command malformed: distance: {distance}')
             return motor_cmds
 
         lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
@@ -212,14 +209,12 @@ class Robot(object):
         lengths_after = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
 
         delta_lengths = lengths_after - lengths_before
-        time_allowed = distance / speed
         delta_angles = delta_lengths / const.PULLEY_RADIUS
-        ang_rates = delta_angles / time_allowed
 
-        motor_cmds['sw'] = (delta_angles[0, 0], ang_rates[0, 0])
-        motor_cmds['se'] = (delta_angles[1, 0], ang_rates[1, 0])
-        motor_cmds['nw'] = (delta_angles[0, 1], ang_rates[0, 1])
-        motor_cmds['ne'] = (delta_angles[1, 1], ang_rates[1, 1])
+        motor_cmds['sw'] = (delta_angles[0, 0],)
+        motor_cmds['se'] = (delta_angles[1, 0],)
+        motor_cmds['nw'] = (delta_angles[0, 1],)
+        motor_cmds['ne'] = (delta_angles[1, 1],)
 
         logger.debug(f'Motor commands: {motor_cmds}\nDelta lengths:{delta_lengths}')
         
@@ -230,7 +225,6 @@ class Robot(object):
                 # 'Cable Lengths Command (m)' : lengths_after,
                 # 'Delta Cable Lengths Command (m)' : delta_lengths,
                 'Motor Delta Angles Command (rad)' : delta_angles,
-                'Motor Angular Rate Command (rad per s)' : ang_rates
             }
         }
         self.tm_queue.put(packet)

@@ -74,8 +74,8 @@ class Executive(object):
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
-            'ne': kit1.stepper1,
-            'nw': kit1.stepper2,
+            'ne': kit1.stepper2,
+            'nw': kit1.stepper1,
             'se': kit0.stepper2
         }
 
@@ -128,7 +128,6 @@ class Executive(object):
             cmd['flasher_cmd']  = rows[i][1] # TODO: ECM: NotImplemented
             cmd['move_mode']    = rows[i][2]
             cmd['pos_cmd']      = (rows[i][3], rows[i][4])
-            cmd['speed_cmd']    = rows[i][5]
             self.cmd_queue.put(cmd)
         return
 
@@ -249,7 +248,6 @@ class Executive(object):
             cmd['flasher_cmd']  = None # TODO: ECM: NotImplemented
             cmd['move_mode']    = 'move'
             cmd['pos_cmd']      = self.robot.home
-            cmd['speed_cmd']    = const.DEFAULT_SPEED
 
             tasks = self.get_motor_tasks(cmd)
             result = self.dispatch_tasks(tasks)
@@ -275,7 +273,6 @@ class Executive(object):
                 spec'd by pos_cmds and speed_cmds
             - pos_cmd_0s: 0th element of position command coordinate
             - pos_cmd_1s: 1st element of position command coordinate
-            - speed_cmds: linear travel speed command
         '''
         # If we are changing to sequence from another mode, ensure we start
         # fresh
@@ -289,17 +286,12 @@ class Executive(object):
             return
         else:
             cmd = self.cmd_queue.get()
-        
-        # Get any motor move tasks
-        tasks = self.get_motor_tasks(cmd)
-        # Get any LabJack tasks
-        tasks += self.get_labjack_tasks(cmd)
-        self.dispatch_tasks(tasks)
+
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
 
         # take time to log TM and update display before doing next cmd
-        self.router.process_tm()
+        # self.router.process_tm()
 
         return
 
@@ -308,60 +300,25 @@ class Executive(object):
         return
 
 
-    def get_motor_tasks(self, cmd: dict) -> list:
+    def do_motor_tasks(self, cmd: dict) -> list:
         '''
-        Transform the move command into a list of motor tasks to dispatch
-        concurrently.
+        Transform the move command into motor commands
 
         Parameters
         ----------
         cmd:
             Command packet dictionary with keys for position command and speed
                 command, to pass to control algorithm
-
-        Returns
-        -------
-        tasks:
-            mutable iterable of tasks to dispatch using some concurrent
-            execution method
         '''
-        tasks = []
         if cmd['move_mode'] == 'move':
             logger.debug(f'Move cmd: {cmd}')
-            motor_cmds = self.robot.process_input(cmd['pos_cmd'], cmd['speed_cmd'])
-            # for key in motor_cmds.keys():
-                # tasks.append(hw.move_motor(self.steppers[key], *motor_cmds[key]))
-
-            # testing: command all motors in one thread
+            motor_cmds = self.robot.process_input(cmd['pos_cmd'])
             angs = [cmd[0] for cmd in motor_cmds.values()]
-            rates = [cmd[1] for cmd in motor_cmds.values()]
             hw.all_steppers(self.steppers.values(), angs)
-        return tasks
 
 
-    def get_labjack_tasks(self, cmd: dict):
+    def do_labjack_tasks(self, cmd: dict):
         return []
-
-
-    def dispatch_tasks(self, tasks: list):
-        '''
-        Abstracts the dispatching of a list of tasks into the desired
-        concurrent execution method.
-
-        Parameters
-        ----------
-        tasks:
-            Iterable of all tasks to run concurrently
-
-        Returns
-        -------
-        result:
-            return value of concurrent execution, e.g. for extracting
-            exceptions
-        '''
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(asyncio.gather(*tasks))
-        return result
 
 
     def close(self):

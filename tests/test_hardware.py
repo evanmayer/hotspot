@@ -25,29 +25,18 @@ def stepper():
 @ pytest.mark.usefixtures('stepper')
 class TestDefault(object):
     # Cases that are expected to pass
-    @pytest.mark.parametrize('radians, rad_per_sec', 
-        [( np.pi / 4., 0.5),
-         (-np.pi / 4., 0.5),
-         ( 1e-9,       0.5),
-         ( 0.,         0.5),
-         ( np.pi,      2.0),
-         (-np.pi,      2.0),
+    @pytest.mark.parametrize('radians', 
+        [( np.pi / 4.,),
+         (-np.pi / 4.,),
+         ( 1e-9,      ),
+         ( 0.,        ),
+         ( np.pi,     ),
+         (-np.pi,     ),
         ]
     )
-    def test_move_motor_good(self, stepper, radians, rad_per_sec): 
+    def test_move_motor_good(self, stepper, radians): 
         try:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, radians, rad_per_sec)))
+            hw.all_steppers([stepper], radians)
         finally:
             stepper.release()
 
-
-    def test_motor_chirp(self, stepper):
-        speeds = np.linspace(.5, 2.4, num=50)
-        try:
-            for speed in speeds:
-                loop = asyncio.get_event_loop()
-                result = loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, np.pi / 32., speed)))
-            result = loop.run_until_complete(asyncio.gather(hw.move_motor(stepper, 2. * np.pi, speed)))
-        finally:
-            stepper.release()
