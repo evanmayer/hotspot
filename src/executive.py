@@ -2,6 +2,7 @@
 # the various processes/threads needed.
 
 from adafruit_motorkit import MotorKit
+from adafruit_motor import stepper
 import algorithm as alg
 import asyncio
 import constants as const
@@ -70,14 +71,20 @@ class Executive(object):
         raft = alg.Raft((0,0), w, h)
         self.robot = alg.Robot(surf, raft, self.tm_queue)
 
-        kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-        kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        # kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        # kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
+        kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
             'ne': kit1.stepper2,
             'nw': kit1.stepper1,
             'se': kit0.stepper2
         }
+
+        # tension steppers
+        for _ in range(1):
+            [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
 
         return
 
@@ -248,9 +255,7 @@ class Executive(object):
             cmd['flasher_cmd']  = None # TODO: ECM: NotImplemented
             cmd['move_mode']    = 'move'
             cmd['pos_cmd']      = self.robot.home
-
-            tasks = self.get_motor_tasks(cmd)
-            result = self.dispatch_tasks(tasks)
+            self.do_motor_tasks(cmd)
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
@@ -288,6 +293,8 @@ class Executive(object):
             cmd = self.cmd_queue.get()
 
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
+        self.do_motor_tasks(cmd)
+        self.do_labjack_tasks(cmd)
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
 
         # take time to log TM and update display before doing next cmd

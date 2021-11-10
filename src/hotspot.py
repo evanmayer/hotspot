@@ -10,7 +10,7 @@ logging.basicConfig()
 
 if __name__ == "__main__":
     geometry_file = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'geometry', 'lab_bench.csv')
-    command_profile = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles', 'raster.csv')
+    command_profile = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles', 'circle.csv')
 
     # Start up executive
     executive = ex.Executive(geometry_file)
