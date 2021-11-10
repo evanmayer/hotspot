@@ -335,7 +335,7 @@ class Executive(object):
             # testing: command all motors in one thread
             angs = [cmd[0] for cmd in motor_cmds.values()]
             rates = [cmd[1] for cmd in motor_cmds.values()]
-            hw.all_steppers(self.steppers.values(), angs, rates)
+            hw.all_steppers(self.steppers.values(), angs)
         return tasks
 
 
