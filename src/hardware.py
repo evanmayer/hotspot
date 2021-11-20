@@ -2,12 +2,10 @@
 # "dummy" versions of the interfaces for use in test environments without the
 # hardware.
 
-from adafruit_motor import stepper
-import asyncio
+from hw_context import stepper
 import constants as const
 import logging
 import numpy as np
-from time import time, sleep
 
 
 # Conventions:
@@ -18,7 +16,7 @@ from time import time, sleep
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, 'DEBUG'))#const.LOGLEVEL))
+# logger.setLevel(getattr(logging, 'DEBUG'))#const.LOGLEVEL))
 
 
 def all_steppers(steppers: list, radians: list):
@@ -27,7 +25,8 @@ def all_steppers(steppers: list, radians: list):
     as a special case of Bresenham's Line Algorithm, in the pos quadrant only,
     with all lines starting at (0, 0).
     All motors will either step or not according to the algorithm.
-    (We are kind of forgoing linear travel speed control here)
+    (We are kind of forgoing linear travel speed control here, but we never
+    had reliable speed control anyway, because RPI Debian is not a RT OS.)
 
     Parameters
     ----------
@@ -61,16 +60,6 @@ def all_steppers(steppers: list, radians: list):
             # decide whether to step or not
             if deltas[i] > 0:
                 stepper_n.onestep(style=style, direction=stepper_dirs[i])
-                # steps_taken[i] += 1
+                steps_taken[i] += 1
                 deltas[i] -= 2 * dx
-                # print('stepping:' + ' ' * i + f'{i}')
-                # sleep(1e-4)
-
             deltas[i] += 2 * dy[i]
-
-        # sleep(1e-9)
-        # print(steps_taken)
-
-
-if __name__ == '__main__':
-    all_steppers([None] * 4, [(4 - i+1) * np.pi / 8 for i in range(4)])

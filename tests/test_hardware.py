@@ -1,4 +1,4 @@
-from adafruit_motorkit import MotorKit
+from hw_context import MotorKit
 import asyncio
 import numpy as np
 import pytest

@@ -8,6 +8,7 @@ dependencies:
   - pytest
   - matplotlib
   - h5py
+  - pip
   - pip:
     - adafruit-circuitpython-motorkit
 

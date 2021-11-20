@@ -1,24 +1,22 @@
 # This file houses the code to coordinate starting, running, and stopping
 # the various processes/threads needed.
 
-from adafruit_motorkit import MotorKit
-from adafruit_motor import stepper
+from hw_context import MotorKit
+from hw_context import stepper
 import algorithm as alg
-import asyncio
 import constants as const
 import hardware as hw
 import logging
 import multiprocessing as mp
+import numpy as np
 import os
 import sys
 import telemetry as tm
 import threading
-import time
-import numpy as np
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, const.LOGLEVEL))
+# logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT'}
 HR = '-' * 80
@@ -71,21 +69,14 @@ class Executive(object):
         raft = alg.Raft((0,0), w, h)
         self.robot = alg.Robot(surf, raft, self.tm_queue)
 
-        # kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-        # kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-        kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
-        kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
+        kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
             'ne': kit1.stepper2,
             'nw': kit1.stepper1,
             'se': kit0.stepper2
         }
-
-        # tension steppers
-        for _ in range(1):
-            [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
-
         return
 
 
@@ -293,13 +284,13 @@ class Executive(object):
             cmd = self.cmd_queue.get()
 
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
+        # Do motor tasks, then LJ tasks in serial, so IR source tasks happen at the end of each move.
         self.do_motor_tasks(cmd)
         self.do_labjack_tasks(cmd)
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
 
         # take time to log TM and update display before doing next cmd
         # self.router.process_tm()
-
         return
 
 

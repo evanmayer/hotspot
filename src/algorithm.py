@@ -9,7 +9,7 @@ import time
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, const.LOGLEVEL))
+# logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 class TestSurface(object):
     '''
@@ -160,7 +160,6 @@ class Robot(object):
         '''
         return self._pos_cmd
 
-
     @pos_cmd.setter
     def pos_cmd(self, new_pos):
         inbounds = self.surf.is_inbounds(new_pos)
@@ -222,8 +221,6 @@ class Robot(object):
             {
                 'Time UTC (s)': time.time(),
                 'Position Command (m)' : pos_cmd,
-                # 'Cable Lengths Command (m)' : lengths_after,
-                # 'Delta Cable Lengths Command (m)' : delta_lengths,
                 'Motor Delta Angles Command (rad)' : delta_angles,
             }
         }
