@@ -23,46 +23,55 @@ class Visualizer(object):
         self.file_handle = file_handle
         self.source = source
 
-        fig, axes = plt.subplots(nrows=len(file_handle[source].keys()))
+        keys = [key for key in file_handle[source].keys() if 'utc' not in key.lower()]
+        fig, axes = plt.subplots(nrows=len(keys))
         fig.suptitle(source)
         fig.tight_layout()
         self.fig = fig
 
-        self.var_axes = {key: axes[i] for i, key in enumerate(file_handle[source].keys())}
+        self.var_axes = {key: axes[i] for i, key in enumerate(keys)}
 
         plt.ion()
         plt.show()
 
 
     
-    def update_subplot(self, file_handle: h5py.File, varname: str):
+    def update_subplot(self, file_handle: h5py.File, varname: str, first_time: bool):
         ax = self.var_axes[varname]
-        ax.clear()
+        fig = ax.get_figure()
 
-        ax.set_title(varname)
+        if first_time:
+            ax.set_title(varname)
+            ax.grid(True)
+        
         time = file_handle[self.source]['Time UTC (s)']
         data = file_handle[self.source][varname]
         dim = len(data.shape)
         if dim < 2: # 1D data
-            ax.plot(
-                time,
-                data
-            )
+            if first_time:
+                ax.plot(time, data)
+            else:
+                l = ax.lines[0]
+                l.set_data(time, data)
         elif dim < 3: # e.g. sequence of coordinates
-            nrows = data.shape[0]
-            for i in range(nrows):
-                if i != nrows - 1: # grey out all previous positions
-                    color = 'silver'
-                else:
-                    color = 'k'
-                ax.scatter(data[i][0], data[i][1], color=color)
+            if first_time:
+                ax.plot(data[:,0], data[:,1], color='k', marker='o', linestyle='None')
+            else:
+                l = ax.lines[0]
+                l.set_data(data[:,0], data[:,1])
         elif dim < 4: # e.g. sequence of motor commands
-            ncols = data.shape[1]
-            for j in range(ncols):
-                ax.plot(time, data[:,j])
+            d = data[:].reshape((data.shape[0], data.shape[1] + data.shape[2]))
+            if first_time:
+                ax.plot(time[:], d)
+            else:
+                for j in range(d.shape[1]):
+                    ax.lines[j].set_data(time[:], d[:,j])
         else:
             logger.warn(f'[{varname}] Plotting data of shape {data.shape} not implemented.')
-        ax.grid(True)
+        ax.relim()
+        ax.autoscale()
+        fig.canvas.draw()
+        plt.pause(1e-9)
         return
 
 
@@ -124,19 +133,21 @@ class DataRouter(object):
         while not self.tm_queue.empty():
             self.process_packet(self.tm_queue.get())
             self.update_display()
-            plt.pause(1e-9)
 
 
-    
     def update_display(self):
         '''
         Function to update plotters.
         '''
         with h5py.File(self.fname) as f:
             for source in f.keys():
+                first_time = False
                 # Make a new visualizer if needed
                 if source not in self.visualizers.keys():
                     self.visualizers[source] = Visualizer(f, source)
+                    first_time = True
                 for var in f[source].keys():
-                    self.visualizers[source].update_subplot(f, var)
+                    if 'utc' in var.lower():
+                        continue
+                    self.visualizers[source].update_subplot(f, var, first_time)
         return

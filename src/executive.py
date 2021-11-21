@@ -290,7 +290,7 @@ class Executive(object):
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
 
         # take time to log TM and update display before doing next cmd
-        # self.router.process_tm()
+        self.router.process_tm()
         return
 
 

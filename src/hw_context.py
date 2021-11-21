@@ -10,10 +10,8 @@ except NotImplementedError:
     class DummyStepperMotor:
         def __init__(self):
             pass
-
         def onestep(self, direction=1, style=1):
             pass
-        
         def release(self):
             pass
     # Dummy motorkit
