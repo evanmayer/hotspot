@@ -16,7 +16,6 @@ import numpy as np
 
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(getattr(logging, 'DEBUG'))#const.LOGLEVEL))
 
 
 def all_steppers(steppers: list, radians: list):

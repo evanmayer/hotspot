@@ -11,7 +11,6 @@ import time
 
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 SOURCES = ['executive', 'algorithm', 'hardware']
 

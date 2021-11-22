@@ -77,7 +77,7 @@ You can log in to the raspberry pi via `ssh`. In order for you computer to "see"
 1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
 1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.
 
-The first option is the easiest, but depends on having access to an exisitng network, so limits your connectivity options. If you have access to you are on a Linux machine, the second option is about as easy and more flexible, in my opinion.
+The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy and more flexible, in my opinion.
 
  The hostname and password are printed on the bottom of the white plastic case. Once connection is sorted out, ping the pi to make sure:
  

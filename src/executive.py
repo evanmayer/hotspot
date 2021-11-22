@@ -16,7 +16,6 @@ import threading
 
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(getattr(logging, const.LOGLEVEL))
 
 MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT'}
 HR = '-' * 80
@@ -305,8 +304,8 @@ class Executive(object):
         Parameters
         ----------
         cmd:
-            Command packet dictionary with keys for position command and speed
-                command, to pass to control algorithm
+            Command packet dictionary with keys for position commands to pass
+            to control algorithm
         '''
         if cmd['move_mode'] == 'move':
             logger.debug(f'Move cmd: {cmd}')
