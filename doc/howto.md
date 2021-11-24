@@ -1,6 +1,6 @@
 # How To
 
-This doc contains instructions for various tasks related to setting up and running the software.
+This doc contains instructions for various tasks related to setting up and running the beam mapper.
 
 # Setting Up the Environment
 
