@@ -74,8 +74,8 @@ class Executive(object):
         # kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
-            'nw': kit1.stepper2,
-            'ne': kit1.stepper1,
+            'ne': kit1.stepper2,
+            'nw': kit1.stepper1,
             'se': kit0.stepper2
         }
 
