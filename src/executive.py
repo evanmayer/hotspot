@@ -70,12 +70,19 @@ class Executive(object):
 
         kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        # kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
+        # kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit0.stepper1,
-            'ne': kit1.stepper2,
-            'nw': kit1.stepper1,
+            'nw': kit1.stepper2,
+            'ne': kit1.stepper1,
             'se': kit0.stepper2
         }
+
+        # tension steppers
+        # for _ in range(1):
+            # [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
+
         return
 
 
@@ -315,6 +322,7 @@ class Executive(object):
 
 
     def do_labjack_tasks(self, cmd: dict):
+        # time.sleep(.5)
         return []
 
 
