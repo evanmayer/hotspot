@@ -110,6 +110,10 @@ class Raft(object):
         position is updated
         '''
         self.corners = self._corners_priv + new_pos
+        self.sw = self.corners[0,0]
+        self.se = self.corners[1,0]
+        self.nw = self.corners[0,1]
+        self.ne = self.corners[1,1]
         self._position = new_pos
 
 

@@ -254,6 +254,7 @@ class Executive(object):
             cmd['move_mode']    = 'move'
             cmd['pos_cmd']      = self.robot.home
             self.do_motor_tasks(cmd)
+            self.router.process_tm()
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
