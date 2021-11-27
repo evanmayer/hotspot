@@ -13,6 +13,7 @@ import os
 import sys
 import telemetry as tm
 import threading
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ class Executive(object):
         # tension steppers
         # for _ in range(1):
             # [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
-
+        self.cumulative_steps = np.array([0.] * len(self.steppers))
         return
 
 
@@ -284,6 +285,7 @@ class Executive(object):
             self.add_cmds(fname)
 
         num_remaining = self.cmd_queue.qsize()
+
         if num_remaining < 1:
             return
         else:
@@ -294,9 +296,9 @@ class Executive(object):
         self.do_motor_tasks(cmd)
         self.do_labjack_tasks(cmd)
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
-
         # take time to log TM and update display before doing next cmd
         self.router.process_tm()
+
         return
 
 
@@ -317,8 +319,19 @@ class Executive(object):
         if cmd['move_mode'] == 'move':
             logger.debug(f'Move cmd: {cmd}')
             motor_cmds = self.robot.process_input(cmd['pos_cmd'])
-            angs = [cmd[0] for cmd in motor_cmds.values()]
-            hw.all_steppers(self.steppers.values(), angs)
+            angs = [cmd for cmd in motor_cmds.values()]
+            steps_taken = hw.all_steppers(self.steppers.values(), angs)
+
+            self.cumulative_steps += np.array(steps_taken)
+            logger.info(f'Cumulative steps:{self.cumulative_steps}')
+
+            packet = {'hardware':
+                {
+                    'Time UTC (s)': time.time(),
+                    'Motor Steps Taken' : steps_taken
+                }
+            }
+            self.tm_queue.put(packet)
 
 
     def do_labjack_tasks(self, cmd: dict):

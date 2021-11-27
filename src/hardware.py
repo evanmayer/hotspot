@@ -37,6 +37,9 @@ def all_steppers(steppers: list, radians: list):
     
     Returns
     -------
+    steps_taken
+        iterable of integers reporting the number of steps taken by each
+        stepper
     '''
     style = const.STEPPER_STYLE
     
@@ -62,3 +65,5 @@ def all_steppers(steppers: list, radians: list):
                 steps_taken[i] += 1
                 deltas[i] -= 2 * dx
             deltas[i] += 2 * dy[i]
+
+    return steps_taken * directions

@@ -23,12 +23,12 @@ class Visualizer(object):
         self.source = source
 
         keys = [key for key in file_handle[source].keys() if 'utc' not in key.lower()]
-        fig, axes = plt.subplots(nrows=len(keys))
+        fig, axes = plt.subplots(nrows=len(keys), squeeze=False)
         fig.suptitle(source)
         fig.tight_layout()
         self.fig = fig
 
-        self.var_axes = {key: axes[i] for i, key in enumerate(keys)}
+        self.var_axes = {key: axes.flatten()[i] for i, key in enumerate(keys)}
 
         plt.ion()
         plt.show()
@@ -52,19 +52,20 @@ class Visualizer(object):
             else:
                 l = ax.lines[0]
                 l.set_data(time, data)
-        elif dim < 3: # e.g. sequence of coordinates
-            if first_time:
-                ax.plot(data[:,0], data[:,1], color='k', marker='o', linestyle='None')
-            else:
-                l = ax.lines[0]
-                l.set_data(data[:,0], data[:,1])
-        elif dim < 4: # e.g. sequence of motor commands
-            d = data[:].reshape((data.shape[0], data.shape[1] + data.shape[2]))
-            if first_time:
-                ax.plot(time[:], d)
-            else:
-                for j in range(d.shape[1]):
-                    ax.lines[j].set_data(time[:], d[:,j])
+        elif dim < 3:
+            # scatter plot for positions
+            if 'position' in varname.lower():
+                if first_time:
+                    ax.plot(data[:,0], data[:,1], color='k', marker='o', linestyle='None')
+                else:
+                    l = ax.lines[0]
+                    l.set_data(data[:,0], data[:,1])
+            else: # line plot for timeseries
+                if first_time:
+                    ax.plot(time[:], data, marker='o', alpha=0.3)
+                else:
+                    for j in range(data.shape[1]):
+                      ax.lines[j].set_data(time[:], data[:,j])
         else:
             logger.warn(f'[{varname}] Plotting data of shape {data.shape} not implemented.')
         ax.relim()

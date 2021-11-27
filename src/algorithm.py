@@ -210,10 +210,10 @@ class Robot(object):
         delta_lengths = lengths_after - lengths_before
         delta_angles = delta_lengths / const.PULLEY_RADIUS
 
-        motor_cmds['sw'] = (delta_angles[0, 0],)
-        motor_cmds['se'] = (delta_angles[1, 0],)
-        motor_cmds['nw'] = (delta_angles[0, 1],)
-        motor_cmds['ne'] = (delta_angles[1, 1],)
+        motor_cmds['sw'] = delta_angles[0, 0]
+        motor_cmds['se'] = delta_angles[1, 0]
+        motor_cmds['nw'] = delta_angles[0, 1]
+        motor_cmds['ne'] = delta_angles[1, 1]
 
         logger.debug(f'Motor commands: {motor_cmds}\nDelta lengths:{delta_lengths}')
         
@@ -221,7 +221,7 @@ class Robot(object):
             {
                 'Time UTC (s)': time.time(),
                 'Position Command (m)' : pos_cmd,
-                'Motor Delta Angles Command (rad)' : delta_angles,
+                'Motor Delta Angle Command (rad)' : delta_angles.flatten(),
             }
         }
         self.tm_queue.put(packet)
