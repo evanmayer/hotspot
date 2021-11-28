@@ -67,3 +67,33 @@ def all_steppers(steppers: list, radians: list):
             deltas[i] += 2 * dy[i]
 
     return steps_taken * directions
+
+
+def all_steppers_serial(ser, radians: list):
+    '''
+    Step by passing the number of steps as a sequence of integers over serial.
+
+    Parameters
+    ----------
+    serial
+        pySerial Serial instance
+    radians
+        iterable of signed angle to move each stepper (radians)
+    
+    Returns
+    -------
+    '''
+
+    steps_to_go = np.round(radians * const.DEG_PER_RAD / (360. / 200. / 1.)).astype(int).astype(str)
+    step_str = ','.join(steps_to_go) + '\n'
+    ser.write(step_str.encode())
+
+
+if __name__ == '__main__':
+    import serial
+    import time
+
+    with serial.Serial('COM5', 115200) as ser:
+        time.sleep(2)
+        all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
+        all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
