@@ -135,7 +135,7 @@ To regenerate the documentation, execute:
 
 ```bash
 cd src/
-PYTHONPATH=. pdoc --docformat numpy -o ../docs/html/ algorithm.py constants.py executive.py hardware.py hotspot.py hw_context.py telemetry.py 
+PYTHONPATH=. pdoc --docformat numpy --logo "../docs/img/time_logo.png" -o ../docs/html/ __init__.py algorithm.py constants.py executive.py hardware.py hotspot.py hw_context.py telemetry.py
 ```
 
 Or whatever the most up to date list of Python source files is.
