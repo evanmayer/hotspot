@@ -118,8 +118,8 @@ class TestDefault(object):
         
         cmds = robot.process_input(pos_cmd)
 
-        assert (abs(cmds['sw'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['sw'][0]}"
-        assert (abs(cmds['ne'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['ne'][0]}"
+        assert (abs(cmds['sw'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['sw'][0]}"
+        assert (abs(cmds['ne'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['ne'][0]}"
 
 
     def test_Robot_process_input_nw(self, robot):
@@ -131,8 +131,8 @@ class TestDefault(object):
         
         cmds = robot.process_input(pos_cmd)
 
-        assert (abs(cmds['se'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['se'][0]}"
-        assert (abs(cmds['nw'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['nw'][0]}"
+        assert (abs(cmds['se'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['se'][0]}"
+        assert (abs(cmds['nw'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['nw'][0]}"
 
 
     def test_Robot_process_input_ne(self, robot):
@@ -144,8 +144,8 @@ class TestDefault(object):
         
         cmds = robot.process_input(pos_cmd)
 
-        assert (abs(cmds['sw'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['sw'][0]}"
-        assert (abs(cmds['ne'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['ne'][0]}"
+        assert (abs(cmds['sw'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['sw'][0]}"
+        assert (abs(cmds['ne'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['ne'][0]}"
 
 
     def test_Robot_process_input_se(self, robot):
@@ -157,6 +157,6 @@ class TestDefault(object):
         
         cmds = robot.process_input(pos_cmd)
 
-        assert (abs(cmds['se'][0] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['se'][0]}"
-        assert (abs(cmds['nw'][0] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['nw'][0]}"
+        assert (abs(cmds['se'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['se'][0]}"
+        assert (abs(cmds['nw'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['nw'][0]}"
 

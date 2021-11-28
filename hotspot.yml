@@ -12,5 +12,6 @@ dependencies:
   - pip
   - pip:
     - adafruit-circuitpython-motorkit
+    - pycallgraph2
 
 prefix: /home/pi/miniconda3/envs/hotspot

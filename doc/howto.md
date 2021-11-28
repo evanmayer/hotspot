@@ -114,11 +114,19 @@ The 3D printed CFRP stepper motor mounts are attached to the beam mapper frame b
 
 A 3D printed CFRP "homing bar" with a corner reference feature sticks out into the mapping region to provide a repeatable location for placing the corner of the effector raft. This part is attached to the beam mapper frame with one 5/16-18 x 2" or 2.25" bolt with nyloc "jam" nut. Ensure the arm is pressed flat against the inside of the frame, no matter where it is attached.
 
-Four 3D printed CFRP 3" x 2.5" registration tabs are provided to enhance the clamping surface the frame can use along the perimeter of a given mirror. They should be installed with 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts, two apiece, installed on the interior of the frame, and oriented such that they extend "down" from the frame, opposite the motor mount brackets. They can be installed in any location along the frame, provided they avoid contact with the mirror's laser tracker nest tabs when the frame is mounted to the mirror.
+Four 3D printed CFRP 3" x 2.5" registration tabs are provided to enhance the clamping surface the frame can use along the perimeter of a given mirror. They should be installed with 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts, installed on the interior of the frame, and oriented such that they extend "down" from the frame, opposite the motor mount brackets. They can be installed in any location along the frame, provided they avoid contact with the mirror's laser tracker nest tabs when the frame is mounted to the mirror.
 
 Two aluminum registration tabs are screwed into the end of each frame piece opposite the black plastic end caps, using a 5/16-18 x 1/4" screw. They are long enough to reach an edge of the mirror regardless of if the mirror's corners have been machined off. These tabs register the frame to a third edge of the mirror, so **it is important that they not be bent**.
 
 When all of these pieces are attached to the frame, it is ready to install onto a mirror for mapping.
+
+# Documentation
+## `pycallgraph`
+To re-generate the call graph image, from the `src` directory, run
+```
+pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=../doc/img/pycallgraph.png -- ./hotspot.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
+```
+You must have `graphviz` installed (using your operating system's package manager).
 
 # Test Fixture Setup
 
