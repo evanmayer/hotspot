@@ -74,15 +74,17 @@ class Executive(object):
         # kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
         # kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
-            'sw': kit0.stepper1,
-            'ne': kit1.stepper2,
-            'nw': kit1.stepper1,
-            'se': kit0.stepper2
+            'sw': kit1.stepper2,
+            'ne': kit0.stepper1,
+            'nw': kit0.stepper2,
+            'se': kit1.stepper1
         }
 
         # tension steppers
-        # for _ in range(1):
-            # [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
+        [self.steppers[key].release() for key in self.steppers.keys()]
+        for _ in range(1):
+            self.steppers['ne'].onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD)
+            [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
         self.cumulative_steps = np.array([0.] * len(self.steppers))
         return
 
@@ -120,8 +122,11 @@ class Executive(object):
             skip_header=1,
             encoding='utf8'
             )
-
-        self.sequence_len = len(rows)
+        if len(rows.shape) < 2: # handle a single point goto
+            self.sequence_len = 1
+            rows = np.array([rows])
+        else:
+            self.sequence_len = rows.shape[-1]
         if (self.sequence_len > const.MAX_QLEN):
             logger.warn(f'Input command number {len(rows)} exceeds command'
                 + ' queue length {const.MAX_QLEN}. Increase'

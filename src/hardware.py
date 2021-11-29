@@ -45,7 +45,6 @@ def all_steppers(steppers: list, radians: list):
     
     directions = np.sign(radians)
     steps_to_go = np.round(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
-    
     stepper_dirs = [stepper.FORWARD] * 4
     for i, direction in enumerate(directions):
         if direction == -1:
@@ -57,6 +56,7 @@ def all_steppers(steppers: list, radians: list):
     dy = steps_to_go
     steps_taken = [0] * 4
     deltas = 2 * dy - dx # 2x to allow integer arithmetic
+    print(deltas)
     for _ in range(dx):
         for i, stepper_n in enumerate(steppers):
             # decide whether to step or not
@@ -90,10 +90,23 @@ def all_steppers_serial(ser, radians: list):
 
 
 if __name__ == '__main__':
-    import serial
-    import time
+    pass
+    # import serial
+    # import time
 
-    with serial.Serial('COM5', 115200) as ser:
-        time.sleep(2)
-        all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
-        all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
+    # with serial.Serial('COM5', 115200) as ser:
+    #     time.sleep(2)
+    #     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
+    #     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
+
+    # from hw_context import MotorKit
+    # kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+    # kit1 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+    # steppers = [
+    #     kit1.stepper2, # sw
+    #     kit0.stepper1, # ne
+    #     kit0.stepper2, # nw
+    #     kit1.stepper1] # se
+    # all_steppers(steppers, [np.pi/4., 0, np.pi/4., 0])
+    # all_steppers(steppers, [0, -np.pi/4., 0, -np.pi/4.])
+    # [stepper.release() for stepper in steppers]
