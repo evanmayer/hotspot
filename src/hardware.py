@@ -7,7 +7,6 @@ import constants as const
 import logging
 import numpy as np
 
-
 # Conventions:
 # - positive steps/angular rates (stepper.FORWARD) spin the motor shaft 
 #     clockwise (CW) when viewed from the rear.
@@ -44,6 +43,14 @@ def all_steppers(steppers: list, radians: list):
     style = const.STEPPER_STYLE
     
     directions = np.sign(radians)
+
+    # Perform steps in an order that avoids over-tension to mitigate skipping
+    # steps: positive steps first to unwind cable, then negative
+    order = np.argsort(directions)[::-1].astype(int)
+    directions = np.array(directions)[order]
+    radians = np.array(radians)[order]
+    steppers = np.array(steppers)[order]
+
     steps_to_go = np.round(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
     stepper_dirs = [stepper.FORWARD] * 4
     for i, direction in enumerate(directions):
@@ -56,7 +63,6 @@ def all_steppers(steppers: list, radians: list):
     dy = steps_to_go
     steps_taken = [0] * 4
     deltas = 2 * dy - dx # 2x to allow integer arithmetic
-    print(deltas)
     for _ in range(dx):
         for i, stepper_n in enumerate(steppers):
             # decide whether to step or not

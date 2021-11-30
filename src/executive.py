@@ -80,11 +80,6 @@ class Executive(object):
             'se': kit1.stepper1
         }
 
-        # tension steppers
-        [self.steppers[key].release() for key in self.steppers.keys()]
-        for _ in range(1):
-            self.steppers['ne'].onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD)
-            [stepper_n.onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD) for stepper_n in self.steppers.values()]
         self.cumulative_steps = np.array([0.] * len(self.steppers))
         return
 
@@ -122,11 +117,7 @@ class Executive(object):
             skip_header=1,
             encoding='utf8'
             )
-        if len(rows.shape) < 2: # handle a single point goto
-            self.sequence_len = 1
-            rows = np.array([rows])
-        else:
-            self.sequence_len = rows.shape[-1]
+        self.sequence_len = len(rows)
         if (self.sequence_len > const.MAX_QLEN):
             logger.warn(f'Input command number {len(rows)} exceeds command'
                 + ' queue length {const.MAX_QLEN}. Increase'
@@ -325,8 +316,9 @@ class Executive(object):
         if cmd['move_mode'] == 'move':
             logger.debug(f'Move cmd: {cmd}')
             motor_cmds = self.robot.process_input(cmd['pos_cmd'])
-            angs = [cmd for cmd in motor_cmds.values()]
-            steps_taken = hw.all_steppers(self.steppers.values(), angs)
+            # bootleg OrderedDict
+            angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
+            steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
 
             self.cumulative_steps += np.array(steps_taken)
             logger.info(f'Cumulative steps:{self.cumulative_steps}')
