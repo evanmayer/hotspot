@@ -1,11 +1,12 @@
-# This file defines the interface used to command the hardware. It also provides
-# "dummy" versions of the interfaces for use in test environments without the
-# hardware.
+# This file defines the interfaces used to command the hardware.
 
 from hw_context import stepper
+from labjack import ljm as lj
 import constants as const
 import logging
 import numpy as np
+import threading
+import time
 
 # Conventions:
 # - positive steps/angular rates (stepper.FORWARD) spin the motor shaft 
@@ -13,10 +14,20 @@ import numpy as np
 # - negative steps/angular rates (stepper.BACKWARD) spin the motor shaft 
 #     counterclockwise (CCW) when viewed from the rear.
 
-
 logger = logging.getLogger(__name__)
 
+# Map relay number to modbus register on the LJ
+RELAY_DICT = {
+    '1': 2008,'2': 2009,'3': 2010,'4': 2011,'5': 2012,'6': 2013,
+    '7': 2014,'8': 2015,'9': 2016,'10': 2017,'11': 2018,'12': 2019
+}
+# Needed to open connection to labjack board
+MODEL_NAME = 'T7'
+MODE = 'USB'
 
+# -----------------------------------------------------------------------------
+# Stepper functions
+# -----------------------------------------------------------------------------
 def all_steppers(steppers: list, radians: list):
     '''
     The number of steps any motor must take on each loop execution can be cast
@@ -78,6 +89,7 @@ def all_steppers(steppers: list, radians: list):
 def all_steppers_serial(ser, radians: list):
     '''
     Step by passing the number of steps as a sequence of integers over serial.
+    This is included as a contingency in the event that Arduino is necessary.
 
     Parameters
     ----------
@@ -89,10 +101,144 @@ def all_steppers_serial(ser, radians: list):
     Returns
     -------
     '''
-
     steps_to_go = np.round(radians * const.DEG_PER_RAD / (360. / 200. / 1.)).astype(int).astype(str)
     step_str = ','.join(steps_to_go) + '\n'
     ser.write(step_str.encode())
+    return
+
+
+# -----------------------------------------------------------------------------
+# LabJack Functions
+# -----------------------------------------------------------------------------
+def try_open(model: str, mode: str):
+    '''
+    Try and open a connection to a LabJack.
+
+    Parameters
+    ----------
+    model
+        LabJack board model name, typ. 'T7'
+    mode
+        LabJack communication mode, typ. 'USB'
+
+    Returns
+    -------
+    name
+        handle to opened LabJack board instance
+    '''
+    while(1):
+        try:
+            name = lj.openS(model, mode)
+            break
+        except lj.LJMError as err:
+            print('Error opening LJ connection')
+            print(err)
+            answer = input('Try again? y/n:')
+            if answer.lower() == 'y':
+                time.sleep(1)
+            else:
+                return -1
+    return name
+
+
+def write_value(handle, addr: int, value=0):
+    '''
+    Write a value to a LabJack, catching errors.
+    
+    Parameters
+    ----------
+    handle
+        LabJack board model handle from `try_open`
+    addr
+        LabJack relay address integer
+
+    Kwargs
+    ------
+    value: int
+        value to write to LabJack relay
+
+    Returns
+    -------
+    bool
+        True if successful, False if not
+    '''
+    try:
+        lj.eWriteAddress(handle, addr, 0, value)
+    except lj.LJMError as err:
+        print("Error in write to LJ, specific error is:")
+        print(err)
+        return False
+    return True
+
+
+def threaded_write(handle, target: int, value: int):
+    '''
+    Wrapper around `write_value` for use in threaded calls.
+    
+    Parameters
+    ----------
+    handle
+        LabJack board model handle from `try_open`
+    target
+        LabJack relay address integer
+    '''
+    written = False
+    while(1):
+        try:
+            if written == False:
+                written = write_value(handle, target, value=value)
+                if written == False:
+                    time.sleep(1)
+                else:
+                    break
+            else:
+                break
+        except KeyboardInterrupt:
+            answer = input('Do you want to interrupt? y/n')
+            if answer.lower() == 'y':
+                break
+    return
+
+
+def spawn_all_threads(handle, states: list):
+    '''
+    Spawns threads and passes the states each relay will need to have
+    
+    Parameters
+    ----------
+    handle
+        LabJack board model handle from `try_open`
+    states
+        iterable of integers describing the states each relay should take
+    '''
+    for key in relay_dict.keys():
+        thread = threading.Thread(
+            target=threaded_write,
+            args=(handle,relay_dict[key],
+            states[int(key) - 1]),
+            daemon=True
+        )
+        thread.start()
+    return
+
+
+def spawn_all_threads_off(handle):
+    '''
+    Spawns threads and sets all relay states off.
+    
+    Parameters
+    ----------
+    handle
+        LabJack board model handle from `try_open`
+    '''
+    for key in relay_dict.keys():
+        thread = threading.Thread(
+            target=threaded_write,
+            args=(handle,relay_dict[key], 0),
+            daemon=True
+        )
+        thread.start()
+    return
 
 
 if __name__ == '__main__':
