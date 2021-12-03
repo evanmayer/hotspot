@@ -34,6 +34,12 @@ To update the environment as changes are made to `hotspot.yml`, run
 conda env update --name hotspot --file hotspot.yml --prune
 ```
 
+#### LabJack libraries
+
+Driving Hawkeye sources with LabJack modules requires both the system libraries and the Python interface to be installed.
+
+[Download and install](https://labjack.com/support/software/installers/ljm) the LJM libraries from LabJack, and the `hotspot.yml` file will handle the Python install via `pip`.
+
 ## Contributing
 
 ### Testing

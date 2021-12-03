@@ -13,6 +13,7 @@ dependencies:
   - pip:
     - adafruit-circuitpython-motorkit
     - adafruit-blinka==3.9.0 # necessary bc this happened to me: https://github.com/home-assistant/core/issues/31719
+    - labjack-ljm
     - pycallgraph2
     - pdoc
 
