@@ -82,6 +82,8 @@ class Executive(object):
         self.cumulative_steps = np.array([0.] * len(self.steppers))
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
+        if self.lj_instance == -1:
+            raise RuntimeError('No LabJack instance found, exiting.')
 
         return
 
@@ -129,7 +131,6 @@ class Executive(object):
             cmd = {}
             cmd['flasher_cmds'] = [int(item) for item in rows[i][0].split()]
             cmd['pos_cmd']      = (rows[i][1], rows[i][2])
-            print(cmd)
             self.cmd_queue.put(cmd)
         return
 

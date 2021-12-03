@@ -182,6 +182,7 @@ def threaded_write(handle, target: int, value: int):
     target
         LabJack relay address integer
     '''
+    logger.debug(f'Trying address {target} state {value}')
     written = False
     while(1):
         try:
