@@ -1,6 +1,6 @@
-flasher_modes,flasher_cmds,move_modes,pos_cmd_0s,pos_cmd_1s
-notimplemented,notimplemented,move,0.3,0.2
-notimplemented,notimplemented,move,0.2,0.2
-notimplemented,notimplemented,move,0.2,0.1
-notimplemented,notimplemented,move,0.3,0.1
-notimplemented,notimplemented,move,0.3,0.2
+flasher_cmds,pos_cmd_0s,pos_cmd_1s
+1 1 1 1 1 1 1 1 1 1 1 1,0.3,0.2
+1 1 1 1 1 1 1 1 1 1 1 1,0.2,0.2
+1 1 1 1 1 1 1 1 1 1 1 1,0.2,0.1
+1 1 1 1 1 1 1 1 1 1 1 1,0.3,0.1
+1 1 1 1 1 1 1 1 1 1 1 1,0.3,0.2

@@ -12,8 +12,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-SOURCES = ['executive', 'algorithm', 'hardware']
-
 class Visualizer(object):
     '''
     Keeps track of plotting objects to enable updating plots for a given source
@@ -24,7 +22,7 @@ class Visualizer(object):
 
         keys = [key for key in file_handle[source].keys() if 'utc' not in key.lower()]
         fig, axes = plt.subplots(nrows=len(keys), squeeze=False)
-        fig.suptitle(source)
+        fig.suptitle(f'Packet: {source}')
         fig.tight_layout()
         self.fig = fig
 
@@ -100,10 +98,6 @@ class DataRouter(object):
         key 'Time UTC (s)'.
         Values can be 1- or 2-D.
         '''
-        # If packet unrecognized, do nothing
-        if not any(item in packet.keys() for item in SOURCES):
-            logger.warning(f'Received unrecognized packet: {packet}')
-            return
         # Otherwise, create or add to output file on disk
         with h5py.File(self.fname, 'a') as f:
             for source in packet.keys():

@@ -1,24 +1,24 @@
-flasher_modes,flasher_cmds,move_modes,pos_cmd_0s,pos_cmd_1s
-notimplemented,notimplemented,move,.075,.105
-notimplemented,notimplemented,move,.105,.105
-notimplemented,notimplemented,move,.105,.103
-notimplemented,notimplemented,move,.075,.103
-notimplemented,notimplemented,move,.075,.101
-notimplemented,notimplemented,move,.105,.101
-notimplemented,notimplemented,move,.105,.099
-notimplemented,notimplemented,move,.075,.099
-notimplemented,notimplemented,move,.075,.097
-notimplemented,notimplemented,move,.105,.097
-notimplemented,notimplemented,move,.105,.095
-notimplemented,notimplemented,move,.075,.095
-notimplemented,notimplemented,move,.075,.093
-notimplemented,notimplemented,move,.105,.093
-notimplemented,notimplemented,move,.105,.091
-notimplemented,notimplemented,move,.075,.091
-notimplemented,notimplemented,move,.075,.089
-notimplemented,notimplemented,move,.105,.089
-notimplemented,notimplemented,move,.105,.087
-notimplemented,notimplemented,move,.075,.087
-notimplemented,notimplemented,move,.105,.085
-notimplemented,notimplemented,move,.075,.085
-notimplemented,notimplemented,move,.10,.10
+flasher_cmds,pos_cmd_0s,pos_cmd_1s
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.105
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.105
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.103
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.103
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.101
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.101
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.099
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.099
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.097
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.097
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.095
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.095
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.093
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.093
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.091
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.091
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.089
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.089
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.087
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.087
+1 1 1 1 1 1 1 1 1 1 1 1,.105,.085
+1 1 1 1 1 1 1 1 1 1 1 1,.075,.085
+1 1 1 1 1 1 1 1 1 1 1 1,.10,.10

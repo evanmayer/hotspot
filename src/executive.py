@@ -79,8 +79,10 @@ class Executive(object):
             'nw': kit0.stepper2,
             'se': kit1.stepper1
         }
-
         self.cumulative_steps = np.array([0.] * len(self.steppers))
+
+        self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
+
         return
 
 
@@ -125,10 +127,9 @@ class Executive(object):
 
         for i in range(self.sequence_len):
             cmd = {}
-            cmd['flasher_mode'] = rows[i][0] # TODO: ECM: NotImplemented
-            cmd['flasher_cmd']  = rows[i][1] # TODO: ECM: NotImplemented
-            cmd['move_mode']    = rows[i][2]
-            cmd['pos_cmd']      = (rows[i][3], rows[i][4])
+            cmd['flasher_cmds'] = [int(item) for item in rows[i][0].split()]
+            cmd['pos_cmd']      = (rows[i][1], rows[i][2])
+            print(cmd)
             self.cmd_queue.put(cmd)
         return
 
@@ -245,10 +246,8 @@ class Executive(object):
             logger.info(f'Clearing command queue and commanding home: {self.robot.home}')
             self.empty_queue(self.cmd_queue)
             cmd = {}
-            cmd['flasher_mode'] = None # TODO: ECM: NotImplemented
-            cmd['flasher_cmd']  = None # TODO: ECM: NotImplemented
-            cmd['move_mode']    = 'move'
-            cmd['pos_cmd']      = self.robot.home
+            cmd['flasher_cmd'] = []
+            cmd['pos_cmd']     = self.robot.home
             self.do_motor_tasks(cmd)
             self.router.process_tm()
             logger.info(f'Home.')
@@ -267,10 +266,7 @@ class Executive(object):
         ----------
         fname
             .csv-formatted file containing a sequence of commands, one per col:
-            - flasher_modes: TODO: not sure how LabJack wants command info
             - flasher_cmds: TODO:  not sure how LabJack wants command info
-            - move_modes: if 'move', issue motor commands to achieve move
-                spec'd by pos_cmds and speed_cmds
             - pos_cmd_0s: 0th element of position command coordinate
             - pos_cmd_1s: 1st element of position command coordinate
         '''
@@ -313,28 +309,49 @@ class Executive(object):
             Command packet dictionary with keys for position commands to pass
             to control algorithm
         '''
-        if cmd['move_mode'] == 'move':
-            logger.debug(f'Move cmd: {cmd}')
-            motor_cmds = self.robot.process_input(cmd['pos_cmd'])
-            # bootleg OrderedDict
-            angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
-            steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
+        logger.debug(f'Move cmd: {cmd}')
+        motor_cmds = self.robot.process_input(cmd['pos_cmd'])
+        # bootleg OrderedDict
+        angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
+        steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
 
-            self.cumulative_steps += np.array(steps_taken)
-            logger.info(f'Cumulative steps:{self.cumulative_steps}')
+        self.cumulative_steps += np.array(steps_taken)
+        logger.info(f'Cumulative steps:{self.cumulative_steps}')
 
-            packet = {'hardware':
-                {
-                    'Time UTC (s)': time.time(),
-                    'Motor Steps Taken' : steps_taken
-                }
+        packet = {'Motor Cmd':
+            {
+                'Time UTC (s)': time.time(),
+                'Motor Steps Taken' : steps_taken
             }
-            self.tm_queue.put(packet)
+        }
+        self.tm_queue.put(packet)
+        return
 
 
     def do_labjack_tasks(self, cmd: dict):
-        # time.sleep(.5)
-        return []
+        freq = 5. # Hz
+        num_blinks = 10
+        flipflop = 0
+        while num_blinks > 0:
+            start_time = time.time()
+            if flipflop:
+                hw.spawn_all_threads(self.lj_instance, cmd['flasher_cmds'])
+            else:
+                hw.spawn_all_threads_off(self.lj_instance)
+            flipflop = 1 - flipflop
+            num_blinks -= 1
+            # sleep off remaining time to fudge actions at frequency freq 
+            time.sleep((1. / freq) - (time.time()-start_time))
+
+        packet = {'LabJack Cmd':
+            {
+                'Time UTC (s)': time.time(),
+                'Addresses Turned On' : 1 + np.where(np.array(cmd['flasher_cmds']) > 0)[0],
+            }
+        }
+        self.tm_queue.put(packet)
+
+        return
 
 
     def close(self):

@@ -39,6 +39,21 @@
             <li>
                     <a class="function" href="#all_steppers_serial">all_steppers_serial</a>
             </li>
+            <li>
+                    <a class="function" href="#try_open">try_open</a>
+            </li>
+            <li>
+                    <a class="function" href="#write_value">write_value</a>
+            </li>
+            <li>
+                    <a class="function" href="#threaded_write">threaded_write</a>
+            </li>
+            <li>
+                    <a class="function" href="#spawn_all_threads">spawn_all_threads</a>
+            </li>
+            <li>
+                    <a class="function" href="#spawn_all_threads_off">spawn_all_threads_off</a>
+            </li>
     </ul>
 
 
@@ -58,15 +73,15 @@ src<wbr>.hardware    </h1>
                 
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="c1"># This file defines the interface used to command the hardware. It also provides</span>
-<span class="c1"># &quot;dummy&quot; versions of the interfaces for use in test environments without the</span>
-<span class="c1"># hardware.</span>
+            <div class="codehilite"><pre><span></span><span class="c1"># This file defines the interfaces used to command the hardware.</span>
 
 <span class="kn">from</span> <span class="nn">hw_context</span> <span class="kn">import</span> <span class="n">stepper</span>
+<span class="kn">from</span> <span class="nn">labjack</span> <span class="kn">import</span> <span class="n">ljm</span> <span class="k">as</span> <span class="n">lj</span>
 <span class="kn">import</span> <span class="nn">constants</span> <span class="k">as</span> <span class="nn">const</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
 
 <span class="c1"># Conventions:</span>
 <span class="c1"># - positive steps/angular rates (stepper.FORWARD) spin the motor shaft </span>
@@ -74,10 +89,20 @@ src<wbr>.hardware    </h1>
 <span class="c1"># - negative steps/angular rates (stepper.BACKWARD) spin the motor shaft </span>
 <span class="c1">#     counterclockwise (CCW) when viewed from the rear.</span>
 
-
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="c1"># Map relay number to modbus register on the LJ</span>
+<span class="n">RELAY_DICT</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;1&#39;</span><span class="p">:</span> <span class="mi">2008</span><span class="p">,</span><span class="s1">&#39;2&#39;</span><span class="p">:</span> <span class="mi">2009</span><span class="p">,</span><span class="s1">&#39;3&#39;</span><span class="p">:</span> <span class="mi">2010</span><span class="p">,</span><span class="s1">&#39;4&#39;</span><span class="p">:</span> <span class="mi">2011</span><span class="p">,</span><span class="s1">&#39;5&#39;</span><span class="p">:</span> <span class="mi">2012</span><span class="p">,</span><span class="s1">&#39;6&#39;</span><span class="p">:</span> <span class="mi">2013</span><span class="p">,</span>
+    <span class="s1">&#39;7&#39;</span><span class="p">:</span> <span class="mi">2014</span><span class="p">,</span><span class="s1">&#39;8&#39;</span><span class="p">:</span> <span class="mi">2015</span><span class="p">,</span><span class="s1">&#39;9&#39;</span><span class="p">:</span> <span class="mi">2016</span><span class="p">,</span><span class="s1">&#39;10&#39;</span><span class="p">:</span> <span class="mi">2017</span><span class="p">,</span><span class="s1">&#39;11&#39;</span><span class="p">:</span> <span class="mi">2018</span><span class="p">,</span><span class="s1">&#39;12&#39;</span><span class="p">:</span> <span class="mi">2019</span>
+<span class="p">}</span>
+<span class="c1"># Needed to open connection to labjack board</span>
+<span class="n">MODEL_NAME</span> <span class="o">=</span> <span class="s1">&#39;T7&#39;</span>
+<span class="n">MODE</span> <span class="o">=</span> <span class="s1">&#39;USB&#39;</span>
 
+<span class="c1"># -----------------------------------------------------------------------------</span>
+<span class="c1"># Stepper functions</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
 <span class="k">def</span> <span class="nf">all_steppers</span><span class="p">(</span><span class="n">steppers</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    The number of steps any motor must take on each loop execution can be cast</span>
@@ -104,8 +129,15 @@ src<wbr>.hardware    </h1>
     <span class="n">style</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span>
     
     <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span>
+
+    <span class="c1"># Perform steps in an order that avoids over-tension to mitigate skipping</span>
+    <span class="c1"># steps: positive steps first to unwind cable, then negative</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">directions</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">directions</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">radians</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">steppers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steppers</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+
     <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    
     <span class="n">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">direction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">directions</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
@@ -132,6 +164,7 @@ src<wbr>.hardware    </h1>
 <span class="k">def</span> <span class="nf">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Step by passing the number of steps as a sequence of integers over serial.</span>
+<span class="sd">    This is included as a contingency in the event that Arduino is necessary.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -143,20 +176,167 @@ src<wbr>.hardware    </h1>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-
     <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">radians</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mf">1.</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
     <span class="n">step_str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
     <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">step_str</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="k">return</span>
+
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+<span class="c1"># LabJack Functions</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
+<span class="k">def</span> <span class="nf">try_open</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Try and open a connection to a LabJack.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model</span>
+<span class="sd">        LabJack board model name, typ. &#39;T7&#39;</span>
+<span class="sd">    mode</span>
+<span class="sd">        LabJack communication mode, typ. &#39;USB&#39;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    name</span>
+<span class="sd">        handle to opened LabJack board instance</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">lj</span><span class="o">.</span><span class="n">openS</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">except</span> <span class="n">lj</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error opening LJ connection&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Try again? y/n:&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">name</span>
+
+
+<span class="k">def</span> <span class="nf">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Write a value to a LabJack, catching errors.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    addr</span>
+<span class="sd">        LabJack relay address integer</span>
+
+<span class="sd">    Kwargs</span>
+<span class="sd">    ------</span>
+<span class="sd">    value: int</span>
+<span class="sd">        value to write to LabJack relay</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if successful, False if not</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">lj</span><span class="o">.</span><span class="n">eWriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">lj</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error in write to LJ, specific error is:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span> <span class="nf">threaded_write</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Wrapper around `write_value` for use in threaded calls.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    target</span>
+<span class="sd">        LabJack relay address integer</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">written</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">written</span> <span class="o">=</span> <span class="n">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Do you want to interrupt? y/n&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="k">return</span>
+
+
+<span class="k">def</span> <span class="nf">spawn_all_threads</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Spawns threads and passes the states each relay will need to have</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    states</span>
+<span class="sd">        iterable of integers describing the states each relay should take</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">relay_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="n">relay_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span>
+            <span class="n">states</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]),</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">return</span>
+
+
+<span class="k">def</span> <span class="nf">spawn_all_threads_off</span><span class="p">(</span><span class="n">handle</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Spawns threads and sets all relay states off.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">relay_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="n">relay_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">return</span>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">serial</span>
-    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="k">pass</span>
+    <span class="c1"># import serial</span>
+    <span class="c1"># import time</span>
 
-    <span class="k">with</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="s1">&#39;COM5&#39;</span><span class="p">,</span> <span class="mi">115200</span><span class="p">)</span> <span class="k">as</span> <span class="n">ser</span><span class="p">:</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">[</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">10.</span><span class="p">]))</span>
-        <span class="n">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">[</span><span class="o">-</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">]))</span>
+    <span class="c1"># with serial.Serial(&#39;COM5&#39;, 115200) as ser:</span>
+    <span class="c1">#     time.sleep(2)</span>
+    <span class="c1">#     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))</span>
+    <span class="c1">#     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))</span>
+
+    <span class="c1"># from hw_context import MotorKit</span>
+    <span class="c1"># kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)</span>
+    <span class="c1"># kit1 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)</span>
+    <span class="c1"># steppers = [</span>
+    <span class="c1">#     kit1.stepper2, # sw</span>
+    <span class="c1">#     kit0.stepper1, # ne</span>
+    <span class="c1">#     kit0.stepper2, # nw</span>
+    <span class="c1">#     kit1.stepper1] # se</span>
+    <span class="c1"># all_steppers(steppers, [np.pi/4., 0, np.pi/4., 0])</span>
+    <span class="c1"># all_steppers(steppers, [0, -np.pi/4., 0, -np.pi/4.])</span>
+    <span class="c1"># [stepper.release() for stepper in steppers]</span>
 </pre></div>
 
         </details>
@@ -198,8 +378,15 @@ src<wbr>.hardware    </h1>
     <span class="n">style</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span>
     
     <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span>
+
+    <span class="c1"># Perform steps in an order that avoids over-tension to mitigate skipping</span>
+    <span class="c1"># steps: positive steps first to unwind cable, then negative</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">directions</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">directions</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">radians</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">steppers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steppers</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+
     <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    
     <span class="n">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">direction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">directions</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
@@ -263,6 +450,7 @@ stepper</li>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Step by passing the number of steps as a sequence of integers over serial.</span>
+<span class="sd">    This is included as a contingency in the event that Arduino is necessary.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -274,15 +462,16 @@ stepper</li>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-
     <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">radians</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mf">1.</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
     <span class="n">step_str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
     <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">step_str</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="k">return</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Step by passing the number of steps as a sequence of integers over serial.</p>
+            <div class="docstring"><p>Step by passing the number of steps as a sequence of integers over serial.
+This is included as a contingency in the event that Arduino is necessary.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -293,6 +482,273 @@ stepper</li>
 </ul>
 
 <hr />
+</div>
+
+
+                </section>
+                <section id="try_open">
+                            <div class="attr function"><a class="headerlink" href="#try_open">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">try_open</span><span class="signature">(model: str, mode: str)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">try_open</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Try and open a connection to a LabJack.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model</span>
+<span class="sd">        LabJack board model name, typ. &#39;T7&#39;</span>
+<span class="sd">    mode</span>
+<span class="sd">        LabJack communication mode, typ. &#39;USB&#39;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    name</span>
+<span class="sd">        handle to opened LabJack board instance</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">lj</span><span class="o">.</span><span class="n">openS</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">except</span> <span class="n">lj</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error opening LJ connection&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Try again? y/n:&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">name</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Try and open a connection to a LabJack.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>model</strong>: LabJack board model name, typ. 'T7'</li>
+<li><strong>mode</strong>: LabJack communication mode, typ. 'USB'</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>name</strong>: handle to opened LabJack board instance</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="write_value">
+                            <div class="attr function"><a class="headerlink" href="#write_value">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">write_value</span><span class="signature">(handle, addr: int, value=0)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Write a value to a LabJack, catching errors.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    addr</span>
+<span class="sd">        LabJack relay address integer</span>
+
+<span class="sd">    Kwargs</span>
+<span class="sd">    ------</span>
+<span class="sd">    value: int</span>
+<span class="sd">        value to write to LabJack relay</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if successful, False if not</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">lj</span><span class="o">.</span><span class="n">eWriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">lj</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error in write to LJ, specific error is:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Write a value to a LabJack, catching errors.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>handle</strong>: LabJack board model handle from <code><a href="#try_open">try_open</a></code></li>
+<li><strong>addr</strong>: LabJack relay address integer</li>
+</ul>
+
+<h6 id="kwargs">Kwargs</h6>
+
+<p>value: int
+    value to write to LabJack relay</p>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>bool</strong>: True if successful, False if not</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="threaded_write">
+                            <div class="attr function"><a class="headerlink" href="#threaded_write">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">threaded_write</span><span class="signature">(handle, target: int, value: int)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">threaded_write</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Wrapper around `write_value` for use in threaded calls.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    target</span>
+<span class="sd">        LabJack relay address integer</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">written</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">written</span> <span class="o">=</span> <span class="n">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Do you want to interrupt? y/n&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Wrapper around <code><a href="#write_value">write_value</a></code> for use in threaded calls.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>handle</strong>: LabJack board model handle from <code><a href="#try_open">try_open</a></code></li>
+<li><strong>target</strong>: LabJack relay address integer</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="spawn_all_threads">
+                            <div class="attr function"><a class="headerlink" href="#spawn_all_threads">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">spawn_all_threads</span><span class="signature">(handle, states: list)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">spawn_all_threads</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Spawns threads and passes the states each relay will need to have</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    states</span>
+<span class="sd">        iterable of integers describing the states each relay should take</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">relay_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="n">relay_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span>
+            <span class="n">states</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]),</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Spawns threads and passes the states each relay will need to have</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>handle</strong>: LabJack board model handle from <code><a href="#try_open">try_open</a></code></li>
+<li><strong>states</strong>: iterable of integers describing the states each relay should take</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="spawn_all_threads_off">
+                            <div class="attr function"><a class="headerlink" href="#spawn_all_threads_off">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">spawn_all_threads_off</span><span class="signature">(handle)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">spawn_all_threads_off</span><span class="p">(</span><span class="n">handle</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Spawns threads and sets all relay states off.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    handle</span>
+<span class="sd">        LabJack board model handle from `try_open`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">relay_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="n">relay_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Spawns threads and sets all relay states off.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>handle</strong>: LabJack board model handle from <code><a href="#try_open">try_open</a></code></li>
+</ul>
 </div>
 
 

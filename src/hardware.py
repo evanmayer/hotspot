@@ -211,14 +211,15 @@ def spawn_all_threads(handle, states: list):
     states
         iterable of integers describing the states each relay should take
     '''
-    for key in relay_dict.keys():
+    for key in RELAY_DICT.keys():
         thread = threading.Thread(
             target=threaded_write,
-            args=(handle,relay_dict[key],
+            args=(handle, RELAY_DICT[key],
             states[int(key) - 1]),
             daemon=True
         )
         thread.start()
+
     return
 
 
@@ -231,10 +232,10 @@ def spawn_all_threads_off(handle):
     handle
         LabJack board model handle from `try_open`
     '''
-    for key in relay_dict.keys():
+    for key in RELAY_DICT.keys():
         thread = threading.Thread(
             target=threaded_write,
-            args=(handle,relay_dict[key], 0),
+            args=(handle,RELAY_DICT[key], 0),
             daemon=True
         )
         thread.start()
