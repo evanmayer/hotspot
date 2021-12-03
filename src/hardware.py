@@ -110,7 +110,7 @@ def all_steppers_serial(ser, radians: list):
 # -----------------------------------------------------------------------------
 # LabJack Functions
 # -----------------------------------------------------------------------------
-def try_open(model: str, mode: str):
+def try_open(model: str, mode: str, retry=True):
     '''
     Try and open a connection to a LabJack.
 
@@ -126,18 +126,18 @@ def try_open(model: str, mode: str):
     name
         handle to opened LabJack board instance
     '''
-    while(1):
-        try:
-            name = lj.openS(model, mode)
-            break
-        except lj.LJMError as err:
-            print('Error opening LJ connection')
-            print(err)
-            answer = input('Try again? y/n:')
-            if answer.lower() == 'y':
-                time.sleep(1)
-            else:
-                return -1
+    try:
+        name = lj.openS(model, mode)
+    except lj.LJMError as err:
+        print('Error opening LJ connection')
+        print(err)
+        if retry:
+            time.sleep(1)
+            print('Trying again in 1s.')
+            name = try_open(model, mode, retry=False)
+        else:
+            return -1
+            
     return name
 
 

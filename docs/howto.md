@@ -42,6 +42,10 @@ If your `hotspot.yml` has been updated, and you need to update your env with the
 conda env update --file hotspot.yml --prune
 ```
 
+# Software Testing with `pytest`
+
+In order to verify that basic low-level functionality is unbroken, run `pytest` from the toplevel directory.
+
 # Setting Up the Hardware
 
 ## Enable Raspberry Pi Hardware
