@@ -130,6 +130,58 @@ Two aluminum registration tabs are screwed into the end of each frame piece oppo
 
 When all of these pieces are attached to the frame, it is ready to install onto a mirror for mapping.
 
+# Installation and Input File Creation
+
+The input file describes the dimensions of the frame and raft in a specific configuration for mapping a specific mirror. The coordinate system of the robot has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face. 
+
+Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated, given the separation between the movable and fixed frame faces.
+
+The eyelets of the motor mounts measured $6.19 \pm 0.5$ mm from the frame to the face of the motor mount, and $7.96 \pm 0.02$ mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of $0.014 \pm 0.001$ m. This value will be used to calculate eyelet y-positions as a function of frame separation.
+
+The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.
+
+The input file also describes the dimensions of the raft carrying the Hawkeye IR sources, in terms of the X- and Y-separation of the eyelets on the raft. This information is used in the control algorithm to calculate the necessary cable lengths needed to move the raft centroid to a given location.
+
+Finally, the installed position of the corner feature on the underside of the homing bar is measured, so that when the raft is nested in the corner feature, a repeatable and known raft centroid position is acheived. The homed centroid position is entered when prompted by the program.
+
+## Example Calculation
+For a benchtop test, the frame separation is $0.392 \pm 0.001$ m, so the movable side y-coordinates are $0.392 - 0.014 = 0.378$ m.
+
+| Feature               | X               | Y               |
+|:---------------------:|:---------------:|:---------------:|
+| SE                    | 0.528 +/- 0.001 | 0.014 +/- 0.001 |
+| SW                    | 0.057 +/- 0.001 | 0.014 +/- 0.001 |
+| NE                    | 0.528 +/- 0.001 | 0.378 +/- 0.001 |
+| NW                    | 0.057 +/- 0.001 | 0.378 +/- 0.001 |
+| Homing feature corner | 0.155 +/- 0.001 | 0.151 +/- 0.001 |
+
+The dimensions of the raft attachment points were measured. These distances are the distances between the points on the raft where the cables exit the eyelets. The eyelets themselves are located $1.2$ mm from each edge of the raft. This modifies the effective position of the homing feature by $(+0.001, +0.001)$ m. 
+
+Raft width:  $0.045 \pm 0.001$ m
+Raft height: $0.040 \pm 0.001$ m
+
+Tgoether, the location of the raft centroid when it is nested at the HOME location:
+
+$r = (0.156 + 0.045/2, 0.152 - 0.040/2)$
+
+Therefore, the input file for this shape would read:
+
+| Input Loc. | X     | Y     |
+|:----------:|:-----:|:-----:|
+| SE         | 0.528 | 0.014 |
+| SW         | 0.057 | 0.014 |
+| NE         | 0.528 | 0.378 |
+| NW         | 0.057 | 0.378 |
+| RAFT       | 0.045 | 0.040 |
+
+And when prompted for the raft's position during home calibration:
+
+| Input Loc. | X     | Y     |
+|:----------:|:-----:|:-----:|
+| HOME       | 0.179 | 0.172 |
+## Input File Creation
+
+
 # Documentation
 
 ## `pdoc`
