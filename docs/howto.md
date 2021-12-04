@@ -60,13 +60,15 @@ Follow the steps for [Enabling I2C communication](https://learn.adafruit.com/ada
 The motor driver board must be powered via its own power supply, since the raspberry pi cannot provide the requisite voltage or current. A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat. For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A.
 
 ### LabJack
-The LabJack board also needs its own power supply to drive the voltage/current that is switched via the breakout board. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. The voltage of this power supply will depend on what is hooked up to the switchable terminals. In this case, we are using LEDs to stand in for Hawkeye IR sources, so 3.3V is fine.
+The LabJack board also needs its own power supply to drive the voltage/current that is switched via the breakout board. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. The voltage of this power supply will depend on what is hooked up to the switchable terminals. If you are using LEDs to stand in for Hawkeye IR sources (e.g. for testing), 3.3V is fine.
+
+The Hawkeye IR50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in `pdf` dir). The design target temperature is 750 C, requiring a voltage of 6.7 V and acurrent of ~134 mA per source, for a total current draw of ~1.74 A when all sources are turned on. The power supply must be able to meet these requirements.
 
 ## Communication
 
 ### Raspberry Pi
-You can log in to the raspberry pi via `ssh`. In order for you computer to "see" the raspberry pi, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
-1. By connecting both computers to a router or network switch that can assigns each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
+You can log in to the raspberry pi via `ssh`. In order for your computer to "see" the raspberry pi, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
+1. By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
 1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
 1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.
 
@@ -116,7 +118,7 @@ After attaching the cables to the spools, the other end should be routed through
 
 The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.
 
-The effector is attached to the cables by simply wrapping ends of the fishing line around the screws in each corner of the raft and screwing them down.
+The effector is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down.
 
 ## Frame
 
@@ -124,11 +126,11 @@ The 3D printed CFRP stepper motor mounts are attached to the beam mapper frame b
 
 A 3D printed CFRP "homing bar" with a corner reference feature sticks out into the mapping region to provide a repeatable location for placing the corner of the effector raft. This part is attached to the beam mapper frame with one 5/16-18 x 2" or 2.25" bolt with nyloc "jam" nut. Ensure the arm is pressed flat against the inside of the frame, no matter where it is attached.
 
-Four 3D printed CFRP 3" x 2.5" registration tabs are provided to enhance the clamping surface the frame can use along the perimeter of a given mirror. They should be installed with 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts, installed on the interior of the frame, and oriented such that they extend "down" from the frame, opposite the motor mount brackets. They can be installed in any location along the frame, provided they avoid contact with the mirror's laser tracker nest tabs when the frame is mounted to the mirror.
-
 Two aluminum registration tabs are screwed into the end of each frame piece opposite the black plastic end caps, using a 5/16-18 x 1/4" screw. They are long enough to reach an edge of the mirror regardless of if the mirror's corners have been machined off. These tabs register the frame to a third edge of the mirror, so **it is important that they not be bent**.
 
-When all of these pieces are attached to the frame, it is ready to install onto a mirror for mapping.
+Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. 
+
+When all of these pieces are attached to the frame, it is ready to install onto a mirror for mapping. The frame should be opened wide enough to allow it to fit over a mirror, then clamped down to register against two opposite faces.
 
 # Installation and Input File Creation
 
@@ -201,11 +203,11 @@ To re-generate the call graph image, from inside the `src` directory, run
 ```
 pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=../doc/img/pycallgraph.png -- ./hotspot.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
 ```
-You must have `graphviz` installed using your operating system's package manager.
+You must have `graphviz` installed using your operating system's package manager. For most accurate graph and timing information, do this with all peripheral hardware attached, so the call graphs include interfacing with the motor drivers and LabJack.
 
 # Test Fixture Setup
 
-For testing the software and hardware together, we set up the raspberry pi and the steppers on an optics bench in Steward Observatory Lab 168. This allows us to affix the steppers to something a roughly known distance apart.
+For testing the software and hardware together, we set up the raspberry pi and the steppers on an optics bench in Steward Observatory Lab 168. This allows us to affix the steppers to something a roughly known distance apart. This was done to allow testing of the algorithms while the frame was in development.
 
 ## Stepper Fixture
 
