@@ -84,6 +84,7 @@ class Executive(object):
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         if self.lj_instance == -1:
             raise RuntimeError('No LabJack instance found, exiting.')
+        hw.spawn_all_threads_off(self.lj_instance)
 
         return
 
@@ -330,20 +331,20 @@ class Executive(object):
 
 
     def do_labjack_tasks(self, cmd: dict):
-        freq = 5. # Hz
+        freq = 10. # Hz
         num_blinks = 10
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
             if flipflop:
                 hw.spawn_all_threads(self.lj_instance, cmd['flasher_cmds'])
+                num_blinks -= 1
             else:
                 hw.spawn_all_threads_off(self.lj_instance)
             flipflop = 1 - flipflop
-            num_blinks -= 1
-            # sleep off remaining time to fudge actions at frequency freq 
+            # sleep off remaining time to fudge actions at frequency freq
             time.sleep((1. / freq) - (time.time()-start_time))
-
+        hw.spawn_all_threads_off(self.lj_instance)
         packet = {'LabJack Cmd':
             {
                 'Time UTC (s)': time.time(),
