@@ -12,13 +12,20 @@ succeeds, skip these steps.
 
 ## Python Dependencies
 ### Anaconda
-If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda [from here](https://docs.conda.io/en/master/miniconda.html). Get the installer for ARM processors (it has `aarch64` in the name) and follow the online instructions.
+If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda like this:
+
+```bash
+curl "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-armv7l.sh" -o "Miniconda.sh"
+chmod +x Miniconda.sh
+./Miniconda.sh
+```
 
 Once that is done, we are ready to set up the `hotspot` environment. `conda` allows specifying the packages needed in a file with a `.yml` extension. This is done for you. Create the `hotspot` conda env with
 
 ```bash
 conda env create -f hotspot.yml
 ```
+
 If this does not work on the Raspberry Pi (e.g. because the Python version in .yml is not available in the ARM64 conda repo), try changing `- python=3.8
 ` to `- python=3.6`.
 
