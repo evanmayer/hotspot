@@ -12,7 +12,18 @@ succeeds, skip these steps.
 
 ## Python Dependencies
 ### Anaconda
-If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda [from here](https://docs.conda.io/en/master/miniconda.html). Get the installer for ARM processors (it has `aarch64` in the name) and follow the online instructions.
+If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda like this:
+
+```bash
+curl "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-armv7l.sh" -o "Miniconda.sh"
+chmod +x Miniconda.sh
+./Miniconda.sh
+```
+For some perverse reason, not all `conda` packages are available for searching on rpi before running this command:
+
+```bash
+conda install anaconda-client
+```
 
 Once that is done, we are ready to set up the `hotspot` environment. `conda` allows specifying the packages needed in a file with a `.yml` extension. This is done for you. Create the `hotspot` conda env with
 
@@ -20,13 +31,24 @@ Once that is done, we are ready to set up the `hotspot` environment. `conda` all
 conda env create -f hotspot.yml
 ```
 
-It should install things like `numpy` and `matplotlib`, as well as drivers for the hardware, such as Adafruit's `adafruit-circuitpython-motorkit` library for driving the steppers, and the library for controlling the Hawkeye IR sources via the LabJack.
+The rpi conda install is a bit weird. If env creation down not work on the Raspberry Pi due to a FreeType error in `matplotlib` install, perform this command:
+
+
+
+If env creation does not work on the Raspberry Pi due to a Python version not found error, ensure the Python version is 3.6 by changing `- python=3.8` to `- python=3.6`.
+
+It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as Adafruit's `adafruit-circuitpython-motorkit` library for driving the steppers, and the `labjack-ljm` library for controlling the Hawkeye IR sources via the LabJack.
+
+However, driving Hawkeye sources with LabJack Python modules requires both the system libraries and the Python interface to be installed.
+
+[Download and install](https://labjack.com/support/software/installers/ljm) the LJM libraries from LabJack.
 
 Once that is done, activate the env with 
 
 ```bash
 conda activate hotspot
 ```
+## Keeping things up to date
 
 If you need to install something else, remember to update `hotspot.yml` by doing 
 
