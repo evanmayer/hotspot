@@ -71,8 +71,6 @@ class Executive(object):
 
         kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-        # kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
-        # kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         self.steppers = {
             'sw': kit1.stepper2,
             'ne': kit0.stepper1,
@@ -292,7 +290,7 @@ class Executive(object):
         self.do_labjack_tasks(cmd)
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
         # take time to log TM and update display before doing next cmd
-        self.router.process_tm()
+        # self.router.process_tm()
 
         return
 
