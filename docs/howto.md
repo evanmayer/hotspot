@@ -19,8 +19,6 @@ Once that is done, we are ready to set up the `hotspot` environment. `conda` all
 ```bash
 conda env create -f hotspot.yml
 ```
-If this does not work on the Raspberry Pi (e.g. because the Python version in .yml is not available in the ARM64 conda repo), try changing `- python=3.8
-` to `- python=3.6`.
 
 It should install things like `numpy` and `matplotlib`, as well as drivers for the hardware, such as Adafruit's `adafruit-circuitpython-motorkit` library for driving the steppers, and the library for controlling the Hawkeye IR sources via the LabJack.
 

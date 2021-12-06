@@ -2,8 +2,9 @@ name: hotspot
 channels:
   - conda-forge
   - defaults
+  - rpi
 dependencies:
-  - python=3.8
+  - python=3.6
   - numpy
   - pytest
   - matplotlib
@@ -12,9 +13,8 @@ dependencies:
   - pip
   - pip:
     - adafruit-circuitpython-motorkit
-    - adafruit-blinka==3.9.0 # necessary bc this happened to me: https://github.com/home-assistant/core/issues/31719
     - labjack-ljm
     - pycallgraph2
     - pdoc
 
-prefix: /home/pi/miniconda3/envs/hotspot
+#prefix: /home/pi/miniconda3/envs/hotspot
