@@ -19,11 +19,6 @@ curl "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-armv7l.sh" -o 
 chmod +x Miniconda.sh
 ./Miniconda.sh
 ```
-For some perverse reason, not all `conda` packages are available for searching on rpi before running this command:
-
-```bash
-conda install anaconda-client
-```
 
 Once that is done, we are ready to set up the `hotspot` environment. `conda` allows specifying the packages needed in a file with a `.yml` extension. This is done for you. Create the `hotspot` conda env with
 
