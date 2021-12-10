@@ -2,6 +2,12 @@
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
+
+const unsigned int NUM_MOTORS = 4;
+long pos_cmds[NUM_MOTORS];
+long pos_curs[NUM_MOTORS];
+double MAX_SPEED = 20.;
+
 // ------------------------------------------------------------------------------
 // Stepper Setup
 // ------------------------------------------------------------------------------
@@ -10,46 +16,42 @@ Adafruit_MotorShield AFMS0 = Adafruit_MotorShield(0x60);
 
 // Connect a stepper motor with 200 steps per revolution (1.8 degree)
 // to motor port N
-Adafruit_StepperMotor *stepper0 = AFMS0.getStepper(200, 1);
-Adafruit_StepperMotor *stepper1 = AFMS0.getStepper(200, 2);
+Adafruit_StepperMotor *ne = AFMS0.getStepper(200, 1);
+Adafruit_StepperMotor *nw = AFMS0.getStepper(200, 2);
 //Adafruit_StepperMotor *stepper2 = AFMS1.getStepper(200, 3);
 //Adafruit_StepperMotor *stepper3 = AFMS1.getStepper(200, 4);
 
 MultiStepper steppers;
 
-void forwardstep0() {
-  stepper0->onestep(FORWARD, DOUBLE);
+void forwardstepne() {
+  ne->onestep(FORWARD, DOUBLE);
 }
-void backwardstep0() {
-  stepper0->onestep(BACKWARD, DOUBLE);
+void backwardstepne() {
+  ne->onestep(BACKWARD, DOUBLE);
 }
-void forwardstep1() {
-  stepper1->onestep(FORWARD, DOUBLE);
+void forwardstepnw() {
+  nw->onestep(FORWARD, DOUBLE);
 }
-void backwardstep1() {
-  stepper1->onestep(BACKWARD, DOUBLE);
+void backwardstepnw() {
+  nw->onestep(BACKWARD, DOUBLE);
 }
-//void forwardstep2() {
-//  stepper2->onestep(FORWARD, MICROSTEP);
+//void forwardstepse() {
+//  se->onestep(FORWARD, MICROSTEP);
 //}
-//void backwardstep2() {
-//  stepper2->onestep(BACKWARD, MICROSTEP);
+//void backwardstepse() {
+//  se->onestep(BACKWARD, MICROSTEP);
 //}
-//void forwardstep3() {
-//  stepper3->onestep(FORWARD, MICROSTEP);
+//void forwardstepsw() {
+//  sw->onestep(FORWARD, MICROSTEP);
 //}
-//void backwardstep3() {
-//  stepper3->onestep(BACKWARD, MICROSTEP);
+//void backwardstepsw() {
+//  sw->onestep(BACKWARD, MICROSTEP);
 //}
 
-AccelStepper Astepper0(forwardstep0, backwardstep0); // use functions to step
-AccelStepper Astepper1(forwardstep1, backwardstep1);
+AccelStepper Astepper0(forwardstepne, backwardstepne); // use functions to step
+AccelStepper Astepper1(forwardstepnw, backwardstepnw);
 //AccelStepper Astepper2(forwardstep2, backwardstep2);
 //AccelStepper Astepper3(forwardstep3, backwardstep3);
-
-const unsigned int NUM_MOTORS = 4;
-long pos_cmds[NUM_MOTORS];
-long pos_curs[NUM_MOTORS];
 
 void setup()
 {
@@ -69,15 +71,10 @@ void setup()
 //  steppers.addStepper(Astepper2);
 //  steppers.addStepper(Astepper3);
 
-  Astepper0.setMaxSpeed(20000.);
-  Astepper1.setMaxSpeed(20000.);
-//  Astepper2.setMaxSpeed(2000.);
-//  Astepper3.setMaxSpeed(2000.);
-
-  Astepper0.setSpeed(10000.);
-  Astepper1.setSpeed(10000.);
-//  Astepper2.setSpeed(1000.);
-//  Astepper3.setSpeed(1000.);
+  Astepper0.setMaxSpeed(MAX_SPEED);
+  Astepper1.setMaxSpeed(MAX_SPEED);
+//  Astepper2.setMaxSpeed(MAX_SPEED);
+//  Astepper3.setMaxSpeed(MAX_SPEED);
 
   for(unsigned int i=0; i<NUM_MOTORS; ++i)
   {

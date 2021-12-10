@@ -30,5 +30,8 @@ PULLEY_RADIUS = 0.03 / 2.
 # Pretty much only limited by memory.
 MAX_QLEN = 2**16
 
+SERIAL_PORT = 'COM5'
+SERIAL_BAUD = 115200
+
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))

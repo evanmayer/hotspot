@@ -10,6 +10,7 @@ import logging
 import multiprocessing as mp
 import numpy as np
 import os
+import serial
 import sys
 import telemetry as tm
 import threading
@@ -80,8 +81,7 @@ class Executive(object):
         self.cumulative_steps = np.array([0.] * len(self.steppers))
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
-        if self.lj_instance == -1:
-            raise RuntimeError('No LabJack instance found, exiting.')
+        self.ser = serial.Serial('COM5', 115200)
         hw.spawn_all_threads_off(self.lj_instance)
 
         return
@@ -313,7 +313,8 @@ class Executive(object):
         motor_cmds = self.robot.process_input(cmd['pos_cmd'])
         # bootleg OrderedDict
         angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
-        steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
+        # steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
+        steps_taken = hw.all_steppers_serial(self.ser, angs)
 
         self.cumulative_steps += np.array(steps_taken)
         logger.info(f'Cumulative steps:{self.cumulative_steps}')
@@ -356,4 +357,5 @@ class Executive(object):
 
     def close(self):
         [self.steppers[key].release() for key in self.steppers.keys()]
+        self.ser.close()
         return 

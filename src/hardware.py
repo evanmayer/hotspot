@@ -1,10 +1,11 @@
 # This file defines the interfaces used to command the hardware.
 
 from hw_context import stepper
-from labjack import ljm as lj
+from hw_context import lj
 import constants as const
 import logging
 import numpy as np
+import serial
 import threading
 import time
 
@@ -101,10 +102,11 @@ def all_steppers_serial(ser, radians: list):
     Returns
     -------
     '''
-    steps_to_go = np.round(radians * const.DEG_PER_RAD / (360. / 200. / 1.)).astype(int).astype(str)
+    # arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier
+    steps_to_go = np.round(np.array(radians) * const.DEG_PER_RAD / (360. / 200. / 1.)).astype(int).astype(str)
     step_str = ','.join(steps_to_go) + '\n'
     ser.write(step_str.encode())
-    return
+    return steps_to_go.astype(int)
 
 
 # -----------------------------------------------------------------------------
@@ -245,13 +247,13 @@ def spawn_all_threads_off(handle):
 
 if __name__ == '__main__':
     pass
-    # import serial
-    # import time
+    import serial
+    import time
 
-    # with serial.Serial('COM5', 115200) as ser:
-    #     time.sleep(2)
-    #     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
-    #     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
+    with serial.Serial('COM5', 115200) as ser:
+        time.sleep(2)
+        all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
+        all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
 
     # from hw_context import MotorKit
     # kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
