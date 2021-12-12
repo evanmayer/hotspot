@@ -17,6 +17,7 @@ class TestSurface(object):
     as-constructed/measured, relative to the mirror origin.
     '''
     def __init__(self, sw=(0.,0.), se=(1.,0.), nw=(0.,1.), ne=(1.,1.)):
+        logger.debug('TestSurface init')
         corner_list = [nw, ne, se, sw]
         for inp in corner_list:
             assert len(inp) == 2, \
@@ -79,6 +80,7 @@ class Raft(object):
     as-constructed/measured.
     '''
     def __init__(self, position: tuple, width: float, height: float):
+        logger.debug('Raft init')
         assert len(position) == 2, \
             f'This module is 2D planar only, so points should be 2-vectors instead of {position}.'
         # Private attribute maintains coords in raft frame
@@ -125,6 +127,7 @@ class Robot(object):
     a set of motor commands.
     '''
     def __init__(self, surf: TestSurface, raft: Raft, tm_queue: mp.Queue):
+        logger.debug('Robot init')
         # Geometry
         self.surf = surf
         self.raft = raft

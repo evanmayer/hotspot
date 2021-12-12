@@ -32,6 +32,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging.basicConfig(level=args.loglevel)
-    # Start up executive
     executive = ex.Executive(os.path.abspath(args.geometry_file))
     executive.run(os.path.abspath(args.command_profile))

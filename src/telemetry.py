@@ -17,6 +17,7 @@ class Visualizer(object):
     Keeps track of plotting objects to enable updating plots for a given source
     '''
     def __init__(self, file_handle: h5py.File, source: str):
+        logger.debug('Visualiser init')
         self.file_handle = file_handle
         self.source = source
 
@@ -75,6 +76,7 @@ class Visualizer(object):
 
 class DataRouter(object):
     def __init__(self, tm_queue: mp.Queue):
+        logger.debug('DataRouter init')
         # map output data to the correct file
         self.output_dir = os.path.join(const.TOPLEVEL_DIR, 'data', 'output')
         self.time_str = time.strftime('_%Y%m%d-%H%M%S')

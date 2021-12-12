@@ -38,6 +38,7 @@ class Executive(object):
         height.
     '''
     def __init__(self, geometry_file: str):
+        logger.debug('Executive init')
         # Set defaults
         self.mode = 'CAL_HOME'
         self.last_mode = 'CAL_HOME'
@@ -72,18 +73,23 @@ class Executive(object):
 
         kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        # This mapping should match the physical setup. kit0 is closest to the
+        # parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2
+        # is terminals M3+M4
         self.steppers = {
             'sw': kit1.stepper2,
             'ne': kit0.stepper1,
             'nw': kit0.stepper2,
             'se': kit1.stepper1
         }
+        # should be ~0 for closed loop shapes
         self.cumulative_steps = np.array([0.] * len(self.steppers))
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
-        self.ser = serial.Serial('COM5', 115200)
         hw.spawn_all_threads_off(self.lj_instance)
 
+        # self.ser = serial.Serial('COM5', 115200)
+        # time.sleep(2)
         return
 
 
