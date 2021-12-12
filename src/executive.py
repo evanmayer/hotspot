@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT'}
 HR = '-' * 80
 
-class Executive(object):
+class Executive:
     '''
     Handles control flow with a state machine, initializes the algorithm's
     Robot class, ingests command files to process and dispatch tasks to
@@ -221,7 +221,6 @@ class Executive(object):
                 print('\nCaught KeyboardInterrupt, shutting down.')
                 running = False
         self.close()
-
         return
 
 
@@ -259,7 +258,6 @@ class Executive(object):
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
-
         return
 
 
@@ -297,7 +295,6 @@ class Executive(object):
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
         # take time to log TM and update display before doing next cmd
         # self.router.process_tm()
-
         return
 
 
@@ -319,8 +316,8 @@ class Executive(object):
         motor_cmds = self.robot.process_input(cmd['pos_cmd'])
         # bootleg OrderedDict
         angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
-        # steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
-        steps_taken = hw.all_steppers_serial(self.ser, angs)
+        steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
+        # steps_taken = hw.all_steppers_serial(self.ser, angs)
 
         self.cumulative_steps += np.array(steps_taken)
         logger.info(f'Cumulative steps:{self.cumulative_steps}')
@@ -357,11 +354,10 @@ class Executive(object):
             }
         }
         self.tm_queue.put(packet)
-
         return
 
 
     def close(self):
         [self.steppers[key].release() for key in self.steppers.keys()]
-        self.ser.close()
-        return 
+        # self.ser.close()
+        return

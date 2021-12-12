@@ -12,7 +12,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
-class Visualizer(object):
+class Visualizer:
     '''
     Keeps track of plotting objects to enable updating plots for a given source
     '''
@@ -74,7 +74,7 @@ class Visualizer(object):
         return
 
 
-class DataRouter(object):
+class DataRouter:
     def __init__(self, tm_queue: mp.Queue):
         logger.debug('DataRouter init')
         # map output data to the correct file

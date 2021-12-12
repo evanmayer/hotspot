@@ -3,7 +3,7 @@
 # attached.
 
 from adafruit_motor import stepper
-from labjack import ljm as lj
+from labjack import ljm
 
 try:
     from adafruit_motorkit import MotorKit
@@ -27,8 +27,10 @@ except NotImplementedError as err:
             self.stepper2 = DummyStepperMotor()
 
 try:
-    name = lj.openS('T7', 'USB')
-except lj.LJMError as err:
+    name = ljm.openS('T7', 'USB')
+    eWriteAddress = ljm.eWriteAddress
+    openS = ljm.openS
+except ljm.LJMError as err:
     print(err)
     print('No LabJack modules found at import. Falling back to dummy class for simulation support.')
     def dummyEwriteAddress(handle, addr, mode, value):
@@ -36,5 +38,5 @@ except lj.LJMError as err:
     def dummyOpenS(model: str, mode: str):
         return None
     # Overwrite
-    lj.eWriteAddress = dummyEwriteAddress
-    lj.openS = dummyOpenS
+    eWriteAddress = dummyEwriteAddress
+    openS = dummyOpenS

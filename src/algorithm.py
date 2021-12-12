@@ -11,7 +11,7 @@ import time
 logger = logging.getLogger(__name__)
 # logger.setLevel(getattr(logging, const.LOGLEVEL))
 
-class TestSurface(object):
+class TestSurface:
     '''
     Contains the mirror-dependent geometry of attachment points, 
     as-constructed/measured, relative to the mirror origin.
@@ -74,7 +74,7 @@ class TestSurface(object):
         return result
 
 
-class Raft(object):
+class Raft:
     '''
     Contains the payload-dependent geometry of attachment points,
     as-constructed/measured.
@@ -120,7 +120,7 @@ class Raft(object):
 
 
 
-class Robot(object):
+class Robot:
     '''
     Contains all information and functions needed to translate a sequence of 
     commands into a set of cable length deltas and velocities, and then into

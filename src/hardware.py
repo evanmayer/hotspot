@@ -1,8 +1,8 @@
 # This file defines the interfaces used to command the hardware.
 
-from hw_context import stepper
-from hw_context import lj
+from hw_context import stepper, openS, eWriteAddress
 import constants as const
+from labjack import ljm
 import logging
 import numpy as np
 import serial
@@ -103,7 +103,7 @@ def all_steppers_serial(ser, radians: list):
     -------
     '''
     # arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier
-    steps_to_go = np.round(np.array(radians) * const.DEG_PER_RAD / (360. / 200. / 1.)).astype(int).astype(str)
+    steps_to_go = np.round(np.array(radians) * const.DEG_PER_RAD / (360. / 200. / 8.)).astype(int).astype(str)
     step_str = ','.join(steps_to_go) + '\n'
     ser.write(step_str.encode())
     return steps_to_go.astype(int)
@@ -129,8 +129,8 @@ def try_open(model: str, mode: str, retry=True):
         handle to opened LabJack board instance
     '''
     try:
-        name = lj.openS(model, mode)
-    except lj.LJMError as err:
+        name = openS(model, mode)
+    except ljm.LJMError as err:
         print('Error opening LJ connection')
         print(err)
         if retry:
@@ -165,8 +165,8 @@ def write_value(handle, addr: int, value=0):
         True if successful, False if not
     '''
     try:
-        lj.eWriteAddress(handle, addr, 0, value)
-    except lj.LJMError as err:
+        eWriteAddress(handle, addr, 0, value)
+    except ljm.LJMError as err:
         print("Error in write to LJ, specific error is:")
         print(err)
         return False
@@ -247,13 +247,13 @@ def spawn_all_threads_off(handle):
 
 if __name__ == '__main__':
     pass
-    import serial
-    import time
+    # import serial
+    # import time
 
-    with serial.Serial('COM5', 115200) as ser:
-        time.sleep(2)
-        all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
-        all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
+    # with serial.Serial('COM5', 115200) as ser:
+    #     time.sleep(2)
+    #     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
+    #     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
 
     # from hw_context import MotorKit
     # kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
