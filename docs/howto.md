@@ -171,9 +171,10 @@ Upon reaching each location in the profile, the robot is programmed to flash Haw
 
 For example, to move to a single coordinate and flash all addresses:
 
-| flasher_cmds  | pos_cmd_0s  | pos_cmd_1s  |
-|:--:|:--:|:--:|
-| 1 1 1 1 1 1 1 1 1 1 1 1   | .5  | .5  |
+| flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
+|:-----------------------:|:----------:|:----------:|
+| 1 1 1 1 1 1 1 1 1 1 1 1 | .5         | .5         |
+
 Building up a sequence of moves allows a grid or shape to be scanned.
 
 ## Input File Creation
@@ -223,6 +224,7 @@ And when prompted for the raft's position during home calibration:
 | Input Loc. | X     | Y     |
 |:----------:|:-----:|:-----:|
 | HOME       | 0.179 | 0.172 |
+
 # Example Call Graph
 
 Without motors or LabJack attached, so does not include overhead of those libraries.
