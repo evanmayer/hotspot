@@ -186,7 +186,7 @@ The eyelet positions should not change in the x-direction, unless the motor moun
 
 The final piece of information needed for the robot to move is the initial position, the home position. The installed position of the corner feature on the underside of the homing bar is measured, so that when the raft is nested in the corner feature, a repeatable and known raft centroid position is acheived. The homed centroid position is entered at the command line when prompted.
 
-## Example Geoemtry Calculation
+## Example Geometry Calculation
 
 This is an example of the measurements needed to create a geoemtry file. Actual values listed here should not be used unless they have been verified against actual hardware, as raft and endpoint dimensions could have changed due to hardware revisions.
 
@@ -223,6 +223,12 @@ And when prompted for the raft's position during home calibration:
 | Input Loc. | X     | Y     |
 |:----------:|:-----:|:-----:|
 | HOME       | 0.179 | 0.172 |
+# Example Call Graph
+
+Without motors or LabJack attached, so does not include overhead of those libraries.
+
+![callgraph](img/pycallgraph.png)
+
 # Documentation
 
 ## `pdoc`
