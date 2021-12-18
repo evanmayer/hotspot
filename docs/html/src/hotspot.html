@@ -82,7 +82,6 @@ src<wbr>.hotspot    </h1>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">loglevel</span><span class="p">)</span>
-    <span class="c1"># Start up executive</span>
     <span class="n">executive</span> <span class="o">=</span> <span class="n">ex</span><span class="o">.</span><span class="n">Executive</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">geometry_file</span><span class="p">))</span>
     <span class="n">executive</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">command_profile</span><span class="p">))</span>
 </pre></div>

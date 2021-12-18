@@ -107,12 +107,13 @@ src<wbr>.algorithm    </h1>
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="c1"># logger.setLevel(getattr(logging, const.LOGLEVEL))</span>
 
-<span class="k">class</span> <span class="nc">TestSurface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">TestSurface</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Contains the mirror-dependent geometry of attachment points, </span>
 <span class="sd">    as-constructed/measured, relative to the mirror origin.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">se</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">nw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">),</span> <span class="n">ne</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">)):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;TestSurface init&#39;</span><span class="p">)</span>
         <span class="n">corner_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nw</span><span class="p">,</span> <span class="n">ne</span><span class="p">,</span> <span class="n">se</span><span class="p">,</span> <span class="n">sw</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">corner_list</span><span class="p">:</span>
             <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
@@ -169,12 +170,13 @@ src<wbr>.algorithm    </h1>
         <span class="k">return</span> <span class="n">result</span>
 
 
-<span class="k">class</span> <span class="nc">Raft</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Raft</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Contains the payload-dependent geometry of attachment points,</span>
 <span class="sd">    as-constructed/measured.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Raft init&#39;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
             <span class="sa">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of </span><span class="si">{</span><span class="n">position</span><span class="si">}</span><span class="s1">.&#39;</span>
         <span class="c1"># Private attribute maintains coords in raft frame</span>
@@ -214,13 +216,14 @@ src<wbr>.algorithm    </h1>
 
 
 
-<span class="k">class</span> <span class="nc">Robot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Robot</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Contains all information and functions needed to translate a sequence of </span>
 <span class="sd">    commands into a set of cable length deltas and velocities, and then into</span>
 <span class="sd">    a set of motor commands.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">surf</span><span class="p">:</span> <span class="n">TestSurface</span><span class="p">,</span> <span class="n">raft</span><span class="p">:</span> <span class="n">Raft</span><span class="p">,</span> <span class="n">tm_queue</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Robot init&#39;</span><span class="p">)</span>
         <span class="c1"># Geometry</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">surf</span> <span class="o">=</span> <span class="n">surf</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">raft</span> <span class="o">=</span> <span class="n">raft</span>
@@ -343,12 +346,13 @@ src<wbr>.algorithm    </h1>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TestSurface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TestSurface</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Contains the mirror-dependent geometry of attachment points, </span>
 <span class="sd">    as-constructed/measured, relative to the mirror origin.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">se</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">nw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">),</span> <span class="n">ne</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">)):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;TestSurface init&#39;</span><span class="p">)</span>
         <span class="n">corner_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nw</span><span class="p">,</span> <span class="n">ne</span><span class="p">,</span> <span class="n">se</span><span class="p">,</span> <span class="n">sw</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">corner_list</span><span class="p">:</span>
             <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
@@ -422,6 +426,7 @@ as-constructed/measured, relative to the mirror origin.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">se</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">nw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">),</span> <span class="n">ne</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">)):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;TestSurface init&#39;</span><span class="p">)</span>
         <span class="n">corner_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nw</span><span class="p">,</span> <span class="n">ne</span><span class="p">,</span> <span class="n">se</span><span class="p">,</span> <span class="n">sw</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">corner_list</span><span class="p">:</span>
             <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
@@ -513,12 +518,13 @@ vertices. If they sum to 360, you're inside the shape.</p>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Raft</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Raft</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Contains the payload-dependent geometry of attachment points,</span>
 <span class="sd">    as-constructed/measured.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Raft init&#39;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
             <span class="sa">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of </span><span class="si">{</span><span class="n">position</span><span class="si">}</span><span class="s1">.&#39;</span>
         <span class="c1"># Private attribute maintains coords in raft frame</span>
@@ -574,6 +580,7 @@ as-constructed/measured.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Raft init&#39;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
             <span class="sa">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of </span><span class="si">{</span><span class="n">position</span><span class="si">}</span><span class="s1">.&#39;</span>
         <span class="c1"># Private attribute maintains coords in raft frame</span>
@@ -621,13 +628,14 @@ as-constructed/measured.</p>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Robot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Robot</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Contains all information and functions needed to translate a sequence of </span>
 <span class="sd">    commands into a set of cable length deltas and velocities, and then into</span>
 <span class="sd">    a set of motor commands.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">surf</span><span class="p">:</span> <span class="n">TestSurface</span><span class="p">,</span> <span class="n">raft</span><span class="p">:</span> <span class="n">Raft</span><span class="p">,</span> <span class="n">tm_queue</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Robot init&#39;</span><span class="p">)</span>
         <span class="c1"># Geometry</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">surf</span> <span class="o">=</span> <span class="n">surf</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">raft</span> <span class="o">=</span> <span class="n">raft</span>
@@ -751,13 +759,14 @@ a set of motor commands.</p>
             <span class="name">Robot</span><span class="signature">(
     surf: <a href="#TestSurface">src.algorithm.TestSurface</a>,
     raft: <a href="#Raft">src.algorithm.Raft</a>,
-    tm_queue: &lt;bound method BaseContext.Queue of &lt;multiprocessing.context.DefaultContext object at 0x7f0948171ac0&gt;&gt;
+    tm_queue: &lt;bound method BaseContext.Queue of &lt;multiprocessing.context.DefaultContext object at 0x7f640016af10&gt;&gt;
 )</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">surf</span><span class="p">:</span> <span class="n">TestSurface</span><span class="p">,</span> <span class="n">raft</span><span class="p">:</span> <span class="n">Raft</span><span class="p">,</span> <span class="n">tm_queue</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Robot init&#39;</span><span class="p">)</span>
         <span class="c1"># Geometry</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">surf</span> <span class="o">=</span> <span class="n">surf</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">raft</span> <span class="o">=</span> <span class="n">raft</span>

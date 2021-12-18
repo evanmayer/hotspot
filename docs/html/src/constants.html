@@ -61,12 +61,12 @@ src<wbr>.constants    </h1>
 <span class="c1"># Adafruit stepper style. Used to enable/disable microstepping.</span>
 <span class="n">STEPPER_STYLE</span> <span class="o">=</span> <span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span>
 
-<span class="n">PWM_FREQ</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">PWM_FREQ</span> <span class="o">=</span> <span class="mi">1600</span>
 
 <span class="c1"># Adafruit microstepping modifier. Divides each single step by the modifier:</span>
 <span class="c1"># E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.</span>
 <span class="c1"># Even numbers from 2-8.</span>
-<span class="n">MICROSTEP_NUM</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">MICROSTEP_NUM</span> <span class="o">=</span> <span class="mi">6</span>
 
 <span class="c1"># Used for converting rotational changes into stepper commands</span>
 <span class="n">DEG_PER_STEP</span> <span class="o">=</span> <span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="n">MICROSTEP_NUM</span>
@@ -79,6 +79,9 @@ src<wbr>.constants    </h1>
 <span class="c1"># Limits the total number of commands that may be in the command queue at once.</span>
 <span class="c1"># Pretty much only limited by memory.</span>
 <span class="n">MAX_QLEN</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span>
+
+<span class="n">SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;/dev/ttyACM0&#39;</span>
+<span class="n">SERIAL_BAUD</span> <span class="o">=</span> <span class="mi">115200</span>
 
 <span class="c1"># Helps with I/O</span>
 <span class="n">TOPLEVEL_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="vm">__file__</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">))</span>

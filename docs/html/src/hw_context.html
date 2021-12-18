@@ -57,6 +57,18 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="function" href="#dummyEwriteAddress">dummyEwriteAddress</a>
+            </li>
+            <li>
+                    <a class="function" href="#dummyOpenS">dummyOpenS</a>
+            </li>
+            <li>
+                    <a class="function" href="#eWriteAddress">eWriteAddress</a>
+            </li>
+            <li>
+                    <a class="function" href="#openS">openS</a>
+            </li>
     </ul>
 
 
@@ -81,10 +93,13 @@ src<wbr>.hw_context    </h1>
 <span class="c1"># attached.</span>
 
 <span class="kn">from</span> <span class="nn">adafruit_motor</span> <span class="kn">import</span> <span class="n">stepper</span>
+<span class="kn">from</span> <span class="nn">labjack</span> <span class="kn">import</span> <span class="n">ljm</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">adafruit_motorkit</span> <span class="kn">import</span> <span class="n">MotorKit</span>
-<span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
+<span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No Adafruit MotorKit module compatibility found at import. Falling back to dummy class for simulation support.&#39;</span><span class="p">)</span>
     <span class="k">class</span> <span class="nc">DummyStepperMotor</span><span class="p">:</span>
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="k">pass</span>
@@ -100,6 +115,21 @@ src<wbr>.hw_context    </h1>
             <span class="bp">self</span><span class="o">.</span><span class="n">pwm_frequency</span> <span class="o">=</span> <span class="n">pwm_frequency</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stepper1</span> <span class="o">=</span> <span class="n">DummyStepperMotor</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stepper2</span> <span class="o">=</span> <span class="n">DummyStepperMotor</span><span class="p">()</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">ljm</span><span class="o">.</span><span class="n">openS</span><span class="p">(</span><span class="s1">&#39;T7&#39;</span><span class="p">,</span> <span class="s1">&#39;USB&#39;</span><span class="p">)</span>
+    <span class="n">eWriteAddress</span> <span class="o">=</span> <span class="n">ljm</span><span class="o">.</span><span class="n">eWriteAddress</span>
+    <span class="n">openS</span> <span class="o">=</span> <span class="n">ljm</span><span class="o">.</span><span class="n">openS</span>
+<span class="k">except</span> <span class="n">ljm</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No LabJack modules found at import. Falling back to dummy class for simulation support.&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">dummyEwriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span>
+    <span class="k">def</span> <span class="nf">dummyOpenS</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="c1"># Overwrite</span>
+    <span class="n">eWriteAddress</span> <span class="o">=</span> <span class="n">dummyEwriteAddress</span>
+    <span class="n">openS</span> <span class="o">=</span> <span class="n">dummyOpenS</span>
 </pre></div>
 
         </details>
@@ -232,6 +262,82 @@ src<wbr>.hw_context    </h1>
     
 
                             </div>
+                </section>
+                <section id="dummyEwriteAddress">
+                            <div class="attr function"><a class="headerlink" href="#dummyEwriteAddress">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">dummyEwriteAddress</span><span class="signature">(handle, addr, mode, value)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">dummyEwriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+    
+
+                </section>
+                <section id="dummyOpenS">
+                            <div class="attr function"><a class="headerlink" href="#dummyOpenS">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">dummyOpenS</span><span class="signature">(model: str, mode: str)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">dummyOpenS</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+        </details>
+
+    
+
+                </section>
+                <section id="eWriteAddress">
+                            <div class="attr function"><a class="headerlink" href="#eWriteAddress">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">eWriteAddress</span><span class="signature">(handle, addr, mode, value)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">dummyEwriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+    
+
+                </section>
+                <section id="openS">
+                            <div class="attr function"><a class="headerlink" href="#openS">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">openS</span><span class="signature">(model: str, mode: str)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">dummyOpenS</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+        </details>
+
+    
+
                 </section>
     </main>
 <script>

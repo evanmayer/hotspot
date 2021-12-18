@@ -103,6 +103,7 @@ src<wbr>.executive    </h1>
 <span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">serial</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">telemetry</span> <span class="k">as</span> <span class="nn">tm</span>
 <span class="kn">import</span> <span class="nn">threading</span>
@@ -114,7 +115,7 @@ src<wbr>.executive    </h1>
 <span class="n">MODES</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="s1">&#39;CAL_HOME&#39;</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="s1">&#39;HOME&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">:</span> <span class="s1">&#39;SEQ&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="s1">&#39;WAIT&#39;</span><span class="p">}</span>
 <span class="n">HR</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">80</span>
 
-<span class="k">class</span> <span class="nc">Executive</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Executive</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Handles control flow with a state machine, initializes the algorithm&#39;s</span>
 <span class="sd">    Robot class, ingests command files to process and dispatch tasks to</span>
@@ -130,6 +131,7 @@ src<wbr>.executive    </h1>
 <span class="sd">        height.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Executive init&#39;</span><span class="p">)</span>
         <span class="c1"># Set defaults</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
@@ -164,16 +166,23 @@ src<wbr>.executive    </h1>
 
         <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
         <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
-        <span class="c1"># kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)</span>
-        <span class="c1"># kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)</span>
+        <span class="c1"># This mapping should match the physical setup. kit0 is closest to the</span>
+        <span class="c1"># parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2</span>
+        <span class="c1"># is terminals M3+M4</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;sw&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper2</span><span class="p">,</span>
             <span class="s1">&#39;ne&#39;</span><span class="p">:</span> <span class="n">kit0</span><span class="o">.</span><span class="n">stepper1</span><span class="p">,</span>
             <span class="s1">&#39;nw&#39;</span><span class="p">:</span> <span class="n">kit0</span><span class="o">.</span><span class="n">stepper2</span><span class="p">,</span>
             <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper1</span>
         <span class="p">}</span>
-
+        <span class="c1"># should be ~0 for closed loop shapes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">try_open</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">MODEL_NAME</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">MODE</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
         <span class="k">return</span>
 
 
@@ -218,10 +227,8 @@ src<wbr>.executive    </h1>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_len</span><span class="p">):</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cmd_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="k">return</span>
 
@@ -307,7 +314,6 @@ src<wbr>.executive    </h1>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Caught KeyboardInterrupt, shutting down.&#39;</span><span class="p">)</span>
                 <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
         <span class="k">return</span>
 
 
@@ -338,16 +344,13 @@ src<wbr>.executive    </h1>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Clearing command queue and commanding home: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">empty_queue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cmd_queue</span><span class="p">)</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="kc">None</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="s1">&#39;move&#39;</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">do_motor_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home.&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Already home, nothing to do.&#39;</span><span class="p">)</span>
-
         <span class="k">return</span>
 
 
@@ -360,10 +363,7 @@ src<wbr>.executive    </h1>
 <span class="sd">        ----------</span>
 <span class="sd">        fname</span>
 <span class="sd">            .csv-formatted file containing a sequence of commands, one per col:</span>
-<span class="sd">            - flasher_modes: TODO: not sure how LabJack wants command info</span>
 <span class="sd">            - flasher_cmds: TODO:  not sure how LabJack wants command info</span>
-<span class="sd">            - move_modes: if &#39;move&#39;, issue motor commands to achieve move</span>
-<span class="sd">                spec&#39;d by pos_cmds and speed_cmds</span>
 <span class="sd">            - pos_cmd_0s: 0th element of position command coordinate</span>
 <span class="sd">            - pos_cmd_1s: 1st element of position command coordinate</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -387,8 +387,7 @@ src<wbr>.executive    </h1>
         <span class="bp">self</span><span class="o">.</span><span class="n">do_labjack_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Command completed. Sequence progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
-
+        <span class="c1"># self.router.process_tm()</span>
         <span class="k">return</span>
 
 
@@ -406,33 +405,55 @@ src<wbr>.executive    </h1>
 <span class="sd">            Command packet dictionary with keys for position commands to pass</span>
 <span class="sd">            to control algorithm</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">if</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
-            <span class="c1"># bootleg OrderedDict</span>
-            <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
-            <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># bootleg OrderedDict</span>
+        <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+        <span class="c1"># steps_taken = hw.all_steppers([self.steppers[key] for key in [&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;]], angs)</span>
+        <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_serial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">angs</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;hardware&#39;</span><span class="p">:</span>
-                <span class="p">{</span>
-                    <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-                    <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
-                <span class="p">}</span>
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Motor Cmd&#39;</span><span class="p">:</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
             <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="k">return</span>
 
 
     <span class="k">def</span> <span class="nf">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="c1"># time.sleep(.5)</span>
-        <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># Hz</span>
+        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">num_blinks</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">flipflop</span><span class="p">:</span>
+                <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">,</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span>
+                <span class="n">num_blinks</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+            <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">flipflop</span>
+            <span class="c1"># sleep off remaining time to fudge actions at frequency freq</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">((</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">freq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">))</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="k">return</span>
 
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
-        <span class="k">return</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span>
 </pre></div>
 
         </details>
@@ -449,7 +470,7 @@ src<wbr>.executive    </h1>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Executive</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Executive</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Handles control flow with a state machine, initializes the algorithm&#39;s</span>
 <span class="sd">    Robot class, ingests command files to process and dispatch tasks to</span>
@@ -465,6 +486,7 @@ src<wbr>.executive    </h1>
 <span class="sd">        height.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Executive init&#39;</span><span class="p">)</span>
         <span class="c1"># Set defaults</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
@@ -499,16 +521,23 @@ src<wbr>.executive    </h1>
 
         <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
         <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
-        <span class="c1"># kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)</span>
-        <span class="c1"># kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)</span>
+        <span class="c1"># This mapping should match the physical setup. kit0 is closest to the</span>
+        <span class="c1"># parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2</span>
+        <span class="c1"># is terminals M3+M4</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;sw&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper2</span><span class="p">,</span>
             <span class="s1">&#39;ne&#39;</span><span class="p">:</span> <span class="n">kit0</span><span class="o">.</span><span class="n">stepper1</span><span class="p">,</span>
             <span class="s1">&#39;nw&#39;</span><span class="p">:</span> <span class="n">kit0</span><span class="o">.</span><span class="n">stepper2</span><span class="p">,</span>
             <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper1</span>
         <span class="p">}</span>
-
+        <span class="c1"># should be ~0 for closed loop shapes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">try_open</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">MODEL_NAME</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">MODE</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
         <span class="k">return</span>
 
 
@@ -553,10 +582,8 @@ src<wbr>.executive    </h1>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_len</span><span class="p">):</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cmd_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="k">return</span>
 
@@ -642,7 +669,6 @@ src<wbr>.executive    </h1>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Caught KeyboardInterrupt, shutting down.&#39;</span><span class="p">)</span>
                 <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
         <span class="k">return</span>
 
 
@@ -673,16 +699,13 @@ src<wbr>.executive    </h1>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Clearing command queue and commanding home: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">empty_queue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cmd_queue</span><span class="p">)</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="kc">None</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="s1">&#39;move&#39;</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">do_motor_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home.&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Already home, nothing to do.&#39;</span><span class="p">)</span>
-
         <span class="k">return</span>
 
 
@@ -695,10 +718,7 @@ src<wbr>.executive    </h1>
 <span class="sd">        ----------</span>
 <span class="sd">        fname</span>
 <span class="sd">            .csv-formatted file containing a sequence of commands, one per col:</span>
-<span class="sd">            - flasher_modes: TODO: not sure how LabJack wants command info</span>
 <span class="sd">            - flasher_cmds: TODO:  not sure how LabJack wants command info</span>
-<span class="sd">            - move_modes: if &#39;move&#39;, issue motor commands to achieve move</span>
-<span class="sd">                spec&#39;d by pos_cmds and speed_cmds</span>
 <span class="sd">            - pos_cmd_0s: 0th element of position command coordinate</span>
 <span class="sd">            - pos_cmd_1s: 1st element of position command coordinate</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -722,8 +742,7 @@ src<wbr>.executive    </h1>
         <span class="bp">self</span><span class="o">.</span><span class="n">do_labjack_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Command completed. Sequence progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
-
+        <span class="c1"># self.router.process_tm()</span>
         <span class="k">return</span>
 
 
@@ -741,33 +760,55 @@ src<wbr>.executive    </h1>
 <span class="sd">            Command packet dictionary with keys for position commands to pass</span>
 <span class="sd">            to control algorithm</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">if</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
-            <span class="c1"># bootleg OrderedDict</span>
-            <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
-            <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># bootleg OrderedDict</span>
+        <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+        <span class="c1"># steps_taken = hw.all_steppers([self.steppers[key] for key in [&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;]], angs)</span>
+        <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_serial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">angs</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;hardware&#39;</span><span class="p">:</span>
-                <span class="p">{</span>
-                    <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-                    <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
-                <span class="p">}</span>
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Motor Cmd&#39;</span><span class="p">:</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
             <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="k">return</span>
 
 
     <span class="k">def</span> <span class="nf">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="c1"># time.sleep(.5)</span>
-        <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># Hz</span>
+        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">num_blinks</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">flipflop</span><span class="p">:</span>
+                <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">,</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span>
+                <span class="n">num_blinks</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+            <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">flipflop</span>
+            <span class="c1"># sleep off remaining time to fudge actions at frequency freq</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">((</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">freq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">))</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="k">return</span>
 
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
-        <span class="k">return</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span>
 </pre></div>
 
         </details>
@@ -798,6 +839,7 @@ height.</li>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Executive init&#39;</span><span class="p">)</span>
         <span class="c1"># Set defaults</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
@@ -832,16 +874,23 @@ height.</li>
 
         <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
         <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
-        <span class="c1"># kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)</span>
-        <span class="c1"># kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)</span>
+        <span class="c1"># This mapping should match the physical setup. kit0 is closest to the</span>
+        <span class="c1"># parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2</span>
+        <span class="c1"># is terminals M3+M4</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;sw&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper2</span><span class="p">,</span>
             <span class="s1">&#39;ne&#39;</span><span class="p">:</span> <span class="n">kit0</span><span class="o">.</span><span class="n">stepper1</span><span class="p">,</span>
             <span class="s1">&#39;nw&#39;</span><span class="p">:</span> <span class="n">kit0</span><span class="o">.</span><span class="n">stepper2</span><span class="p">,</span>
             <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper1</span>
         <span class="p">}</span>
-
+        <span class="c1"># should be ~0 for closed loop shapes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">try_open</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">MODEL_NAME</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">MODE</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
         <span class="k">return</span>
 </pre></div>
 
@@ -886,10 +935,8 @@ height.</li>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_len</span><span class="p">):</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cmd_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="k">return</span>
 </pre></div>
@@ -915,7 +962,7 @@ Data spec described in docstring of sequence() function.</li>
             <span class="def">def</span>
             <span class="name">empty_queue</span><span class="signature">(
     self,
-    queue: &lt;bound method BaseContext.Queue of &lt;multiprocessing.context.DefaultContext object at 0x7f0948171ac0&gt;&gt;
+    queue: &lt;bound method BaseContext.Queue of &lt;multiprocessing.context.DefaultContext object at 0x7f640016af10&gt;&gt;
 )</span>:
     </div>
 
@@ -1025,7 +1072,6 @@ Data spec described in docstring of sequence() function.</li>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Caught KeyboardInterrupt, shutting down.&#39;</span><span class="p">)</span>
                 <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
         <span class="k">return</span>
 </pre></div>
 
@@ -1099,16 +1145,13 @@ store it as the home position.</p>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Clearing command queue and commanding home: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">empty_queue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cmd_queue</span><span class="p">)</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="kc">None</span> <span class="c1"># TODO: ECM: NotImplemented</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="s1">&#39;move&#39;</span>
-            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">do_motor_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home.&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Already home, nothing to do.&#39;</span><span class="p">)</span>
-
         <span class="k">return</span>
 </pre></div>
 
@@ -1138,10 +1181,7 @@ store it as the home position.</p>
 <span class="sd">        ----------</span>
 <span class="sd">        fname</span>
 <span class="sd">            .csv-formatted file containing a sequence of commands, one per col:</span>
-<span class="sd">            - flasher_modes: TODO: not sure how LabJack wants command info</span>
 <span class="sd">            - flasher_cmds: TODO:  not sure how LabJack wants command info</span>
-<span class="sd">            - move_modes: if &#39;move&#39;, issue motor commands to achieve move</span>
-<span class="sd">                spec&#39;d by pos_cmds and speed_cmds</span>
 <span class="sd">            - pos_cmd_0s: 0th element of position command coordinate</span>
 <span class="sd">            - pos_cmd_1s: 1st element of position command coordinate</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -1165,8 +1205,7 @@ store it as the home position.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">do_labjack_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Command completed. Sequence progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
-
+        <span class="c1"># self.router.process_tm()</span>
         <span class="k">return</span>
 </pre></div>
 
@@ -1180,10 +1219,7 @@ it to motors/LabJack.</p>
 <ul>
 <li><strong>fname</strong>: .csv-formatted file containing a sequence of commands, one per col:
 <ul>
-<li>flasher_modes: TODO: not sure how LabJack wants command info</li>
 <li>flasher_cmds: TODO:  not sure how LabJack wants command info</li>
-<li>move_modes: if 'move', issue motor commands to achieve move
-spec'd by pos_cmds and speed_cmds</li>
 <li>pos_cmd_0s: 0th element of position command coordinate</li>
 <li>pos_cmd_1s: 1st element of position command coordinate</li>
 </ul></li>
@@ -1231,23 +1267,24 @@ spec'd by pos_cmds and speed_cmds</li>
 <span class="sd">            Command packet dictionary with keys for position commands to pass</span>
 <span class="sd">            to control algorithm</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">if</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;move_mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
-            <span class="c1"># bootleg OrderedDict</span>
-            <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
-            <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># bootleg OrderedDict</span>
+        <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+        <span class="c1"># steps_taken = hw.all_steppers([self.steppers[key] for key in [&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;]], angs)</span>
+        <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_serial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">angs</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;hardware&#39;</span><span class="p">:</span>
-                <span class="p">{</span>
-                    <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-                    <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
-                <span class="p">}</span>
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Motor Cmd&#39;</span><span class="p">:</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
             <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="k">return</span>
 </pre></div>
 
         </details>
@@ -1275,8 +1312,28 @@ to control algorithm</li>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="c1"># time.sleep(.5)</span>
-        <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># Hz</span>
+        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">num_blinks</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">flipflop</span><span class="p">:</span>
+                <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">,</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span>
+                <span class="n">num_blinks</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+            <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">flipflop</span>
+            <span class="c1"># sleep off remaining time to fudge actions at frequency freq</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">((</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">freq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">))</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="k">return</span>
 </pre></div>
 
         </details>
@@ -1296,7 +1353,8 @@ to control algorithm</li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
-        <span class="k">return</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span>
 </pre></div>
 
         </details>
