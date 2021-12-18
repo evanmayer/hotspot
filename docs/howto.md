@@ -200,6 +200,7 @@ For a benchtop test, the frame separation is $0.392 \pm 0.001$ m, so the north s
 | NE                    | 0.528 +/- 0.001 | 0.378 +/- 0.001 |
 | NW                    | 0.057 +/- 0.001 | 0.378 +/- 0.001 |
 | Homing feature corner | 0.155 +/- 0.001 | 0.151 +/- 0.001 |
+
 The dimensions of the raft attachment points were measured. These distances are the distances between the points on the raft where the cables exit the eyelets. The eyelets themselves were located $1.2$ mm from each edge of the raft. This modifies the effective position of the homing feature by $(+0.001, +0.001)$ m. 
 
 Raft width:  $0.045 \pm 0.001$ m
