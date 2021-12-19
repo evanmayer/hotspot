@@ -259,7 +259,9 @@ For testing the software and hardware together, we set up the raspberry pi and t
 ## Stepper Fixture
 
 Steppers are attached to the optics bench for testing via 3D-printed brackets. 1/4-20 socket head cap screws affix the bracket to the bench, and M3 screws affix the steppers to the brackets.
-![Test bench setup](docs/img/spool_side_view.jpg "Test bench setup") ![Test bench setup](docs/img/spool_bench_mounted.jpg)
+
+![Test bench setup](docs/img/spool_side_view.jpg "Test bench setup")
+![Test bench setup](docs/img/spool_bench_mounted.jpg)
 
 ## Fishing line routing
 
