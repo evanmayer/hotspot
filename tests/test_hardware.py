@@ -1,10 +1,12 @@
-from hw_context import MotorKit
 import asyncio
 import numpy as np
 import pytest
 
 from context import hardware as hw
 from context import constants as const
+from context import hw_context
+from hw_context import MotorKit
+
 
 
 # ------------------------------------------------------------------------------
