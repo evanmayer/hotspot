@@ -232,6 +232,12 @@ Without motors or LabJack attached, so does not include overhead of those librar
 
 ![callgraph](docs/img/pycallgraph.png)
 
+# Module Flow Charts
+
+## Executive
+
+![executive](docs/img/executive.drawio.png)
+
 # Documentation
 
 ## `pdoc`
