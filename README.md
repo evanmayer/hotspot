@@ -10,14 +10,14 @@ Code for simulating and driving a cable-driven parallel robot for mapping beams 
 
 ## Running
 
-Run `python src/hotspot.py -h` for the docstring describing the command line interface.
+Run `python main.py -h` for the docstring describing the command line interface.
 
 You will be prompted to enter the position of the centroid of the end effector (raft), then the robot will await a command. Choices are described onscreen.
 
 ### Example
 
 ```bash
-python ./src/hotspot.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
+python main.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
 ```
 
 ### Dependencies
