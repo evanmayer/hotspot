@@ -88,7 +88,7 @@ class Executive:
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
 
-        # self.ser = serial.Serial('COM5', 115200)
+        #self.ser = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD)
         # time.sleep(2)
         return
 
@@ -317,7 +317,7 @@ class Executive:
         # bootleg OrderedDict
         angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
         steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
-        # steps_taken = hw.all_steppers_serial(self.ser, angs)
+        #steps_taken = hw.all_steppers_serial(self.ser, angs)
 
         self.cumulative_steps += np.array(steps_taken)
         logger.info(f'Cumulative steps:{self.cumulative_steps}')
@@ -359,5 +359,5 @@ class Executive:
 
     def close(self):
         [self.steppers[key].release() for key in self.steppers.keys()]
-        # self.ser.close()
+        #self.ser.close()
         return
