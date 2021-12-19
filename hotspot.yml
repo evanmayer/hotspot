@@ -15,6 +15,6 @@ dependencies:
     - adafruit-circuitpython-motorkit
     - labjack-ljm
     - pycallgraph2
-    - pdoc
-
+    - portray
+    - prompt-toolkit<=2.0.0
 #prefix: /home/pi/miniconda3/envs/hotspot
