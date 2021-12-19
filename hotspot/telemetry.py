@@ -1,13 +1,15 @@
 # This file defines functions for outputting telemetry (TM) and visualization.
 
-import constants as const
-import h5py
 import logging
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import numpy as np
 import os
 import time
+
+import h5py
+
+import hotspot.constants as const
 
 
 logger = logging.getLogger(__name__)

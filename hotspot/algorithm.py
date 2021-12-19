@@ -1,11 +1,13 @@
 # This file houses the algorithms necessary for calculating the control
 # quantities.
 # MKS units only.
-import constants as const
+
 import logging
 import multiprocessing as mp
 import numpy as np
 import time
+
+import hotspot.constants as const
 
 
 logger = logging.getLogger(__name__)

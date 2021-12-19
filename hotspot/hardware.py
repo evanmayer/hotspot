@@ -1,13 +1,16 @@
 # This file defines the interfaces used to command the hardware.
 
-from hw_context import stepper, openS, eWriteAddress
-import constants as const
-from labjack import ljm
 import logging
 import numpy as np
 import serial
 import threading
 import time
+
+from labjack import ljm
+
+import hotspot.constants as const
+from hotspot.hw_context import stepper, openS, eWriteAddress
+
 
 # Conventions:
 # - positive steps/angular rates (stepper.FORWARD) spin the motor shaft 

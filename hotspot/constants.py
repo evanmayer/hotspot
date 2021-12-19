@@ -1,8 +1,11 @@
 # Numbers that don't change from mirror to mirror
 # MKS units throughout if not specified.
-from hw_context import stepper
+
 import numpy as np
 import os
+
+from hotspot.hw_context import stepper
+
 
 # Adafruit stacking motor driver hats are addressable.
 HAT_0_ADDR = 0x60

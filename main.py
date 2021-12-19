@@ -1,7 +1,6 @@
 # This file houses the argument parsing and program setup
 import argparse
-import constants as const
-import executive as ex
+from hotspot.executive import Executive
 import logging
 import os
 
@@ -32,5 +31,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging.basicConfig(level=args.loglevel)
-    executive = ex.Executive(os.path.abspath(args.geometry_file))
+    executive = Executive(os.path.abspath(args.geometry_file))
     executive.run(os.path.abspath(args.command_profile))

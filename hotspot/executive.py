@@ -1,20 +1,21 @@
 # This file houses the code to coordinate starting, running, and stopping
 # the various processes/threads needed.
 
-from hw_context import MotorKit
-from hw_context import stepper
-import algorithm as alg
-import constants as const
-import hardware as hw
 import logging
 import multiprocessing as mp
 import numpy as np
 import os
 import serial
 import sys
-import telemetry as tm
 import threading
 import time
+
+from hotspot.hw_context import MotorKit
+from hotspot.hw_context import stepper
+import hotspot.algorithm as alg
+import hotspot.constants as const
+import hotspot.hardware as hw
+import hotspot.telemetry as tm
 
 
 logger = logging.getLogger(__name__)
