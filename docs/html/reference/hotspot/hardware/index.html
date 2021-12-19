@@ -1,0 +1,1866 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.0">
+    
+    
+      
+        <title>Hardware - hotspot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.8b42a75e.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.3f5d1f46.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#4cae4f">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="green" data-md-color-accent="lightgreen">
+  
+    
+    <script>function __prefix(e){return new URL("../../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#module-hotspothardware" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="hotspot" class="md-header__button md-logo" aria-label="hotspot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            hotspot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Hardware
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/evanmayer/hotspot/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    hotspot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="hotspot" class="md-nav__button md-logo" aria-label="hotspot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    hotspot
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/evanmayer/hotspot/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    hotspot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/howto/" class="md-nav__link">
+        Howto
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" type="checkbox" id="__nav_3_1" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1">
+          Hotspot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Hotspot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Hotspot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithm/" class="md-nav__link">
+        Algorithm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../executive/" class="md-nav__link">
+        Executive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Hardware
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Hardware
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all_steppers" class="md-nav__link">
+    all_steppers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all_steppers_serial" class="md-nav__link">
+    all_steppers_serial
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn_all_threads" class="md-nav__link">
+    spawn_all_threads
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn_all_threads_off" class="md-nav__link">
+    spawn_all_threads_off
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#threaded_write" class="md-nav__link">
+    threaded_write
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#try_open" class="md-nav__link">
+    try_open
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_value" class="md-nav__link">
+    write_value
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hw_context/" class="md-nav__link">
+        Hw Context
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telemetry/" class="md-nav__link">
+        Telemetry
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all_steppers" class="md-nav__link">
+    all_steppers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all_steppers_serial" class="md-nav__link">
+    all_steppers_serial
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn_all_threads" class="md-nav__link">
+    spawn_all_threads
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn_all_threads_off" class="md-nav__link">
+    spawn_all_threads_off
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#threaded_write" class="md-nav__link">
+    threaded_write
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#try_open" class="md-nav__link">
+    try_open
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_value" class="md-nav__link">
+    write_value
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/evanmayer/hotspot/edit/main/reference/hotspot/hardware.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="module-hotspothardware">Module hotspot.hardware</h1>
+<p>None</p>
+<p>None</p>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="c1"># This file defines the interfaces used to command the hardware.</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">serial</span>
+
+<span class="kn">import</span> <span class="nn">threading</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">labjack</span> <span class="kn">import</span> <span class="n">ljm</span>
+
+<span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
+
+<span class="kn">from</span> <span class="nn">hotspot.hw_context</span> <span class="kn">import</span> <span class="n">stepper</span><span class="p">,</span> <span class="n">openS</span><span class="p">,</span> <span class="n">eWriteAddress</span>
+
+<span class="c1"># Conventions:</span>
+
+<span class="c1"># - positive steps/angular rates (stepper.FORWARD) spin the motor shaft</span>
+
+<span class="c1">#     clockwise (CW) when viewed from the rear.</span>
+
+<span class="c1"># - negative steps/angular rates (stepper.BACKWARD) spin the motor shaft</span>
+
+<span class="c1">#     counterclockwise (CCW) when viewed from the rear.</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Map relay number to modbus register on the LJ</span>
+
+<span class="n">RELAY_DICT</span> <span class="o">=</span> <span class="p">{</span>
+
+    <span class="s1">&#39;1&#39;</span><span class="p">:</span> <span class="mi">2008</span><span class="p">,</span><span class="s1">&#39;2&#39;</span><span class="p">:</span> <span class="mi">2009</span><span class="p">,</span><span class="s1">&#39;3&#39;</span><span class="p">:</span> <span class="mi">2010</span><span class="p">,</span><span class="s1">&#39;4&#39;</span><span class="p">:</span> <span class="mi">2011</span><span class="p">,</span><span class="s1">&#39;5&#39;</span><span class="p">:</span> <span class="mi">2012</span><span class="p">,</span><span class="s1">&#39;6&#39;</span><span class="p">:</span> <span class="mi">2013</span><span class="p">,</span>
+
+    <span class="s1">&#39;7&#39;</span><span class="p">:</span> <span class="mi">2014</span><span class="p">,</span><span class="s1">&#39;8&#39;</span><span class="p">:</span> <span class="mi">2015</span><span class="p">,</span><span class="s1">&#39;9&#39;</span><span class="p">:</span> <span class="mi">2016</span><span class="p">,</span><span class="s1">&#39;10&#39;</span><span class="p">:</span> <span class="mi">2017</span><span class="p">,</span><span class="s1">&#39;11&#39;</span><span class="p">:</span> <span class="mi">2018</span><span class="p">,</span><span class="s1">&#39;12&#39;</span><span class="p">:</span> <span class="mi">2019</span>
+
+<span class="p">}</span>
+
+<span class="c1"># Needed to open connection to labjack board</span>
+
+<span class="n">MODEL_NAME</span> <span class="o">=</span> <span class="s1">&#39;T7&#39;</span>
+
+<span class="n">MODE</span> <span class="o">=</span> <span class="s1">&#39;USB&#39;</span>
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
+<span class="c1"># Stepper functions</span>
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
+<span class="k">def</span> <span class="nf">all_steppers</span><span class="p">(</span><span class="n">steppers</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    The number of steps any motor must take on each loop execution can be cast</span>
+
+<span class="sd">    as a special case of Bresenham&#39;s Line Algorithm, in the pos quadrant only,</span>
+
+<span class="sd">    with all lines starting at (0, 0).</span>
+
+<span class="sd">    All motors will either step or not according to the algorithm.</span>
+
+<span class="sd">    (We are kind of forgoing linear travel speed control here, but we never</span>
+
+<span class="sd">    had reliable speed control anyway, because RPI Debian is not a RT OS.)</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    steppers</span>
+
+<span class="sd">        iterable of 4x Adafruit MotorKit stepper instances</span>
+
+<span class="sd">        (not adafruit_motor.stepper module)</span>
+
+<span class="sd">    radians</span>
+
+<span class="sd">        iterable of signed angle to move each stepper (radians)</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    steps_taken</span>
+
+<span class="sd">        iterable of integers reporting the number of steps taken by each</span>
+
+<span class="sd">        stepper</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">style</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span>
+
+    <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">sign</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span>
+
+    <span class="c1"># Perform steps in an order that avoids over-tension to mitigate skipping</span>
+
+    <span class="c1"># steps: positive steps first to unwind cable, then negative</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">argsort</span><span class="p">(</span><span class="n">directions</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">directions</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+
+    <span class="n">radians</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+
+    <span class="n">steppers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">steppers</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+
+    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">direction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">directions</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+
+            <span class="n">stepper_dirs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span>
+
+    <span class="c1"># Normalize the slopes of the lines by making the motor that must take</span>
+
+    <span class="c1"># the most total steps have a slope = 1, or 1 step per loop cycle.</span>
+
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">max</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span>
+
+    <span class="n">dy</span> <span class="o">=</span> <span class="n">steps_to_go</span>
+
+    <span class="n">steps_taken</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+
+    <span class="n">deltas</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span> <span class="o">-</span> <span class="n">dx</span> <span class="c1"># 2x to allow integer arithmetic</span>
+
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dx</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stepper_n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">steppers</span><span class="p">):</span>
+
+            <span class="c1"># decide whether to step or not</span>
+
+            <span class="k">if</span> <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+                <span class="n">stepper_n</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper_dirs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+                <span class="n">steps_taken</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dx</span>
+
+            <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">steps_taken</span> <span class="o">*</span> <span class="n">directions</span>
+
+<span class="k">def</span> <span class="nf">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Step by passing the number of steps as a sequence of integers over serial.</span>
+
+<span class="sd">    This is included as a contingency in the event that Arduino is necessary.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    serial</span>
+
+<span class="sd">        pySerial Serial instance</span>
+
+<span class="sd">    radians</span>
+
+<span class="sd">        iterable of signed angle to move each stepper (radians)</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier</span>
+
+    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mf">8.</span><span class="p">))</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">step_str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">step_str</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">steps_to_go</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
+<span class="c1"># LabJack Functions</span>
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
+<span class="k">def</span> <span class="nf">try_open</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Try and open a connection to a LabJack.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    model</span>
+
+<span class="sd">        LabJack board model name, typ. &#39;T7&#39;</span>
+
+<span class="sd">    mode</span>
+
+<span class="sd">        LabJack communication mode, typ. &#39;USB&#39;</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    name</span>
+
+<span class="sd">        handle to opened LabJack board instance</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">openS</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ljm</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error opening LJ connection&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">retry</span><span class="p">:</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Trying again in 1s.&#39;</span><span class="p">)</span>
+
+            <span class="n">name</span> <span class="o">=</span> <span class="n">try_open</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">name</span>
+
+<span class="k">def</span> <span class="nf">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Write a value to a LabJack, catching errors.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    handle</span>
+
+<span class="sd">        LabJack board model handle from `try_open`</span>
+
+<span class="sd">    addr</span>
+
+<span class="sd">        LabJack relay address integer</span>
+
+<span class="sd">    Kwargs</span>
+
+<span class="sd">    ------</span>
+
+<span class="sd">    value: int</span>
+
+<span class="sd">        value to write to LabJack relay</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    bool</span>
+
+<span class="sd">        True if successful, False if not</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="n">eWriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ljm</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error in write to LJ, specific error is:&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span>
+
+<span class="k">def</span> <span class="nf">threaded_write</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Wrapper around `write_value` for use in threaded calls.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    handle</span>
+
+<span class="sd">        LabJack board model handle from `try_open`</span>
+
+<span class="sd">    target</span>
+
+<span class="sd">        LabJack relay address integer</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Trying address </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1"> state </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">written</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="k">try</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+
+                <span class="n">written</span> <span class="o">=</span> <span class="n">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="k">break</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="k">break</span>
+
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+
+            <span class="n">answer</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Do you want to interrupt? y/n&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+
+                <span class="k">break</span>
+
+    <span class="k">return</span>
+
+<span class="k">def</span> <span class="nf">spawn_all_threads</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Spawns threads and passes the states each relay will need to have</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    handle</span>
+
+<span class="sd">        LabJack board model handle from `try_open`</span>
+
+<span class="sd">    states</span>
+
+<span class="sd">        iterable of integers describing the states each relay should take</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">RELAY_DICT</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">RELAY_DICT</span><span class="p">[</span><span class="n">key</span><span class="p">],</span>
+
+            <span class="n">states</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]),</span>
+
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+
+        <span class="p">)</span>
+
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">return</span>
+
+<span class="k">def</span> <span class="nf">spawn_all_threads_off</span><span class="p">(</span><span class="n">handle</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Spawns threads and sets all relay states off.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    handle</span>
+
+<span class="sd">        LabJack board model handle from `try_open`</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">RELAY_DICT</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="n">RELAY_DICT</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="mi">0</span><span class="p">),</span>
+
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+
+        <span class="p">)</span>
+
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">return</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">pass</span>
+
+    <span class="c1"># import serial</span>
+
+    <span class="c1"># import time</span>
+
+    <span class="c1"># with serial.Serial(&#39;COM5&#39;, 115200) as ser:</span>
+
+    <span class="c1">#     time.sleep(2)</span>
+
+    <span class="c1">#     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))</span>
+
+    <span class="c1">#     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))</span>
+
+    <span class="c1"># from hw_context import MotorKit</span>
+
+    <span class="c1"># kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)</span>
+
+    <span class="c1"># kit1 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)</span>
+
+    <span class="c1"># steppers = [</span>
+
+    <span class="c1">#     kit1.stepper2, # sw</span>
+
+    <span class="c1">#     kit0.stepper1, # ne</span>
+
+    <span class="c1">#     kit0.stepper2, # nw</span>
+
+    <span class="c1">#     kit1.stepper1] # se</span>
+
+    <span class="c1"># all_steppers(steppers, [np.pi/4., 0, np.pi/4., 0])</span>
+
+    <span class="c1"># all_steppers(steppers, [0, -np.pi/4., 0, -np.pi/4.])</span>
+
+    <span class="c1"># [stepper.release() for stepper in steppers]</span>
+</code></pre></div>
+
+</details>
+<h2 id="variables">Variables</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">MODE</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">MODEL_NAME</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">RELAY_DICT</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">logger</span>
+</code></pre></div>
+
+<h2 id="functions">Functions</h2>
+<h3 id="all_steppers">all_steppers</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">all_steppers</span><span class="p">(</span>
+    <span class="n">steppers</span><span class="p">:</span><span class="nb">list</span><span class="p">,</span>
+    <span class="n">radians</span><span class="p">:</span><span class="nb">list</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>The number of steps any motor must take on each loop execution can be cast</p>
+<p>as a special case of Bresenham's Line Algorithm, in the pos quadrant only,
+with all lines starting at (0, 0).
+All motors will either step or not according to the algorithm.
+(We are kind of forgoing linear travel speed control here, but we never
+had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>steppers</td>
+<td>None</td>
+<td>iterable of 4x Adafruit MotorKit stepper instances</td>
+<td></td>
+</tr>
+<tr>
+<td>(not adafruit_motor.stepper module)</td>
+<td>None</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>radians</td>
+<td>None</td>
+<td>iterable of signed angle to move each stepper (radians)</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>steps_taken</td>
+<td>iterable of integers reporting the number of steps taken by each</td>
+</tr>
+<tr>
+<td>stepper</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="s s-Atom">def</span> <span class="nf">all_steppers</span><span class="p">(</span><span class="nn">steppers</span><span class="p">:</span> <span class="s s-Atom">list</span><span class="p">,</span> <span class="nn">radians</span><span class="p">:</span> <span class="s s-Atom">list</span><span class="p">)</span><span class="s s-Atom">:</span>
+
+    <span class="s s-Atom">&#39;&#39;&#39;</span>
+
+<span class="s s-Atom">    The number of steps any motor must take on each loop execution can be cast</span>
+
+<span class="s s-Atom">    as a special case of Bresenham&#39;s</span> <span class="nv">Line</span> <span class="nv">Algorithm</span><span class="p">,</span> <span class="s s-Atom">in</span> <span class="s s-Atom">the</span> <span class="s s-Atom">pos</span> <span class="s s-Atom">quadrant</span> <span class="s s-Atom">only</span><span class="p">,</span>
+
+    <span class="s s-Atom">with</span> <span class="s s-Atom">all</span> <span class="s s-Atom">lines</span> <span class="s s-Atom">starting</span> <span class="nf">at</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span>
+
+    <span class="nv">All</span> <span class="s s-Atom">motors</span> <span class="s s-Atom">will</span> <span class="s s-Atom">either</span> <span class="s s-Atom">step</span> <span class="s s-Atom">or</span> <span class="o">not</span> <span class="s s-Atom">according</span> <span class="s s-Atom">to</span> <span class="s s-Atom">the</span> <span class="s s-Atom">algorithm</span><span class="p">.</span>
+
+    <span class="p">(</span><span class="nv">We</span> <span class="s s-Atom">are</span> <span class="s s-Atom">kind</span> <span class="s s-Atom">of</span> <span class="s s-Atom">forgoing</span> <span class="s s-Atom">linear</span> <span class="s s-Atom">travel</span> <span class="s s-Atom">speed</span> <span class="s s-Atom">control</span> <span class="s s-Atom">here</span><span class="p">,</span> <span class="s s-Atom">but</span> <span class="s s-Atom">we</span> <span class="s s-Atom">never</span>
+
+    <span class="s s-Atom">had</span> <span class="s s-Atom">reliable</span> <span class="s s-Atom">speed</span> <span class="s s-Atom">control</span> <span class="s s-Atom">anyway</span><span class="p">,</span> <span class="s s-Atom">because</span> <span class="nv">RPI</span> <span class="nv">Debian</span> <span class="o">is</span> <span class="o">not</span> <span class="s s-Atom">a</span> <span class="nv">RT</span> <span class="nv">OS</span><span class="p">.)</span>
+
+    <span class="nv">Parameters</span>
+
+    <span class="s s-Atom">----------</span>
+
+    <span class="s s-Atom">steppers</span>
+
+        <span class="s s-Atom">iterable</span> <span class="s s-Atom">of</span> <span class="mi">4</span><span class="s s-Atom">x</span> <span class="nv">Adafruit</span> <span class="nv">MotorKit</span> <span class="s s-Atom">stepper</span> <span class="nf">instances</span>
+
+        <span class="p">(</span><span class="o">not</span> <span class="s s-Atom">adafruit_motor</span><span class="p">.</span><span class="s s-Atom">stepper</span> <span class="s s-Atom">module</span><span class="p">)</span>
+
+    <span class="s s-Atom">radians</span>
+
+        <span class="s s-Atom">iterable</span> <span class="s s-Atom">of</span> <span class="s s-Atom">signed</span> <span class="s s-Atom">angle</span> <span class="s s-Atom">to</span> <span class="s s-Atom">move</span> <span class="s s-Atom">each</span> <span class="nf">stepper</span> <span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)</span>
+
+    <span class="nv">Returns</span>
+
+    <span class="s s-Atom">-------</span>
+
+    <span class="s s-Atom">steps_taken</span>
+
+        <span class="s s-Atom">iterable</span> <span class="s s-Atom">of</span> <span class="s s-Atom">integers</span> <span class="s s-Atom">reporting</span> <span class="s s-Atom">the</span> <span class="s s-Atom">number</span> <span class="s s-Atom">of</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">taken</span> <span class="s s-Atom">by</span> <span class="s s-Atom">each</span>
+
+        <span class="s s-Atom">stepper</span>
+
+    <span class="s s-Atom">&#39;&#39;</span><span class="err">&#39;</span>
+
+    <span class="s s-Atom">style</span> <span class="o">=</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">STEPPER_STYLE</span>
+
+    <span class="s s-Atom">directions</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">sign</span><span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)</span>
+
+    <span class="s s-Atom">#</span> <span class="nv">Perform</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">in</span> <span class="s s-Atom">an</span> <span class="s s-Atom">order</span> <span class="s s-Atom">that</span> <span class="s s-Atom">avoids</span> <span class="s s-Atom">over</span><span class="o">-</span><span class="s s-Atom">tension</span> <span class="s s-Atom">to</span> <span class="s s-Atom">mitigate</span> <span class="s s-Atom">skipping</span>
+
+    <span class="s s-Atom">#</span> <span class="nn">steps</span><span class="p">:</span> <span class="s s-Atom">positive</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">first</span> <span class="s s-Atom">to</span> <span class="s s-Atom">unwind</span> <span class="s s-Atom">cable</span><span class="p">,</span> <span class="s s-Atom">then</span> <span class="s s-Atom">negative</span>
+
+    <span class="s s-Atom">order</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">argsort</span><span class="p">(</span><span class="s s-Atom">directions</span><span class="p">)[</span><span class="s s-Atom">::-</span><span class="mi">1</span><span class="p">].</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+
+    <span class="s s-Atom">directions</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">directions</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
+
+    <span class="s s-Atom">radians</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
+
+    <span class="s s-Atom">steppers</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">steppers</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
+
+    <span class="s s-Atom">steps_to_go</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="s s-Atom">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)</span> <span class="o">*</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_RAD</span> <span class="o">/</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_STEP</span><span class="p">).</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+
+    <span class="s s-Atom">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="s s-Atom">stepper</span><span class="p">.</span><span class="nv">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+
+    <span class="s s-Atom">for</span> <span class="s s-Atom">i</span><span class="p">,</span> <span class="s s-Atom">direction</span> <span class="s s-Atom">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="s s-Atom">directions</span><span class="p">)</span><span class="s s-Atom">:</span>
+
+        <span class="s s-Atom">if</span> <span class="s s-Atom">direction</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="s s-Atom">:</span>
+
+            <span class="s s-Atom">stepper_dirs</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="o">=</span> <span class="s s-Atom">stepper</span><span class="p">.</span><span class="nv">BACKWARD</span>
+
+    <span class="s s-Atom">#</span> <span class="nv">Normalize</span> <span class="s s-Atom">the</span> <span class="s s-Atom">slopes</span> <span class="s s-Atom">of</span> <span class="s s-Atom">the</span> <span class="s s-Atom">lines</span> <span class="s s-Atom">by</span> <span class="s s-Atom">making</span> <span class="s s-Atom">the</span> <span class="s s-Atom">motor</span> <span class="s s-Atom">that</span> <span class="s s-Atom">must</span> <span class="s s-Atom">take</span>
+
+    <span class="s s-Atom">#</span> <span class="s s-Atom">the</span> <span class="s s-Atom">most</span> <span class="s s-Atom">total</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">have</span> <span class="s s-Atom">a</span> <span class="s s-Atom">slope</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="s s-Atom">or</span> <span class="mi">1</span> <span class="s s-Atom">step</span> <span class="s s-Atom">per</span> <span class="s s-Atom">loop</span> <span class="s s-Atom">cycle</span><span class="p">.</span>
+
+    <span class="s s-Atom">dx</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="s s-Atom">steps_to_go</span><span class="p">)</span>
+
+    <span class="s s-Atom">dy</span> <span class="o">=</span> <span class="s s-Atom">steps_to_go</span>
+
+    <span class="s s-Atom">steps_taken</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+
+    <span class="s s-Atom">deltas</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dy</span> <span class="o">-</span> <span class="s s-Atom">dx</span> <span class="s s-Atom">#</span> <span class="mi">2</span><span class="s s-Atom">x</span> <span class="s s-Atom">to</span> <span class="s s-Atom">allow</span> <span class="s s-Atom">integer</span> <span class="s s-Atom">arithmetic</span>
+
+    <span class="s s-Atom">for</span> <span class="k">_</span> <span class="s s-Atom">in</span> <span class="nf">range</span><span class="p">(</span><span class="s s-Atom">dx</span><span class="p">)</span><span class="s s-Atom">:</span>
+
+        <span class="s s-Atom">for</span> <span class="s s-Atom">i</span><span class="p">,</span> <span class="s s-Atom">stepper_n</span> <span class="s s-Atom">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="s s-Atom">steppers</span><span class="p">)</span><span class="s s-Atom">:</span>
+
+            <span class="s s-Atom">#</span> <span class="s s-Atom">decide</span> <span class="s s-Atom">whether</span> <span class="s s-Atom">to</span> <span class="s s-Atom">step</span> <span class="s s-Atom">or</span> <span class="o">not</span>
+
+            <span class="s s-Atom">if</span> <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="s s-Atom">:</span>
+
+                <span class="s s-Atom">stepper_n</span><span class="p">.</span><span class="nf">onestep</span><span class="p">(</span><span class="s s-Atom">style</span><span class="o">=</span><span class="s s-Atom">style</span><span class="p">,</span> <span class="s s-Atom">direction</span><span class="o">=</span><span class="s s-Atom">stepper_dirs</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">])</span>
+
+                <span class="s s-Atom">steps_taken</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">+=</span> <span class="mi">1</span>
+
+                <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dx</span>
+
+            <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dy</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span>
+
+    <span class="s s-Atom">return</span> <span class="s s-Atom">steps_taken</span> <span class="o">*</span> <span class="s s-Atom">directions</span>
+</code></pre></div>
+
+</details>
+<h3 id="all_steppers_serial">all_steppers_serial</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">all_steppers_serial</span><span class="p">(</span>
+    <span class="n">ser</span><span class="p">,</span>
+    <span class="n">radians</span><span class="p">:</span><span class="nb">list</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Step by passing the number of steps as a sequence of integers over serial.</p>
+<p>This is included as a contingency in the event that Arduino is necessary.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>serial</td>
+<td>None</td>
+<td>pySerial Serial instance</td>
+<td>None</td>
+</tr>
+<tr>
+<td>radians</td>
+<td>None</td>
+<td>iterable of signed angle to move each stepper (radians)</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="n">list</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Step by passing the number of steps as a sequence of integers over serial.</span>
+
+<span class="sd">    This is included as a contingency in the event that Arduino is necessary.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    serial</span>
+
+<span class="sd">        pySerial Serial instance</span>
+
+<span class="sd">    radians</span>
+
+<span class="sd">        iterable of signed angle to move each stepper (radians)</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier</span>
+
+    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mf">8.</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">step_str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">step_str</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">steps_to_go</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span>
+</code></pre></div>
+
+</details>
+<h3 id="spawn_all_threads">spawn_all_threads</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">spawn_all_threads</span><span class="p">(</span>
+    <span class="n">handle</span><span class="p">,</span>
+    <span class="n">states</span><span class="p">:</span><span class="nb">list</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Spawns threads and passes the states each relay will need to have</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handle</td>
+<td>None</td>
+<td>LabJack board model handle from <code>try_open</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td>states</td>
+<td>None</td>
+<td>iterable of integers describing the states each relay should take</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">spawn_all_threads</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">states</span><span class="o">:</span> <span class="k">list</span><span class="p">)</span><span class="o">:</span>
+
+    <span class="s1">&#39;</span><span class="se">&#39;&#39;</span><span class="s1"></span>
+
+<span class="s1">    Spawns threads and passes the states each relay will need to have</span>
+
+<span class="s1">    Parameters</span>
+
+<span class="s1">    ----------</span>
+
+<span class="s1">    handle</span>
+
+<span class="s1">        LabJack board model handle from `try_open`</span>
+
+<span class="s1">    states</span>
+
+<span class="s1">        iterable of integers describing the states each relay should take</span>
+
+<span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
+
+    <span class="k">for</span> <span class="k">key</span> <span class="k">in</span> <span class="n">RELAY_DICT</span><span class="p">.</span><span class="k">keys</span><span class="p">()</span><span class="o">:</span>
+
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">(</span>
+
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">RELAY_DICT</span><span class="err">[</span><span class="k">key</span><span class="err">]</span><span class="p">,</span>
+
+            <span class="n">states</span><span class="err">[</span><span class="kt">int</span><span class="p">(</span><span class="k">key</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="err">]</span><span class="p">),</span>
+
+            <span class="n">daemon</span><span class="o">=</span><span class="no">True</span>
+
+        <span class="p">)</span>
+
+        <span class="n">thread</span><span class="p">.</span><span class="k">start</span><span class="p">()</span>
+
+    <span class="k">return</span>
+</code></pre></div>
+
+</details>
+<h3 id="spawn_all_threads_off">spawn_all_threads_off</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">spawn_all_threads_off</span><span class="p">(</span>
+    <span class="n">handle</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Spawns threads and sets all relay states off.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handle</td>
+<td>None</td>
+<td>LabJack board model handle from <code>try_open</code></td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span><span class="o">:</span>
+
+    <span class="s1">&#39;</span><span class="se">&#39;&#39;</span><span class="s1"></span>
+
+<span class="s1">    Spawns threads and sets all relay states off.</span>
+
+<span class="s1">    Parameters</span>
+
+<span class="s1">    ----------</span>
+
+<span class="s1">    handle</span>
+
+<span class="s1">        LabJack board model handle from `try_open`</span>
+
+<span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
+
+    <span class="k">for</span> <span class="k">key</span> <span class="k">in</span> <span class="n">RELAY_DICT</span><span class="p">.</span><span class="k">keys</span><span class="p">()</span><span class="o">:</span>
+
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">(</span>
+
+            <span class="n">target</span><span class="o">=</span><span class="n">threaded_write</span><span class="p">,</span>
+
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="n">RELAY_DICT</span><span class="err">[</span><span class="k">key</span><span class="err">]</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+
+            <span class="n">daemon</span><span class="o">=</span><span class="no">True</span>
+
+        <span class="p">)</span>
+
+        <span class="n">thread</span><span class="p">.</span><span class="k">start</span><span class="p">()</span>
+
+    <span class="k">return</span>
+</code></pre></div>
+
+</details>
+<h3 id="threaded_write">threaded_write</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">threaded_write</span><span class="p">(</span>
+    <span class="n">handle</span><span class="p">,</span>
+    <span class="n">target</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+    <span class="n">value</span><span class="p">:</span><span class="nb">int</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Wrapper around <code>write_value</code> for use in threaded calls.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handle</td>
+<td>None</td>
+<td>LabJack board model handle from <code>try_open</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td>target</td>
+<td>None</td>
+<td>LabJack relay address integer</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">threaded_write</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="o">:</span> <span class="kt">int</span><span class="p">,</span> <span class="k">value</span><span class="o">:</span> <span class="kt">int</span><span class="p">)</span><span class="o">:</span>
+
+    <span class="s1">&#39;</span><span class="se">&#39;&#39;</span><span class="s1"></span>
+
+<span class="s1">    Wrapper around `write_value` for use in threaded calls.</span>
+
+<span class="s1">    Parameters</span>
+
+<span class="s1">    ----------</span>
+
+<span class="s1">    handle</span>
+
+<span class="s1">        LabJack board model handle from `try_open`</span>
+
+<span class="s1">    target</span>
+
+<span class="s1">        LabJack relay address integer</span>
+
+<span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
+
+    <span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Trying address {target} state {value}&#39;</span><span class="p">)</span>
+
+    <span class="n">written</span> <span class="o">=</span> <span class="no">False</span>
+
+    <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span>
+
+        <span class="n">try</span><span class="o">:</span>
+
+            <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="no">False</span><span class="o">:</span>
+
+                <span class="n">written</span> <span class="o">=</span> <span class="n">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="k">value</span><span class="o">=</span><span class="k">value</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">written</span> <span class="o">==</span> <span class="no">False</span><span class="o">:</span>
+
+                    <span class="kt">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="o">:</span>
+
+                    <span class="n">break</span>
+
+            <span class="k">else</span><span class="o">:</span>
+
+                <span class="n">break</span>
+
+        <span class="k">except</span> <span class="n">KeyboardInterrupt</span><span class="o">:</span>
+
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">input</span><span class="p">(</span><span class="s1">&#39;Do you want to interrupt? y/n&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">answer</span><span class="p">.</span><span class="nf">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="o">:</span>
+
+                <span class="n">break</span>
+
+    <span class="k">return</span>
+</code></pre></div>
+
+</details>
+<h3 id="try_open">try_open</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">try_open</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">retry</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Try and open a connection to a LabJack.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td>None</td>
+<td>LabJack board model name, typ. 'T7'</td>
+<td>None</td>
+</tr>
+<tr>
+<td>mode</td>
+<td>None</td>
+<td>LabJack communication mode, typ. 'USB'</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>handle to opened LabJack board instance</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">try_open</span><span class="ss">(</span><span class="nv">model</span>: <span class="nv">str</span>, <span class="nv">mode</span>: <span class="nv">str</span>, <span class="nv">retry</span><span class="o">=</span><span class="nv">True</span><span class="ss">)</span>:
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">Try</span> <span class="nv">and</span> <span class="nv">open</span> <span class="nv">a</span> <span class="nv">connection</span> <span class="nv">to</span> <span class="nv">a</span> <span class="nv">LabJack</span>.
+
+    <span class="nv">Parameters</span>
+
+    <span class="o">----------</span>
+
+    <span class="nv">model</span>
+
+        <span class="nv">LabJack</span> <span class="nv">board</span> <span class="nv">model</span> <span class="nv">name</span>, <span class="nv">typ</span>. <span class="s1">&#39;</span><span class="s">T7</span><span class="s1">&#39;</span>
+
+    <span class="nv">mode</span>
+
+        <span class="nv">LabJack</span> <span class="nv">communication</span> <span class="nv">mode</span>, <span class="nv">typ</span>. <span class="s1">&#39;</span><span class="s">USB</span><span class="s1">&#39;</span>
+
+    <span class="nv">Returns</span>
+
+    <span class="o">-------</span>
+
+    <span class="nv">name</span>
+
+        <span class="nv">handle</span> <span class="nv">to</span> <span class="nv">opened</span> <span class="nv">LabJack</span> <span class="nv">board</span> <span class="nv">instance</span>
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">try</span>:
+
+        <span class="nv">name</span> <span class="o">=</span> <span class="nv">openS</span><span class="ss">(</span><span class="nv">model</span>, <span class="nv">mode</span><span class="ss">)</span>
+
+    <span class="nv">except</span> <span class="nv">ljm</span>.<span class="nv">LJMError</span> <span class="nv">as</span> <span class="nv">err</span>:
+
+        <span class="nv">print</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Error opening LJ connection</span><span class="s1">&#39;</span><span class="ss">)</span>
+
+        <span class="nv">print</span><span class="ss">(</span><span class="nv">err</span><span class="ss">)</span>
+
+        <span class="k">if</span> <span class="nv">retry</span>:
+
+            <span class="nv">time</span>.<span class="nv">sleep</span><span class="ss">(</span><span class="mi">1</span><span class="ss">)</span>
+
+            <span class="nv">print</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Trying again in 1s.</span><span class="s1">&#39;</span><span class="ss">)</span>
+
+            <span class="nv">name</span> <span class="o">=</span> <span class="nv">try_open</span><span class="ss">(</span><span class="nv">model</span>, <span class="nv">mode</span>, <span class="nv">retry</span><span class="o">=</span><span class="nv">False</span><span class="ss">)</span>
+
+        <span class="k">else</span>:
+
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">return</span> <span class="nv">name</span>
+</code></pre></div>
+
+</details>
+<h3 id="write_value">write_value</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">write_value</span><span class="p">(</span>
+    <span class="n">handle</span><span class="p">,</span>
+    <span class="n">addr</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+    <span class="n">value</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Write a value to a LabJack, catching errors.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handle</td>
+<td>None</td>
+<td>LabJack board model handle from <code>try_open</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td>addr</td>
+<td>None</td>
+<td>LabJack relay address integer</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Kwargs</td>
+<td>None</td>
+<td>None</td>
+<td>None</td>
+</tr>
+<tr>
+<td>------</td>
+<td>None</td>
+<td>None</td>
+<td>None</td>
+</tr>
+<tr>
+<td>value</td>
+<td>int</td>
+<td>value to write to LabJack relay</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bool</td>
+<td>True if successful, False if not</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">write_value</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="o">:</span> <span class="kt">int</span><span class="p">,</span> <span class="k">value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">:</span>
+
+    <span class="s1">&#39;</span><span class="se">&#39;&#39;</span><span class="s1"></span>
+
+<span class="s1">    Write a value to a LabJack, catching errors.</span>
+
+<span class="s1">    Parameters</span>
+
+<span class="s1">    ----------</span>
+
+<span class="s1">    handle</span>
+
+<span class="s1">        LabJack board model handle from `try_open`</span>
+
+<span class="s1">    addr</span>
+
+<span class="s1">        LabJack relay address integer</span>
+
+<span class="s1">    Kwargs</span>
+
+<span class="s1">    ------</span>
+
+<span class="s1">    value: int</span>
+
+<span class="s1">        value to write to LabJack relay</span>
+
+<span class="s1">    Returns</span>
+
+<span class="s1">    -------</span>
+
+<span class="s1">    bool</span>
+
+<span class="s1">        True if successful, False if not</span>
+
+<span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
+
+    <span class="n">try</span><span class="o">:</span>
+
+        <span class="n">eWriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">value</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ljm</span><span class="p">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="o">:</span>
+
+        <span class="n">print</span><span class="p">(</span><span class="s2">&quot;Error in write to LJ, specific error is:&quot;</span><span class="p">)</span>
+
+        <span class="n">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="no">False</span>
+
+    <span class="k">return</span> <span class="no">True</span>
+</code></pre></div>
+
+</details>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../executive/" title="Executive" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Executive
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../hw_context/" title="Hw Context" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Hw Context
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Powered by
+        <a href="http://timothycrosley.github.io/portray">portray.</a>
+        You too can
+        <a href="http://timothycrosley.github.io/portray">
+          portray</a>
+        your Python project well using automatic documentation.
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../../assets/javascripts/workers/search.f8263e09.min.js", "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.4fc53ad4.min.js"></script>
+      
+    
+  </body>
+</html>

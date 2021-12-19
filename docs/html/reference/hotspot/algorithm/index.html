@@ -1,0 +1,1845 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.0">
+    
+    
+      
+        <title>Algorithm - hotspot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.8b42a75e.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.3f5d1f46.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#4cae4f">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="green" data-md-color-accent="lightgreen">
+  
+    
+    <script>function __prefix(e){return new URL("../../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#module-hotspotalgorithm" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="hotspot" class="md-header__button md-logo" aria-label="hotspot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            hotspot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Algorithm
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/evanmayer/hotspot/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    hotspot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="hotspot" class="md-nav__button md-logo" aria-label="hotspot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    hotspot
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/evanmayer/hotspot/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    hotspot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/howto/" class="md-nav__link">
+        Howto
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" type="checkbox" id="__nav_3_1" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1">
+          Hotspot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Hotspot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Hotspot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Algorithm
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Algorithm
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#classes" class="md-nav__link">
+    Classes
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raft" class="md-nav__link">
+    Raft
+  </a>
+  
+    <nav class="md-nav" aria-label="Raft">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instance-variables" class="md-nav__link">
+    Instance variables
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot" class="md-nav__link">
+    Robot
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instance-variables_1" class="md-nav__link">
+    Instance variables
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process_input" class="md-nav__link">
+    process_input
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testsurface" class="md-nav__link">
+    TestSurface
+  </a>
+  
+    <nav class="md-nav" aria-label="TestSurface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methods_1" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_inbounds" class="md-nav__link">
+    is_inbounds
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../executive/" class="md-nav__link">
+        Executive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware/" class="md-nav__link">
+        Hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hw_context/" class="md-nav__link">
+        Hw Context
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telemetry/" class="md-nav__link">
+        Telemetry
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#classes" class="md-nav__link">
+    Classes
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raft" class="md-nav__link">
+    Raft
+  </a>
+  
+    <nav class="md-nav" aria-label="Raft">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instance-variables" class="md-nav__link">
+    Instance variables
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot" class="md-nav__link">
+    Robot
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instance-variables_1" class="md-nav__link">
+    Instance variables
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process_input" class="md-nav__link">
+    process_input
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testsurface" class="md-nav__link">
+    TestSurface
+  </a>
+  
+    <nav class="md-nav" aria-label="TestSurface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methods_1" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_inbounds" class="md-nav__link">
+    is_inbounds
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/evanmayer/hotspot/edit/main/reference/hotspot/algorithm.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="module-hotspotalgorithm">Module hotspot.algorithm</h1>
+<p>None</p>
+<p>None</p>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="c1"># This file houses the algorithms necessary for calculating the control</span>
+
+<span class="c1"># quantities.</span>
+
+<span class="c1"># MKS units only.</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># logger.setLevel(getattr(logging, const.LOGLEVEL))</span>
+
+<span class="k">class</span> <span class="nc">TestSurface</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Contains the mirror-dependent geometry of attachment points,</span>
+
+<span class="sd">    as-constructed/measured, relative to the mirror origin.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">se</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span> <span class="n">nw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">),</span> <span class="n">ne</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">)):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;TestSurface init&#39;</span><span class="p">)</span>
+
+        <span class="n">corner_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nw</span><span class="p">,</span> <span class="n">ne</span><span class="p">,</span> <span class="n">se</span><span class="p">,</span> <span class="n">sw</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">corner_list</span><span class="p">:</span>
+
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
+
+                <span class="sa">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of </span><span class="si">{</span><span class="n">inp</span><span class="si">}</span><span class="s1">.&#39;</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">({</span><span class="n">elem</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">corner_list</span><span class="p">})</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">corner_list</span><span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;Vertices should be unique: </span><span class="si">{</span><span class="n">corner_list</span><span class="si">}</span><span class="s1">&#39;</span>
+
+        <span class="c1"># Corner points are expressed as x,y offsets in mirror coordinate frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">corners</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([[</span><span class="n">sw</span><span class="p">,</span> <span class="n">nw</span><span class="p">],</span> <span class="p">[</span><span class="n">se</span><span class="p">,</span> <span class="n">ne</span><span class="p">]])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">se</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">is_inbounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Interior/exterior test: sum angles between pos and successive pairs of</span>
+
+<span class="sd">        vertices. If they sum to 360, you&#39;re inside the shape.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># ECM: Might be able to exploit matrix math to make faster</span>
+
+        <span class="c1"># e.g. make two arrays of vertices and vectorize the for loop</span>
+
+        <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-9</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">ang_tot_rad</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="n">vertex_seq</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ne</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">se</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sw</span><span class="p">]</span>
+
+        <span class="n">reason</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vertex_seq</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+
+            <span class="n">disp0</span> <span class="o">=</span> <span class="n">vertex_seq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">pos</span>
+
+            <span class="n">disp1</span> <span class="o">=</span> <span class="n">vertex_seq</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">pos</span>
+
+            <span class="n">mag0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">disp0</span><span class="p">)</span>
+
+            <span class="n">mag1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">disp1</span><span class="p">)</span>
+
+            <span class="c1"># is pos too close to a vertex (protect against divide by 0)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">mag0</span> <span class="o">&lt;</span> <span class="n">eps</span> <span class="ow">or</span> <span class="n">mag1</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">):</span>
+
+                <span class="n">result</span> <span class="o">=</span> <span class="kc">False</span>
+
+                <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;Too close to corner&#39;</span>
+
+                <span class="k">break</span>
+
+            <span class="n">v0_hat</span> <span class="o">=</span> <span class="n">disp0</span> <span class="o">/</span> <span class="n">mag0</span>
+
+            <span class="n">v1_hat</span> <span class="o">=</span> <span class="n">disp1</span> <span class="o">/</span> <span class="n">mag1</span>
+
+            <span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">dot</span><span class="p">(</span><span class="n">v0_hat</span><span class="p">,</span> <span class="n">v1_hat</span><span class="p">))</span>
+
+            <span class="c1"># is pos too close to an edge</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">ang</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+
+                <span class="n">result</span> <span class="o">=</span> <span class="kc">False</span>
+
+                <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;Too close to edge&#39;</span>
+
+                <span class="k">break</span>
+
+            <span class="n">ang_tot_rad</span> <span class="o">+=</span> <span class="n">ang</span>
+
+        <span class="c1"># is pos inside shape</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">ang_tot_rad</span> <span class="o">-</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">eps</span><span class="p">:</span>
+
+            <span class="n">result</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Outside shape: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">ang_tot_rad</span> <span class="o">-</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+
+        <span class="k">if</span> <span class="n">reason</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Bounds check failed: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">class</span> <span class="nc">Raft</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Contains the payload-dependent geometry of attachment points,</span>
+
+<span class="sd">    as-constructed/measured.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Raft init&#39;</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
+
+            <span class="sa">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of </span><span class="si">{</span><span class="n">position</span><span class="si">}</span><span class="s1">.&#39;</span>
+
+        <span class="c1"># Private attribute maintains coords in raft frame</span>
+
+        <span class="c1"># origin implicit at centroid of rectangle</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corners_priv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span>
+
+            <span class="p">[[(</span><span class="o">-</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="o">-</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span>  <span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)],</span>
+
+             <span class="p">[(</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="o">-</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">),</span> <span class="p">(</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span>  <span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)]]</span>
+
+        <span class="p">)</span>
+
+        <span class="c1"># Public attribute maintains coords in mirror frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">corners</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corners_priv</span> <span class="o">+</span> <span class="n">position</span>
+
+        <span class="c1"># position of the raft origin in mirror coordinate frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">=</span> <span class="n">position</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">se</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+
+    <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;Accessor for raft origin position in mirror coordinate frame&#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span>
+
+    <span class="nd">@position</span><span class="o">.</span><span class="n">setter</span>
+
+    <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_pos</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Setter for raft origin position ensures the raft corners follow when</span>
+
+<span class="sd">        position is updated</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">corners</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corners_priv</span> <span class="o">+</span> <span class="n">new_pos</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">se</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">=</span> <span class="n">new_pos</span>
+
+<span class="k">class</span> <span class="nc">Robot</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Contains all information and functions needed to translate a sequence of</span>
+
+<span class="sd">    commands into a set of cable length deltas and velocities, and then into</span>
+
+<span class="sd">    a set of motor commands.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">surf</span><span class="p">:</span> <span class="n">TestSurface</span><span class="p">,</span> <span class="n">raft</span><span class="p">:</span> <span class="n">Raft</span><span class="p">,</span> <span class="n">tm_queue</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Robot init&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Geometry</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">surf</span> <span class="o">=</span> <span class="n">surf</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">raft</span> <span class="o">=</span> <span class="n">raft</span>
+
+        <span class="c1"># Init home to an invalid position until we are homed</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_home</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="kp">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="kp">inf</span><span class="p">)</span>
+
+        <span class="c1"># Start off pos_cmd in an error state, hoping an error will occur</span>
+
+        <span class="c1"># If we attempt to move before issuing a real pos_cmd</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pos_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_home</span>
+
+        <span class="c1"># A handle to the queue for outputting TM packets for vis and logging</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span> <span class="o">=</span> <span class="n">tm_queue</span>
+
+    <span class="nd">@property</span>
+
+    <span class="k">def</span> <span class="nf">home</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        The location in mirror coordinate frame the robot will guide to</span>
+
+<span class="sd">        when commanded home</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_home</span>
+
+    <span class="nd">@home</span><span class="o">.</span><span class="n">setter</span>
+
+    <span class="k">def</span> <span class="nf">home</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">home_pos</span><span class="p">):</span>
+
+        <span class="n">inbounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">home_pos</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inbounds</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_home</span> <span class="o">=</span> <span class="n">home_pos</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home location </span><span class="si">{</span><span class="n">home_pos</span><span class="si">}</span><span class="s1"> is outside of bounds for surface </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+
+    <span class="k">def</span> <span class="nf">pos_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        The location in mirror coordinate frame the robot will guide to for the</span>
+
+<span class="sd">        next move</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos_cmd</span>
+
+    <span class="nd">@pos_cmd</span><span class="o">.</span><span class="n">setter</span>
+
+    <span class="k">def</span> <span class="nf">pos_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_pos</span><span class="p">):</span>
+
+        <span class="n">inbounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">new_pos</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inbounds</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pos_cmd</span> <span class="o">=</span> <span class="n">new_pos</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Position command </span><span class="si">{</span><span class="n">new_pos</span><span class="si">}</span><span class="s1"> is outside of bounds for surface </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">process_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_cmd</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Translate a move command into 4 motor commands. Motors should be</span>
+
+<span class="sd">        attached to cables such that increasing the length of the cable played</span>
+
+<span class="sd">        out requires a positive-valued rotation (motor shaft spins clockwise)</span>
+
+<span class="sd">        from rear.</span>
+
+<span class="sd">        Parameters</span>
+
+<span class="sd">        ----------</span>
+
+<span class="sd">        pos_cmd</span>
+
+<span class="sd">            the position command in the frame of the surface</span>
+
+<span class="sd">        Returns</span>
+
+<span class="sd">        -------</span>
+
+<span class="sd">        motor_cmds : dict of tuples</span>
+
+<span class="sd">            dict containing pairs of (radians, rad_per_sec) motor commands.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="p">{</span>
+
+            <span class="s1">&#39;sw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;nw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;ne&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+
+        <span class="p">}</span>
+
+        <span class="c1"># Input checking, this is just in case of malformed inputs.</span>
+
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Position command malformed: distance: </span><span class="si">{</span><span class="n">distance</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">motor_cmds</span>
+
+        <span class="n">lengths_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># update the commanded position</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_cmd</span>
+
+        <span class="c1"># update the raft&#39;s position to move its corners</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos_cmd</span>
+
+        <span class="n">lengths_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
+
+        <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Motor commands: </span><span class="si">{</span><span class="n">motor_cmds</span><span class="si">}</span><span class="se">\n</span><span class="s1">Delta lengths:</span><span class="si">{</span><span class="n">delta_lengths</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
+
+            <span class="p">{</span>
+
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+
+                <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos_cmd</span><span class="p">,</span>
+
+                <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">delta_angles</span><span class="o">.</span><span class="kp">flatten</span><span class="p">(),</span>
+
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">motor_cmds</span>
+</code></pre></div>
+
+</details>
+<h2 id="variables">Variables</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">logger</span>
+</code></pre></div>
+
+<h2 id="classes">Classes</h2>
+<h3 id="raft">Raft</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Raft</span><span class="p">(</span>
+    <span class="n">position</span><span class="p">:</span><span class="nb">tuple</span><span class="p">,</span>
+    <span class="n">width</span><span class="p">:</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">height</span><span class="p">:</span><span class="nb">float</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="n">Raft</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Contains the payload-dependent geometry of attachment points,</span>
+
+<span class="sd">    as-constructed/measured.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">def</span> <span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="n">tuple</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb nb-Type">float</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb nb-Type">float</span><span class="p">):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Raft init&#39;</span><span class="p">)</span>
+
+        <span class="nb">assert</span> <span class="n">len</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
+
+            <span class="n">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of {position}.&#39;</span>
+
+        <span class="c1"># Private attribute maintains coords in raft frame</span>
+
+        <span class="c1"># origin implicit at centroid of rectangle</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corners_priv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+
+            <span class="p">[[(</span><span class="o">-</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="o">-</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span>  <span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)],</span>
+
+             <span class="p">[(</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="o">-</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">),</span> <span class="p">(</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span>  <span class="n">height</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)]]</span>
+
+        <span class="p">)</span>
+
+        <span class="c1"># Public attribute maintains coords in mirror frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">corners</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corners_priv</span> <span class="o">+</span> <span class="n">position</span>
+
+        <span class="c1"># position of the raft origin in mirror coordinate frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">=</span> <span class="n">position</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">se</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="err">@</span><span class="n">property</span>
+
+    <span class="n">def</span> <span class="n">position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;Accessor for raft origin position in mirror coordinate frame&#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span>
+
+    <span class="err">@</span><span class="n">position</span><span class="o">.</span><span class="n">setter</span>
+
+    <span class="n">def</span> <span class="n">position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_pos</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Setter for raft origin position ensures the raft corners follow when</span>
+
+<span class="sd">        position is updated</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">corners</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corners_priv</span> <span class="o">+</span> <span class="n">new_pos</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">se</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">=</span> <span class="n">new_pos</span>
+</code></pre></div>
+
+</details>
+<hr />
+<h4 id="instance-variables">Instance variables</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">position</span>
+</code></pre></div>
+
+<p>Accessor for raft origin position in mirror coordinate frame</p>
+<h3 id="robot">Robot</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Robot</span><span class="p">(</span>
+    <span class="n">surf</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">TestSurface</span><span class="p">,</span>
+    <span class="n">raft</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">Raft</span><span class="p">,</span>
+    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7fa84c5209b0</span><span class="o">&gt;&gt;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="n">Robot</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Contains all information and functions needed to translate a sequence of</span>
+
+<span class="sd">    commands into a set of cable length deltas and velocities, and then into</span>
+
+<span class="sd">    a set of motor commands.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">def</span> <span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">surf</span><span class="p">:</span> <span class="n">TestSurface</span><span class="p">,</span> <span class="n">raft</span><span class="p">:</span> <span class="n">Raft</span><span class="p">,</span> <span class="n">tm_queue</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Robot init&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Geometry</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">surf</span> <span class="o">=</span> <span class="n">surf</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">raft</span> <span class="o">=</span> <span class="n">raft</span>
+
+        <span class="c1"># Init home to an invalid position until we are homed</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_home</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+
+        <span class="c1"># Start off pos_cmd in an error state, hoping an error will occur</span>
+
+        <span class="c1"># If we attempt to move before issuing a real pos_cmd</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pos_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_home</span>
+
+        <span class="c1"># A handle to the queue for outputting TM packets for vis and logging</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span> <span class="o">=</span> <span class="n">tm_queue</span>
+
+    <span class="err">@</span><span class="n">property</span>
+
+    <span class="n">def</span> <span class="n">home</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        The location in mirror coordinate frame the robot will guide to</span>
+
+<span class="sd">        when commanded home</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_home</span>
+
+    <span class="err">@</span><span class="n">home</span><span class="o">.</span><span class="n">setter</span>
+
+    <span class="n">def</span> <span class="n">home</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">home_pos</span><span class="p">):</span>
+
+        <span class="n">inbounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">home_pos</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inbounds</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_home</span> <span class="o">=</span> <span class="n">home_pos</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">raise</span> <span class="n">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Home location {home_pos} is outside of bounds for surface {self.surf}&#39;</span><span class="p">)</span>
+
+    <span class="err">@</span><span class="n">property</span>
+
+    <span class="n">def</span> <span class="n">pos_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        The location in mirror coordinate frame the robot will guide to for the</span>
+
+<span class="sd">        next move</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos_cmd</span>
+
+    <span class="err">@</span><span class="n">pos_cmd</span><span class="o">.</span><span class="n">setter</span>
+
+    <span class="n">def</span> <span class="n">pos_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_pos</span><span class="p">):</span>
+
+        <span class="n">inbounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">new_pos</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inbounds</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pos_cmd</span> <span class="o">=</span> <span class="n">new_pos</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">raise</span> <span class="n">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command {new_pos} is outside of bounds for surface {self.surf}&#39;</span><span class="p">)</span>
+
+    <span class="n">def</span> <span class="n">process_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_cmd</span><span class="p">:</span> <span class="n">tuple</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Translate a move command into 4 motor commands. Motors should be</span>
+
+<span class="sd">        attached to cables such that increasing the length of the cable played</span>
+
+<span class="sd">        out requires a positive-valued rotation (motor shaft spins clockwise)</span>
+
+<span class="sd">        from rear.</span>
+
+<span class="sd">        Parameters</span>
+
+<span class="sd">        ----------</span>
+
+<span class="sd">        pos_cmd</span>
+
+<span class="sd">            the position command in the frame of the surface</span>
+
+<span class="sd">        Returns</span>
+
+<span class="sd">        -------</span>
+
+<span class="sd">        motor_cmds : dict of tuples</span>
+
+<span class="sd">            dict containing pairs of (radians, rad_per_sec) motor commands.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="p">{</span>
+
+            <span class="s1">&#39;sw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;nw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;ne&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+
+        <span class="p">}</span>
+
+        <span class="c1"># Input checking, this is just in case of malformed inputs.</span>
+
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb nb-Type">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command malformed: distance: {distance}&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">motor_cmds</span>
+
+        <span class="n">lengths_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># update the commanded position</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_cmd</span>
+
+        <span class="c1"># update the raft&#39;s position to move its corners</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos_cmd</span>
+
+        <span class="n">lengths_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
+
+        <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor commands: {motor_cmds}</span><span class="se">\n</span><span class="s1">Delta lengths:{delta_lengths}&#39;</span><span class="p">)</span>
+
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
+
+            <span class="p">{</span>
+
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+
+                <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos_cmd</span><span class="p">,</span>
+
+                <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">delta_angles</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">motor_cmds</span>
+</code></pre></div>
+
+</details>
+<hr />
+<h4 id="instance-variables_1">Instance variables</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">home</span>
+</code></pre></div>
+
+<p>The location in mirror coordinate frame the robot will guide to</p>
+<p>when commanded home</p>
+<div class="codehilite"><pre><span></span><code><span class="n">pos_cmd</span>
+</code></pre></div>
+
+<p>The location in mirror coordinate frame the robot will guide to for the </p>
+<p>next move</p>
+<h4 id="methods">Methods</h4>
+<h4 id="process_input">process_input</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">process_input</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">pos_cmd</span><span class="p">:</span><span class="nb">tuple</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Translate a move command into 4 motor commands. Motors should be</p>
+<p>attached to cables such that increasing the length of the cable played
+out requires a positive-valued rotation (motor shaft spins clockwise)
+from rear.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pos_cmd</td>
+<td>None</td>
+<td>the position command in the frame of the surface</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dict of tuples</td>
+<td>dict containing pairs of (radians, rad_per_sec) motor commands.</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    <span class="n">def</span> <span class="n">process_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_cmd</span><span class="p">:</span> <span class="n">tuple</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Translate a move command into 4 motor commands. Motors should be</span>
+
+<span class="sd">        attached to cables such that increasing the length of the cable played</span>
+
+<span class="sd">        out requires a positive-valued rotation (motor shaft spins clockwise)</span>
+
+<span class="sd">        from rear.</span>
+
+<span class="sd">        Parameters</span>
+
+<span class="sd">        ----------</span>
+
+<span class="sd">        pos_cmd</span>
+
+<span class="sd">            the position command in the frame of the surface</span>
+
+<span class="sd">        Returns</span>
+
+<span class="sd">        -------</span>
+
+<span class="sd">        motor_cmds : dict of tuples</span>
+
+<span class="sd">            dict containing pairs of (radians, rad_per_sec) motor commands.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="p">{</span>
+
+            <span class="s1">&#39;sw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;nw&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;ne&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+
+            <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+
+        <span class="p">}</span>
+
+        <span class="c1"># Input checking, this is just in case of malformed inputs.</span>
+
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb nb-Type">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command malformed: distance: {distance}&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">motor_cmds</span>
+
+        <span class="n">lengths_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># update the commanded position</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_cmd</span>
+
+        <span class="c1"># update the raft&#39;s position to move its corners</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos_cmd</span>
+
+        <span class="n">lengths_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
+
+        <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor commands: {motor_cmds}</span><span class="se">\n</span><span class="s1">Delta lengths:{delta_lengths}&#39;</span><span class="p">)</span>
+
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
+
+            <span class="p">{</span>
+
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+
+                <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos_cmd</span><span class="p">,</span>
+
+                <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">delta_angles</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">motor_cmds</span>
+</code></pre></div>
+
+</details>
+<h3 id="testsurface">TestSurface</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">TestSurface</span><span class="p">(</span>
+    <span class="n">sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+    <span class="n">se</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+    <span class="n">nw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+    <span class="n">ne</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nl">TestSurface</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">    </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">    Contains the mirror-dependent geometry of attachment points,</span>
+
+<span class="s1">    as-constructed/measured, relative to the mirror origin.</span>
+
+<span class="s1">    &#39;&#39;&#39;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="n">sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span><span class="w"> </span><span class="n">se</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">),</span><span class="w"> </span><span class="n">nw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">),</span><span class="w"> </span><span class="n">ne</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">))</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;TestSurface init&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">corner_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">nw, ne, se, sw</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">inp</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nl">corner_list</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">assert</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="err">\</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">f</span><span class="s1">&#39;This module is 2D planar only, so points should be 2-vectors instead of {inp}.&#39;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">assert</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="err">{</span><span class="n">elem</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">elem</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">corner_list</span><span class="err">}</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="n">corner_list</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;Vertices should be unique: {corner_list}&#39;</span><span class="w"></span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Corner</span><span class="w"> </span><span class="n">points</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">expressed</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="w"> </span><span class="k">offsets</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">mirror</span><span class="w"> </span><span class="n">coordinate</span><span class="w"> </span><span class="n">frame</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="o">[</span><span class="n">[sw, nw</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">se, ne</span><span class="o">]</span><span class="err">]</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">sw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="o">[</span><span class="n">0,0</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="o">[</span><span class="n">1,0</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">nw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="o">[</span><span class="n">0,1</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">ne</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="o">[</span><span class="n">1,1</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="nl">pos</span><span class="p">:</span><span class="w"> </span><span class="n">tuple</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">        Interior/exterior test: sum angles between pos and successive pairs of</span>
+
+<span class="s1">        vertices. If they sum to 360, you&#39;</span><span class="n">re</span><span class="w"> </span><span class="n">inside</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">shape</span><span class="p">.</span><span class="w"></span>
+
+<span class="w">        </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">        # ECM: Might be able to exploit matrix math to make faster</span>
+
+<span class="s1">        # e.g. make two arrays of vertices and vectorize the for loop</span>
+
+<span class="s1">        eps = 1e-9</span>
+
+<span class="s1">        result = True</span>
+
+<span class="s1">        ang_tot_rad = 0.</span>
+
+<span class="s1">        vertex_seq = [self.sw, self.nw, self.ne, self.se, self.sw]</span>
+
+<span class="s1">        reason = None</span>
+
+<span class="s1">        for i in range(len(vertex_seq) - 1):</span>
+
+<span class="s1">            disp0 = vertex_seq[i] - pos</span>
+
+<span class="s1">            disp1 = vertex_seq[i+1] - pos</span>
+
+<span class="s1">            mag0 = np.linalg.norm(disp0)</span>
+
+<span class="s1">            mag1 = np.linalg.norm(disp1)</span>
+
+<span class="s1">            # is pos too close to a vertex (protect against divide by 0)</span>
+
+<span class="s1">            if (mag0 &lt; eps or mag1 &lt; eps):</span>
+
+<span class="s1">                result = False</span>
+
+<span class="s1">                reason = &#39;</span><span class="n">Too</span><span class="w"> </span><span class="k">close</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">corner</span><span class="s1">&#39;</span>
+
+<span class="s1">                break</span>
+
+<span class="s1">            v0_hat = disp0 / mag0</span>
+
+<span class="s1">            v1_hat = disp1 / mag1</span>
+
+<span class="s1">            ang = np.arccos(np.dot(v0_hat, v1_hat))</span>
+
+<span class="s1">            # is pos too close to an edge</span>
+
+<span class="s1">            if np.abs(ang - np.pi) &lt; eps:</span>
+
+<span class="s1">                result = False</span>
+
+<span class="s1">                reason = &#39;</span><span class="n">Too</span><span class="w"> </span><span class="k">close</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">edge</span><span class="s1">&#39;</span>
+
+<span class="s1">                break</span>
+
+<span class="s1">            ang_tot_rad += ang</span>
+
+<span class="s1">        # is pos inside shape</span>
+
+<span class="s1">        if np.abs(ang_tot_rad - 2. * np.pi) &gt; eps:</span>
+
+<span class="s1">            result = False</span>
+
+<span class="s1">            reason = f&#39;</span><span class="n">Outside</span><span class="w"> </span><span class="nl">shape</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">ang_tot_rad</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">2.</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">pi</span><span class="p">)</span><span class="err">}</span><span class="s1">&#39;</span>
+
+<span class="s1">        if reason:</span>
+
+<span class="s1">            logger.debug(f&#39;</span><span class="n">Bounds</span><span class="w"> </span><span class="k">check</span><span class="w"> </span><span class="nl">failed</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">reason</span><span class="err">}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">result</span><span class="w"></span>
+</code></pre></div>
+
+</details>
+<hr />
+<h4 id="methods_1">Methods</h4>
+<h4 id="is_inbounds">is_inbounds</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">is_inbounds</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">pos</span><span class="p">:</span><span class="nb">tuple</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Interior/exterior test: sum angles between pos and successive pairs of</p>
+<p>vertices. If they sum to 360, you're inside the shape.</p>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="nl">pos</span><span class="p">:</span><span class="w"> </span><span class="n">tuple</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">        Interior/exterior test: sum angles between pos and successive pairs of</span>
+
+<span class="s1">        vertices. If they sum to 360, you&#39;</span><span class="n">re</span><span class="w"> </span><span class="n">inside</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">shape</span><span class="p">.</span><span class="w"></span>
+
+<span class="w">        </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">        # ECM: Might be able to exploit matrix math to make faster</span>
+
+<span class="s1">        # e.g. make two arrays of vertices and vectorize the for loop</span>
+
+<span class="s1">        eps = 1e-9</span>
+
+<span class="s1">        result = True</span>
+
+<span class="s1">        ang_tot_rad = 0.</span>
+
+<span class="s1">        vertex_seq = [self.sw, self.nw, self.ne, self.se, self.sw]</span>
+
+<span class="s1">        reason = None</span>
+
+<span class="s1">        for i in range(len(vertex_seq) - 1):</span>
+
+<span class="s1">            disp0 = vertex_seq[i] - pos</span>
+
+<span class="s1">            disp1 = vertex_seq[i+1] - pos</span>
+
+<span class="s1">            mag0 = np.linalg.norm(disp0)</span>
+
+<span class="s1">            mag1 = np.linalg.norm(disp1)</span>
+
+<span class="s1">            # is pos too close to a vertex (protect against divide by 0)</span>
+
+<span class="s1">            if (mag0 &lt; eps or mag1 &lt; eps):</span>
+
+<span class="s1">                result = False</span>
+
+<span class="s1">                reason = &#39;</span><span class="n">Too</span><span class="w"> </span><span class="k">close</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">corner</span><span class="s1">&#39;</span>
+
+<span class="s1">                break</span>
+
+<span class="s1">            v0_hat = disp0 / mag0</span>
+
+<span class="s1">            v1_hat = disp1 / mag1</span>
+
+<span class="s1">            ang = np.arccos(np.dot(v0_hat, v1_hat))</span>
+
+<span class="s1">            # is pos too close to an edge</span>
+
+<span class="s1">            if np.abs(ang - np.pi) &lt; eps:</span>
+
+<span class="s1">                result = False</span>
+
+<span class="s1">                reason = &#39;</span><span class="n">Too</span><span class="w"> </span><span class="k">close</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">edge</span><span class="s1">&#39;</span>
+
+<span class="s1">                break</span>
+
+<span class="s1">            ang_tot_rad += ang</span>
+
+<span class="s1">        # is pos inside shape</span>
+
+<span class="s1">        if np.abs(ang_tot_rad - 2. * np.pi) &gt; eps:</span>
+
+<span class="s1">            result = False</span>
+
+<span class="s1">            reason = f&#39;</span><span class="n">Outside</span><span class="w"> </span><span class="nl">shape</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">ang_tot_rad</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">2.</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">pi</span><span class="p">)</span><span class="err">}</span><span class="s1">&#39;</span>
+
+<span class="s1">        if reason:</span>
+
+<span class="s1">            logger.debug(f&#39;</span><span class="n">Bounds</span><span class="w"> </span><span class="k">check</span><span class="w"> </span><span class="nl">failed</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">reason</span><span class="err">}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">result</span><span class="w"></span>
+</code></pre></div>
+
+</details>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../../../docs/howto/" title="Howto" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Howto
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../constants/" title="Constants" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Constants
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Powered by
+        <a href="http://timothycrosley.github.io/portray">portray.</a>
+        You too can
+        <a href="http://timothycrosley.github.io/portray">
+          portray</a>
+        your Python project well using automatic documentation.
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../../assets/javascripts/workers/search.f8263e09.min.js", "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.4fc53ad4.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,797 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.0">
+    
+    
+      
+        <title>Howto - hotspot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8b42a75e.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.3f5d1f46.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#4cae4f">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="green" data-md-color-accent="lightgreen">
+  
+    
+    <script>function __prefix(e){return new URL("../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="hotspot" class="md-header__button md-logo" aria-label="hotspot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            hotspot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Howto
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/evanmayer/hotspot/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    hotspot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="hotspot" class="md-nav__button md-logo" aria-label="hotspot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    hotspot
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/evanmayer/hotspot/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    hotspot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Howto
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" type="checkbox" id="__nav_3_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1">
+          Hotspot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Hotspot" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Hotspot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/algorithm/" class="md-nav__link">
+        Algorithm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/executive/" class="md-nav__link">
+        Executive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/hardware/" class="md-nav__link">
+        Hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/hw_context/" class="md-nav__link">
+        Hw Context
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/" class="md-nav__link">
+        Index
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hotspot/telemetry/" class="md-nav__link">
+        Telemetry
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/evanmayer/hotspot/edit/main/docs/howto.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="how-to">How To</h1>
+<p>This doc contains instructions for various tasks related to setting up and running the beam mapper.</p>
+<h1 id="setting-up-the-environment">Setting Up the Environment</h1>
+<p>First, check that the environment setup has not been done before. If </p>
+<div class="codehilite"><pre><span></span><code>conda activate hotspot
+</code></pre></div>
+
+<p>succeeds, skip these steps.</p>
+<h2 id="python-dependencies">Python Dependencies</h2>
+<h3 id="anaconda">Anaconda</h3>
+<p>If the Python environment/package manager <a href="https://www.anaconda.com/">Anaconda</a> does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda like this:</p>
+<div class="codehilite"><pre><span></span><code>curl <span class="s2">&quot;https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-armv7l.sh&quot;</span> -o <span class="s2">&quot;Miniconda.sh&quot;</span>
+chmod +x Miniconda.sh
+./Miniconda.sh
+</code></pre></div>
+
+<p>Once that is done, we are ready to set up the <code>hotspot</code> environment. <code>conda</code> allows specifying the packages needed in a file with a <code>.yml</code> extension. This is done for you. Create the <code>hotspot</code> conda env with</p>
+<div class="codehilite"><pre><span></span><code>conda env create -f hotspot.yml
+</code></pre></div>
+
+<p>It should install things like <code>numpy</code> and <code>matplotlib</code>, as well as libraries for the hardware, such as Adafruit's <code>adafruit-circuitpython-motorkit</code> library for driving the steppers, and the <code>labjack-ljm</code> library for controlling the Hawkeye IR sources via the LabJack.</p>
+<p>However, driving Hawkeye sources with LabJack Python modules requires both the system libraries and the Python interface to be installed.</p>
+<p><a href="https://labjack.com/support/software/installers/ljm">Download and install</a> the LJM libraries from LabJack.</p>
+<p>Once that is done, activate the env with </p>
+<div class="codehilite"><pre><span></span><code>conda activate hotspot
+</code></pre></div>
+
+<h2 id="keeping-things-up-to-date">Keeping things up to date</h2>
+<p>If you need to install something else, remember to update <code>hotspot.yml</code> by doing </p>
+<div class="codehilite"><pre><span></span><code>conda env <span class="nb">export</span> --from-history <span class="p">|</span> tee hotspot.yml
+</code></pre></div>
+
+<p>If your <code>hotspot.yml</code> has been updated, and you need to update your env with the new <code>hotspot.yml</code>, do</p>
+<div class="codehilite"><pre><span></span><code>conda env update --file hotspot.yml --prune
+</code></pre></div>
+
+<h1 id="software-testing-with-pytest">Software Testing with <code>pytest</code></h1>
+<p>In order to verify that basic low-level functionality is unbroken, run <code>pytest</code> from the toplevel directory.</p>
+<h1 id="setting-up-the-hardware">Setting Up the Hardware</h1>
+<h2 id="enable-raspberry-pi-hardware">Enable Raspberry Pi Hardware</h2>
+<p>The raspberry pi should have at least two <a href="https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi">motor driver hat boards</a>. These are PCBs with onboard chips that talk to the raspberry pi on an I2C bus via the 2x20 header pins. They issue commands to the motor driver chips, which handle the delivery and timing of greater voltage and current than the raspberry pi is capable of on its own.</p>
+<p>Follow the steps for <a href="https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi/installing-software#enable-i2c-1106864-2">Enabling I2C communication</a> from Adafruit. A backup pdf is saved in the <code>pdf</code> dir.</p>
+<h2 id="power">Power</h2>
+<h3 id="motors">Motors</h3>
+<p>The motor driver board must be powered via its own power supply, since the raspberry pi cannot provide the requisite voltage or current. A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat. For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A.</p>
+<h3 id="labjack">LabJack</h3>
+<p>The LabJack board also needs its own power supply to drive the voltage/current that is switched via the breakout board. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. The voltage of this power supply will depend on what is hooked up to the switchable terminals. If you are using LEDs to stand in for Hawkeye IR sources (e.g. for testing), 3.3V is fine.</p>
+<p>The Hawkeye IR50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in <code>pdf</code> dir). The design target temperature is 750 C, requiring a voltage of 6.7 V and acurrent of ~134 mA per source, for a total current draw of ~1.74 A when all sources are turned on. The power supply must be able to meet these requirements.</p>
+<h2 id="communication">Communication</h2>
+<h3 id="raspberry-pi">Raspberry Pi</h3>
+<p>You can log in to the raspberry pi via <code>ssh</code>. In order for your computer to "see" the raspberry pi, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
+1. By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than <a href="https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi">wireless</a>.
+1. By connecting directly to the pi via an Ethernet patch cable and setting up a <a href="https://en.wikipedia.org/wiki/Link-local_address">link-local</a> connection
+1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.</p>
+<p>The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy and more flexible, in my opinion.</p>
+<p>The hostname and password are printed on the bottom of the white plastic case. Once connection is sorted out, ping the pi to make sure:</p>
+<p><code>bash
+ ping timepi.local</code></p>
+<p>The ssh command goes like this:</p>
+<p><code>bash
+ ssh -X pi@timepi.local</code></p>
+<p><code>-X</code> allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic raspberry pi case.</p>
+<h3 id="motors_1">Motors</h3>
+<p>Motors should be connected to the screw terminals of the pi's stepper hat like this:</p>
+<p><img alt="Stepper Wiring Example" src="../img/stepper_wiring.jpg" /></p>
+<p>Getting the order right ensures the stepper's coils are energized in the correct sequence to get it to rotate.</p>
+<p>The stepper motors have NEMA-17 spec hole patterns, which mate to the 3D printed CFRP motor mount brackets which we will attach to the beam mapper frame. Each stepper should be attached to its motor mount using M3 x 0.5 x 10mm screws. Use lubricant, because metal on CFRP will be squeaky.</p>
+<p>At this point, it is important to consider mapping of motor HAT terminal -&gt; stepper motor -&gt; motor mount -&gt; corner of beam mapper frame. The <code>Executive.__init__()</code> function specifies this mapping, so the motor installation location and stepper instance in <code>__init__()</code> should match, to ensure the correct motor commands are sent to the correct stepper.</p>
+<p>In general, the HAT closest to the Pi will be <code>kit0</code> (although this can be double-checked by looking at the address - <code>0x60</code> is the default I2C address for the hat, which can be changed by bridging the HAT pads A0-A4, so the board addressed by <code>0x60</code> will have no pads bridged). The terminal blocks M1-M2 are used for <code>stepper1</code> on each HAT, and M3-M4 are used for <code>stepper2</code>.</p>
+<p>It doesn't matter which terminal maps to which corner, only that the code and physical arrangement agree.</p>
+<h2 id="spools">Spools</h2>
+<p>The spools are each attached to the 5mm stepper motor shaft via one M3 setscrew. The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. </p>
+<p><img alt="View of spool and M3 setscrew" src="../img/spool_side_view.jpg" /></p>
+<p>Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Motors should be oriented relative to the cable such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.</p>
+<p>After attaching the cables to the spools, the other end should be routed through the ~.9mm hole in the motor mount bracket.</p>
+<h2 id="effector">Effector</h2>
+<p>The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies <a href="http://www.hawkeyetechnologies.com/source-selection/pulsable/">IR-50</a> emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.</p>
+<p>The effector is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down.</p>
+<h2 id="frame">Frame</h2>
+<p>The 3D printed CFRP stepper motor mounts are attached to the beam mapper frame by 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts.</p>
+<p>A 3D printed CFRP "homing bar" with a corner reference feature sticks out into the mapping region to provide a repeatable location for placing the corner of the effector raft. This part is attached to the beam mapper frame with one 5/16-18 x 2" or 2.25" bolt with nyloc "jam" nut. Ensure the arm is pressed flat against the inside of the frame, no matter where it is attached.</p>
+<p>Two aluminum registration tabs are screwed into the end of each frame piece opposite the black plastic end caps, using a 5/16-18 x 1/4" screw. They are long enough to reach an edge of the mirror regardless of if the mirror's corners have been machined off. These tabs register the frame to a third edge of the mirror, so <strong>it is important that they not be bent</strong>.</p>
+<p>Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. </p>
+<p>When all of these pieces are attached to the frame, it is ready to install onto a mirror for mapping. The frame should be opened wide enough to allow it to fit over a mirror, then clamped down to register against two opposite faces.</p>
+<h1 id="physical-installation-and-input-file-creation">Physical Installation and Input File Creation</h1>
+<h2 id="coordinate-system">Coordinate System</h2>
+<p>In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another. The x-axis is in the plane of contact between the "south" frame and an edge of the mirror. The y-axis is in the contact plane between the side aluminum registration tab and a perpendicular mirror edge. The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.</p>
+<h2 id="input-files">Input Files</h2>
+<p>There are two types of input files: geometry and profile.</p>
+<h3 id="geometry">Geometry</h3>
+<p>Geometry files are one-line .csv files in <code>hotspot/data/input/geometry</code>. Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. For example:</p>
+<table>
+<thead>
+<tr>
+<th align="center">sw_0</th>
+<th align="center">sw_1</th>
+<th align="center">nw_0</th>
+<th align="center">nw_1</th>
+<th align="center">se_0</th>
+<th align="center">se_1</th>
+<th align="center">ne_0</th>
+<th align="center">ne_1</th>
+<th align="center">w</th>
+<th align="center">h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">.1</td>
+<td align="center">.1</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="geoemtry" src="../img/geometry.png" /></p>
+<p>Each corner point is the location of an eyelet through which the cable passes. The width and height of the raft are defined by the separations between eyelets on the raft, through which the cable passes.</p>
+<h3 id="profile">Profile</h3>
+<p>The profile files are multi-line .csv files in <code>hotspot/data/input/profiles</code>. Each one defines a new position to which the robot should move, in the coordinate system defined above.</p>
+<p><img alt="profile" src="../img/profile.png" /></p>
+<p>Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 10 Hz), and which sources are enabled are configurable with the <code>flasher_cmds</code> column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index to address mapping is defined in the dictionary at the top of <code>hardware.py</code>. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.</p>
+<p>For example, to move to a single coordinate and flash all addresses:</p>
+<table>
+<thead>
+<tr>
+<th align="center">flasher_cmds</th>
+<th align="center">pos_cmd_0s</th>
+<th align="center">pos_cmd_1s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1 1 1 1 1 1 1 1 1 1 1 1</td>
+<td align="center">.5</td>
+<td align="center">.5</td>
+</tr>
+</tbody>
+</table>
+<p>Building up a sequence of moves allows a grid or shape to be scanned.</p>
+<h2 id="input-file-creation">Input File Creation</h2>
+<p>Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated, given the separation between the movable and fixed frame faces.</p>
+<p>The eyelets of the motor mounts measured $6.19 \pm 0.5$ mm from the frame to the face of the motor mount, and $7.96 \pm 0.02$ mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of $0.014 \pm 0.001$ m. This value will be used to calculate eyelet y-positions as a function of frame separation.</p>
+<p>The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.</p>
+<p>The final piece of information needed for the robot to move is the initial position, the home position. The installed position of the corner feature on the underside of the homing bar is measured, so that when the raft is nested in the corner feature, a repeatable and known raft centroid position is acheived. The homed centroid position is entered at the command line when prompted.</p>
+<h2 id="example-geometry-calculation">Example Geometry Calculation</h2>
+<p>This is an example of the measurements needed to create a geoemtry file. Actual values listed here should not be used unless they have been verified against actual hardware, as raft and endpoint dimensions could have changed due to hardware revisions.</p>
+<p>For a benchtop test, the frame separation is $0.392 \pm 0.001$ m, so the north side y-coordinates are $0.392 - 0.014 = 0.378$ m.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Feature</th>
+<th align="center">X</th>
+<th align="center">Y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">SE</td>
+<td align="center">0.528 +/- 0.001</td>
+<td align="center">0.014 +/- 0.001</td>
+</tr>
+<tr>
+<td align="center">SW</td>
+<td align="center">0.057 +/- 0.001</td>
+<td align="center">0.014 +/- 0.001</td>
+</tr>
+<tr>
+<td align="center">NE</td>
+<td align="center">0.528 +/- 0.001</td>
+<td align="center">0.378 +/- 0.001</td>
+</tr>
+<tr>
+<td align="center">NW</td>
+<td align="center">0.057 +/- 0.001</td>
+<td align="center">0.378 +/- 0.001</td>
+</tr>
+<tr>
+<td align="center">Homing feature corner</td>
+<td align="center">0.155 +/- 0.001</td>
+<td align="center">0.151 +/- 0.001</td>
+</tr>
+</tbody>
+</table>
+<p>The dimensions of the raft attachment points were measured. These distances are the distances between the points on the raft where the cables exit the eyelets. The eyelets themselves were located $1.2$ mm from each edge of the raft. This modifies the effective position of the homing feature by $(+0.001, +0.001)$ m. </p>
+<p>Raft width:  $0.045 \pm 0.001$ m
+Raft height: $0.040 \pm 0.001$ m</p>
+<p>Together, the location of the raft centroid when it is nested at the HOME location:</p>
+<p>$r = (0.156 + 0.045/2, 0.152 - 0.040/2)$</p>
+<p>Therefore, the input file for this shape would read:</p>
+<table>
+<thead>
+<tr>
+<th align="center">Input Loc.</th>
+<th align="center">X</th>
+<th align="center">Y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">SE</td>
+<td align="center">0.528</td>
+<td align="center">0.014</td>
+</tr>
+<tr>
+<td align="center">SW</td>
+<td align="center">0.057</td>
+<td align="center">0.014</td>
+</tr>
+<tr>
+<td align="center">NE</td>
+<td align="center">0.528</td>
+<td align="center">0.378</td>
+</tr>
+<tr>
+<td align="center">NW</td>
+<td align="center">0.057</td>
+<td align="center">0.378</td>
+</tr>
+<tr>
+<td align="center">RAFT</td>
+<td align="center">0.045</td>
+<td align="center">0.040</td>
+</tr>
+</tbody>
+</table>
+<p>And when prompted for the raft's position during home calibration:</p>
+<table>
+<thead>
+<tr>
+<th align="center">Input Loc.</th>
+<th align="center">X</th>
+<th align="center">Y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">HOME</td>
+<td align="center">0.179</td>
+<td align="center">0.172</td>
+</tr>
+</tbody>
+</table>
+<h1 id="example-call-graph">Example Call Graph</h1>
+<p>Without motors or LabJack attached, so does not include overhead of those libraries.</p>
+<p><img alt="callgraph" src="../img/pycallgraph.png" /></p>
+<h1 id="documentation">Documentation</h1>
+<h2 id="pdoc"><code>pdoc</code></h2>
+<p>The html documentation of the source code is generated by <a href="https://pdoc.dev/docs/pdoc.html">pdoc</a>.</p>
+<p>To regenerate the documentation, execute:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span> hotspot/
+<span class="nv">PYTHONPATH</span><span class="o">=</span>. pdoc --docformat numpy --logo <span class="s2">&quot;../docs/img/time_logo.png&quot;</span> -o ../docs/html/ __init__.py algorithm.py constants.py executive.py hardware.py hotspot.py hw_context.py telemetry.py
+</code></pre></div>
+
+<p>Or whatever the most up to date list of Python source files is.</p>
+<h2 id="pycallgraph"><code>pycallgraph</code></h2>
+<p>To re-generate the call graph image, from inside the <code>hotspot</code> directory, run</p>
+<div class="codehilite"><pre><span></span><code>pycallgraph -i <span class="s2">&quot;alg*&quot;</span> -i <span class="s2">&quot;const*&quot;</span> -i <span class="s2">&quot;exec*&quot;</span> -i <span class="s2">&quot;hardw*&quot;</span> -i <span class="s2">&quot;hot*&quot;</span> -i <span class="s2">&quot;hw*&quot;</span> -i <span class="s2">&quot;tele*&quot;</span> graphviz --output-file<span class="o">=</span>../doc/img/pycallgraph.png -- ./hotspot.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
+</code></pre></div>
+
+<p>You must have <code>graphviz</code> installed using your operating system's package manager. For most accurate graph and timing information, do this with all peripheral hardware attached, so the call graphs include interfacing with the motor drivers and LabJack.</p>
+<h1 id="test-fixture-setup">Test Fixture Setup</h1>
+<p>For testing the software and hardware together, we set up the raspberry pi and the steppers on an optics bench in Steward Observatory Lab 168. This allows us to affix the steppers to something a roughly known distance apart. This was done to allow testing of the algorithms while the frame was in development.</p>
+<h2 id="stepper-fixture">Stepper Fixture</h2>
+<p>Steppers are attached to the optics bench for testing via 3D-printed brackets. 1/4-20 socket head cap screws affix the bracket to the bench, and M3 screws affix the steppers to the brackets.
+<img alt="Test bench setup" src="../img/spool_side_view.jpg" title="Test bench setup" /> <img alt="Test bench setup" src="../img/spool_bench_mounted.jpg" /></p>
+<h2 id="fishing-line-routing">Fishing line routing</h2>
+<p>On the optics bench, the fishing line was routed from the motor spools to the raft via 3D printed posts, forming 4 corners of a rectangle to emulate the operational configuration. These posts were 3D printed 1/4-20 screws in PETG plastic, with ~.9mm (as designed, not as printed) holes in the top to allow routing the fishing line through.</p>
+<h2 id="test-raft">Test raft</h2>
+<p>For testing purposes, the raft was another 3D printed part, a rectangular plastic coupon with four holes to accept M3 screws for tying down the ends of the fishing line a known distance apart. This was done in lieu of having a raft of Hawkeye sources ready.</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../.." title="Home" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Home
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../../reference/hotspot/algorithm/" title="Algorithm" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Algorithm
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Powered by
+        <a href="http://timothycrosley.github.io/portray">portray.</a>
+        You too can
+        <a href="http://timothycrosley.github.io/portray">
+          portray</a>
+        your Python project well using automatic documentation.
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.f8263e09.min.js", "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.4fc53ad4.min.js"></script>
+      
+    
+  </body>
+</html>
