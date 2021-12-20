@@ -702,7 +702,6 @@ Raft height: $0.040 \pm 0.001$ m</p>
 <div class="codehilite"><pre><span></span><code>portray as_html -m hotspot -o docs/html/ --overwrite
 </code></pre></div>
 
-<p>Or whatever the most up to date list of Python source files is.</p>
 <h2 id="pycallgraph"><code>pycallgraph</code></h2>
 <p>To re-generate the call graph image, directory, run</p>
 <div class="codehilite"><pre><span></span><code>pycallgraph -i <span class="s2">&quot;alg*&quot;</span> -i <span class="s2">&quot;const*&quot;</span> -i <span class="s2">&quot;exec*&quot;</span> -i <span class="s2">&quot;hardw*&quot;</span> -i <span class="s2">&quot;hot*&quot;</span> -i <span class="s2">&quot;hw*&quot;</span> -i <span class="s2">&quot;tele*&quot;</span> graphviz --output-file<span class="o">=</span>../doc/img/pycallgraph.png -- main.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
