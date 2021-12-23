@@ -83,6 +83,7 @@ def all_steppers(steppers: list, radians: list):
             # decide whether to step or not
             if deltas[i] > 0:
                 stepper_n.onestep(style=style, direction=stepper_dirs[i])
+                time.sleep(1e-6)
                 steps_taken[i] += 1
                 deltas[i] -= 2 * dx
             deltas[i] += 2 * dy[i]

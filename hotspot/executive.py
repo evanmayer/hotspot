@@ -90,6 +90,26 @@ class Executive:
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
 
+        import time
+        firstpass = 600
+        secondpass = 200
+        self.close()
+        logger.info('Homing to NW')
+        i = firstpass
+        while i > 0:
+            self.steppers['nw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            time.sleep(1e-2)
+            i -= 1
+        # self.close()
+        logger.info('Retracting cables to home NE, SE, SW')
+        i = secondpass
+        while i > 0:
+            self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            self.steppers['se'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            self.steppers['sw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            time.sleep(1e-2)
+            i -= 1
+
         #self.ser = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD)
         # time.sleep(2)
         return
