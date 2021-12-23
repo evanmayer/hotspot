@@ -1,10 +1,10 @@
-from hw_context import MotorKit
 import asyncio
 import numpy as np
 import pytest
 
 from context import hardware as hw
 from context import constants as const
+from context import hw_context
 
 
 # ------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ from context import constants as const
 def stepper():
     # Class scope cuts down on time spent init-ing
     # Used by any test function that needs a default motorkit instance
-    motorkit = MotorKit(steppers_microsteps=const.MICROSTEP_NUM)
+    motorkit = hw_context.MotorKit(steppers_microsteps=const.MICROSTEP_NUM)
     motorkit.stepper1.release()
     yield motorkit.stepper1
 

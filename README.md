@@ -10,14 +10,14 @@ Code for simulating and driving a cable-driven parallel robot for mapping beams 
 
 ## Running
 
-Run `python src/hotspot.py -h` for the docstring describing the command line interface.
+Run `python main.py -h` for the docstring describing the command line interface.
 
 You will be prompted to enter the position of the centroid of the end effector (raft), then the robot will await a command. Choices are described onscreen.
 
 ### Example
 
-```bash
-python ./src/hotspot.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
+``` bash
+python main.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
 ```
 
 ### Dependencies
@@ -30,7 +30,7 @@ I periodically use `conda env export --from-history | tee hotspot.yml` to dump w
 
 To update the environment as changes are made to `hotspot.yml`, run
 
-```bash
+``` bash
 conda env update --name hotspot --file hotspot.yml --prune
 ```
 
@@ -46,7 +46,7 @@ Driving Hawkeye sources with LabJack modules requires both the system libraries 
 Testing is accomplished with `pytest`. Passing tests are a prerequisite for committing code, and new code should come with new tests.
 
 To run the test suite defined in the `tests` dir, change dir to the toplevel dir of the repo and execute 
-```
+``` bash
 pytest
 ```
 
