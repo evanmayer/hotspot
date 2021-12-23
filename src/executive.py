@@ -36,7 +36,7 @@ class Executive(object):
         and the rectangular geometry of the central effector as a width and
         height.
     '''
-    def __init__(self, geometry_file: str):
+    def __init__(self, geometry_file: str, plot_enable=False):
         # Set defaults
         self.mode = 'CAL_HOME'
         self.last_mode = 'CAL_HOME'
@@ -45,8 +45,9 @@ class Executive(object):
         self.tm_queue = mp.Queue(const.MAX_QLEN)
         self.sequence_len = 0.
 
-        # Handle telemetry output and display
+        # Handle telemetry output
         self.router = tm.DataRouter(self.tm_queue)
+        self.plot_enable = plot_enable
 
         # Read in positions of cable endpoints and raft dimensions
         (sw_0, sw_1,
@@ -249,7 +250,7 @@ class Executive(object):
             cmd['flasher_cmd'] = []
             cmd['pos_cmd']     = self.robot.home
             self.do_motor_tasks(cmd)
-            self.router.process_tm()
+            self.router.process_tm(plot_enable=self.plot_enable)
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
@@ -290,7 +291,7 @@ class Executive(object):
         self.do_labjack_tasks(cmd)
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
         # take time to log TM and update display before doing next cmd
-        # self.router.process_tm()
+        self.router.process_tm(plot_enable=self.plot_enable)
 
         return
 

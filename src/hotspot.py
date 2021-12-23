@@ -20,6 +20,13 @@ if __name__ == "__main__":
         type=str,
         help='(str) Choose the file that defines the sequence of locations and IR source actions to take.'
     )
+    parser.add_argument('--plot',
+        '-P',
+        default=False,
+        dest='plot_enable',
+        action='store_true',
+        help='Plot telemetry after completing each move.'
+    )
     parser.add_argument('--loglevel',
         '-L',
         default='INFO',
@@ -33,5 +40,5 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=args.loglevel)
     # Start up executive
-    executive = ex.Executive(os.path.abspath(args.geometry_file))
+    executive = ex.Executive(os.path.abspath(args.geometry_file), plot_enable=args.plot_enable)
     executive.run(os.path.abspath(args.command_profile))
