@@ -90,26 +90,6 @@ class Executive:
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
 
-        import time
-        firstpass = 600
-        secondpass = 200
-        self.close()
-        logger.info('Homing to NW')
-        i = firstpass
-        while i > 0:
-            self.steppers['nw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            time.sleep(1e-2)
-            i -= 1
-        # self.close()
-        logger.info('Retracting cables to home NE, SE, SW')
-        i = secondpass
-        while i > 0:
-            self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            self.steppers['se'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            self.steppers['sw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            time.sleep(1e-2)
-            i -= 1
-
         #self.ser = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD)
         # time.sleep(2)
         return
@@ -260,6 +240,57 @@ class Executive:
         self.robot.home = pos
         self.robot.raft.position = pos
         logger.info(f'Home position set: {self.robot.home}')
+        return
+
+
+    def cal_home_auto(self):
+        '''
+        Moves motors to limits to calibrate the stepper positions.
+
+        First moves to NW limit, then retracts cable from each other stepper
+        until we can be sure all lines are taut. Updates the raft centroid
+        position according to offsets in constants.py which depend on the
+        (repeatable) position the raft ends up in when it reaches the NW limit.
+
+        Assumptions:
+        - All cables are slack, but without excessive cable played out.
+        - Hawkeye signaling wires protrude from the S side of the raft,
+            preventing us from choosing SW or SE as limit finding locations.
+        - We do not know where the raft starts out, so we must move the maximum
+            possible number of steps to get to NW, given the surface geometry.
+        - Corners form a rectangle.
+        - Stepper torque is sufficient to hold the raft once at NW while SW,
+            SE, NE retract.
+        '''
+        # All motors must be released before starting, to NE, SE, SW don't
+        # inhibit motion
+        [self.steppers[key].release() for key in self.steppers.keys()]
+
+        # Worst case, about how far would we have to move before hitting NW?
+        max_distance = self.robot.surf.nw - self.robot.surf.se
+        max_radians = max_distance / const.PULLEY_RADIUS
+        max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
+
+        logger.info('Homing to NW')
+        i = max_steps
+        while i > 0:
+            self.steppers['nw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            time.sleep(1e-4)
+            i -= 1
+
+        self.robot.raft.position = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, HOMING_OFFSET_Y))
+        logger.info(f'Homed raft centroid is: {self.robot.raft.position}')
+
+        # With a little more work, the number of steps here could be reduced,
+        # but doing the same # of steps as before should always work.
+        logger.info('Retracting cables to home NE, SE, SW')
+        i = max_steps
+        while i > 0:
+            self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            self.steppers['se'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            self.steppers['sw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            time.sleep(1e-4)
+            i -= 1
         return
 
 

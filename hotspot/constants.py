@@ -19,7 +19,7 @@ PWM_FREQ = 1600
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.
 # Even numbers from 2-8.
-MICROSTEP_NUM = 2
+MICROSTEP_NUM = 4
 
 # Used for converting rotational changes into stepper commands
 DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
@@ -33,8 +33,15 @@ PULLEY_RADIUS = 0.03 / 2.
 # Pretty much only limited by memory.
 MAX_QLEN = 2**16
 
-SERIAL_PORT = '/dev/ttyACM0'
-SERIAL_BAUD = 115200
+# delta x distance from the NW eyelet to the raft centroid, when it is driven
+# to the NW limit and the raft isn't cockeyed
+HOMING_OFFSET_X = .01 # TODO: ECM: Measure this
+# same, but for y
+HOMING_OFFSET_Y = -.01 # TODO: ECM: measure this
+
+# Backup vars in case we need to switch to arduino motor control over serial
+# SERIAL_PORT = '/dev/ttyACM0'
+# SERIAL_BAUD = 115200
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
