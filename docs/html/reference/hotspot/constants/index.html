@@ -523,7 +523,7 @@
 
 <span class="c1"># Even numbers from 2-8.</span>
 
-<span class="n">MICROSTEP_NUM</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">MICROSTEP_NUM</span> <span class="o">=</span> <span class="mi">4</span>
 
 <span class="c1"># Used for converting rotational changes into stepper commands</span>
 
@@ -541,9 +541,21 @@
 
 <span class="n">MAX_QLEN</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span>
 
-<span class="n">SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;/dev/ttyACM0&#39;</span>
+<span class="c1"># delta x distance from the NW eyelet to the raft centroid, when it is driven</span>
 
-<span class="n">SERIAL_BAUD</span> <span class="o">=</span> <span class="mi">115200</span>
+<span class="c1"># to the NW limit and the raft isn&#39;t cockeyed</span>
+
+<span class="n">HOMING_OFFSET_X</span> <span class="o">=</span> <span class="mf">.01</span> <span class="c1"># TODO: ECM: Measure this</span>
+
+<span class="c1"># same, but for y</span>
+
+<span class="n">HOMING_OFFSET_Y</span> <span class="o">=</span> <span class="o">-</span><span class="mf">.01</span> <span class="c1"># TODO: ECM: measure this</span>
+
+<span class="c1"># Backup vars in case we need to switch to arduino motor control over serial</span>
+
+<span class="c1"># SERIAL_PORT = &#39;/dev/ttyACM0&#39;</span>
+
+<span class="c1"># SERIAL_BAUD = 115200</span>
 
 <span class="c1"># Helps with I/O</span>
 
@@ -564,6 +576,12 @@
 <div class="codehilite"><pre><span></span><code><span class="n">HAT_1_ADDR</span>
 </code></pre></div>
 
+<div class="codehilite"><pre><span></span><code><span class="n">HOMING_OFFSET_X</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">HOMING_OFFSET_Y</span>
+</code></pre></div>
+
 <div class="codehilite"><pre><span></span><code><span class="n">MAX_QLEN</span>
 </code></pre></div>
 
@@ -574,12 +592,6 @@
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">PWM_FREQ</span>
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_BAUD</span>
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_PORT</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">STEPPER_STYLE</span>

@@ -408,6 +408,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cal_home_auto" class="md-nav__link">
+    cal_home_auto
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#close" class="md-nav__link">
     close
   </a>
@@ -628,6 +635,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cal_home_auto" class="md-nav__link">
+    cal_home_auto
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#close" class="md-nav__link">
     close
   </a>
@@ -781,7 +795,7 @@
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plot_enable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Executive init&#39;</span><span class="p">)</span>
 
@@ -799,9 +813,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sequence_len</span> <span class="o">=</span> <span class="mf">0.</span>
 
-        <span class="c1"># Handle telemetry output and display</span>
+        <span class="c1"># Handle telemetry output</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">router</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">DataRouter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span> <span class="o">=</span> <span class="n">plot_enable</span>
 
         <span class="c1"># Read in positions of cable endpoints and raft dimensions</span>
 
@@ -1135,6 +1151,92 @@
 
         <span class="k">return</span>
 
+    <span class="k">def</span> <span class="nf">cal_home_auto</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Moves motors to limits to calibrate the stepper positions.</span>
+
+<span class="sd">        First moves to NW limit, then retracts cable from each other stepper</span>
+
+<span class="sd">        until we can be sure all lines are taut. Updates the raft centroid</span>
+
+<span class="sd">        position according to offsets in constants.py which depend on the</span>
+
+<span class="sd">        (repeatable) position the raft ends up in when it reaches the NW limit.</span>
+
+<span class="sd">        Assumptions:</span>
+
+<span class="sd">        - All cables are slack, but without excessive cable played out.</span>
+
+<span class="sd">        - Hawkeye signaling wires protrude from the S side of the raft,</span>
+
+<span class="sd">            preventing us from choosing SW or SE as limit finding locations.</span>
+
+<span class="sd">        - We do not know where the raft starts out, so we must move the maximum</span>
+
+<span class="sd">            possible number of steps to get to NW, given the surface geometry.</span>
+
+<span class="sd">        - Corners form a rectangle.</span>
+
+<span class="sd">        - Stepper torque is sufficient to hold the raft once at NW while SW,</span>
+
+<span class="sd">            SE, NE retract.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># All motors must be released before starting, to NE, SE, SW don&#39;t</span>
+
+        <span class="c1"># inhibit motion</span>
+
+        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+
+        <span class="c1"># Worst case, about how far would we have to move before hitting NW?</span>
+
+        <span class="n">max_distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span>
+
+        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Homing to NW&#39;</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">((</span><span class="n">const</span><span class="o">.</span><span class="n">HOMING_OFFSET_X</span><span class="p">,</span> <span class="n">HOMING_OFFSET_Y</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Homed raft centroid is: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># With a little more work, the number of steps here could be reduced,</span>
+
+        <span class="c1"># but doing the same # of steps as before should always work.</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Retracting cables to home NE, SE, SW&#39;</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">return</span>
+
     <span class="k">def</span> <span class="nf">home</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="sd">&#39;&#39;&#39;</span>
@@ -1161,7 +1263,7 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">do_motor_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home.&#39;</span><span class="p">)</span>
 
@@ -1229,7 +1331,7 @@
 
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
 
-        <span class="c1"># self.router.process_tm()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">)</span>
 
         <span class="k">return</span>
 
@@ -1356,7 +1458,8 @@
 <h2 id="classes">Classes</h2>
 <h3 id="executive">Executive</h3>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Executive</span><span class="p">(</span>
-    <span class="n">geometry_file</span><span class="p">:</span><span class="nb">str</span>
+    <span class="n">geometry_file</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">plot_enable</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1433,7 +1536,7 @@
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="n">def</span> <span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">def</span> <span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geometry_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plot_enable</span><span class="o">=</span><span class="n">False</span><span class="p">):</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Executive init&#39;</span><span class="p">)</span>
 
@@ -1451,9 +1554,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sequence_len</span> <span class="o">=</span> <span class="mf">0.</span>
 
-        <span class="c1"># Handle telemetry output and display</span>
+        <span class="c1"># Handle telemetry output</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">router</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">DataRouter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span> <span class="o">=</span> <span class="n">plot_enable</span>
 
         <span class="c1"># Read in positions of cable endpoints and raft dimensions</span>
 
@@ -1787,6 +1892,92 @@
 
         <span class="k">return</span>
 
+    <span class="n">def</span> <span class="n">cal_home_auto</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Moves motors to limits to calibrate the stepper positions.</span>
+
+<span class="sd">        First moves to NW limit, then retracts cable from each other stepper</span>
+
+<span class="sd">        until we can be sure all lines are taut. Updates the raft centroid</span>
+
+<span class="sd">        position according to offsets in constants.py which depend on the</span>
+
+<span class="sd">        (repeatable) position the raft ends up in when it reaches the NW limit.</span>
+
+<span class="sd">        Assumptions:</span>
+
+<span class="sd">        - All cables are slack, but without excessive cable played out.</span>
+
+<span class="sd">        - Hawkeye signaling wires protrude from the S side of the raft,</span>
+
+<span class="sd">            preventing us from choosing SW or SE as limit finding locations.</span>
+
+<span class="sd">        - We do not know where the raft starts out, so we must move the maximum</span>
+
+<span class="sd">            possible number of steps to get to NW, given the surface geometry.</span>
+
+<span class="sd">        - Corners form a rectangle.</span>
+
+<span class="sd">        - Stepper torque is sufficient to hold the raft once at NW while SW,</span>
+
+<span class="sd">            SE, NE retract.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># All motors must be released before starting, to NE, SE, SW don&#39;t</span>
+
+        <span class="c1"># inhibit motion</span>
+
+        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+
+        <span class="c1"># Worst case, about how far would we have to move before hitting NW?</span>
+
+        <span class="n">max_distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span>
+
+        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Homing to NW&#39;</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="k">const</span><span class="o">.</span><span class="n">HOMING_OFFSET_X</span><span class="p">,</span> <span class="n">HOMING_OFFSET_Y</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Homed raft centroid is: {self.robot.raft.position}&#39;</span><span class="p">)</span>
+
+        <span class="c1"># With a little more work, the number of steps here could be reduced,</span>
+
+        <span class="c1"># but doing the same # of steps as before should always work.</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Retracting cables to home NE, SE, SW&#39;</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">return</span>
+
     <span class="n">def</span> <span class="n">home</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="sd">&#39;&#39;&#39;</span>
@@ -1813,7 +2004,7 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">do_motor_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Home.&#39;</span><span class="p">)</span>
 
@@ -1881,7 +2072,7 @@
 
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
 
-        <span class="c1"># self.router.process_tm()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">)</span>
 
         <span class="k">return</span>
 
@@ -2132,6 +2323,116 @@
 </code></pre></div>
 
 </details>
+<h4 id="cal_home_auto">cal_home_auto</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">cal_home_auto</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Moves motors to limits to calibrate the stepper positions.</p>
+<p>First moves to NW limit, then retracts cable from each other stepper
+until we can be sure all lines are taut. Updates the raft centroid
+position according to offsets in constants.py which depend on the
+(repeatable) position the raft ends up in when it reaches the NW limit.</p>
+<p>Assumptions:
+- All cables are slack, but without excessive cable played out.
+- Hawkeye signaling wires protrude from the S side of the raft,
+    preventing us from choosing SW or SE as limit finding locations.
+- We do not know where the raft starts out, so we must move the maximum
+    possible number of steps to get to NW, given the surface geometry.
+- Corners form a rectangle.
+- Stepper torque is sufficient to hold the raft once at NW while SW,
+    SE, NE retract.</p>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">cal_home_auto</span><span class="p">(</span><span class="n">self</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">        Moves motors to limits to calibrate the stepper positions.</span>
+
+<span class="s1">        First moves to NW limit, then retracts cable from each other stepper</span>
+
+<span class="s1">        until we can be sure all lines are taut. Updates the raft centroid</span>
+
+<span class="s1">        position according to offsets in constants.py which depend on the</span>
+
+<span class="s1">        (repeatable) position the raft ends up in when it reaches the NW limit.</span>
+
+<span class="s1">        Assumptions:</span>
+
+<span class="s1">        - All cables are slack, but without excessive cable played out.</span>
+
+<span class="s1">        - Hawkeye signaling wires protrude from the S side of the raft,</span>
+
+<span class="s1">            preventing us from choosing SW or SE as limit finding locations.</span>
+
+<span class="s1">        - We do not know where the raft starts out, so we must move the maximum</span>
+
+<span class="s1">            possible number of steps to get to NW, given the surface geometry.</span>
+
+<span class="s1">        - Corners form a rectangle.</span>
+
+<span class="s1">        - Stepper torque is sufficient to hold the raft once at NW while SW,</span>
+
+<span class="s1">            SE, NE retract.</span>
+
+<span class="s1">        &#39;&#39;&#39;</span><span class="w"></span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="ow">All</span><span class="w"> </span><span class="n">motors</span><span class="w"> </span><span class="n">must</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">released</span><span class="w"> </span><span class="k">before</span><span class="w"> </span><span class="n">starting</span><span class="p">,</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">NE</span><span class="p">,</span><span class="w"> </span><span class="n">SE</span><span class="p">,</span><span class="w"> </span><span class="n">SW</span><span class="w"> </span><span class="n">don</span><span class="s1">&#39;t</span>
+
+<span class="s1">        # inhibit motion</span>
+
+<span class="s1">        [self.steppers[key].release() for key in self.steppers.keys()]</span>
+
+<span class="s1">        # Worst case, about how far would we have to move before hitting NW?</span>
+
+<span class="s1">        max_distance = self.robot.surf.nw - self.robot.surf.se</span>
+
+<span class="s1">        max_radians = max_distance / const.PULLEY_RADIUS</span>
+
+<span class="s1">        max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)</span>
+
+<span class="s1">        logger.info(&#39;</span><span class="n">Homing</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">NW</span><span class="s1">&#39;)</span>
+
+<span class="s1">        i = max_steps</span>
+
+<span class="s1">        while i &gt; 0:</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">nw</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+
+<span class="s1">            time.sleep(1e-4)</span>
+
+<span class="s1">            i -= 1</span>
+
+<span class="s1">        self.robot.raft.position = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, HOMING_OFFSET_Y))</span>
+
+<span class="s1">        logger.info(f&#39;</span><span class="n">Homed</span><span class="w"> </span><span class="n">raft</span><span class="w"> </span><span class="n">centroid</span><span class="w"> </span><span class="k">is</span><span class="err">:</span><span class="w"> </span><span class="err">{</span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="err">}</span><span class="s1">&#39;)</span>
+
+<span class="s1">        # With a little more work, the number of steps here could be reduced,</span>
+
+<span class="s1">        # but doing the same # of steps as before should always work.</span>
+
+<span class="s1">        logger.info(&#39;</span><span class="n">Retracting</span><span class="w"> </span><span class="n">cables</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="n">NE</span><span class="p">,</span><span class="w"> </span><span class="n">SE</span><span class="p">,</span><span class="w"> </span><span class="n">SW</span><span class="s1">&#39;)</span>
+
+<span class="s1">        i = max_steps</span>
+
+<span class="s1">        while i &gt; 0:</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">ne</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">se</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">sw</span><span class="err">&#39;]</span><span class="p">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="p">.</span><span class="n">MICROSTEP</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="p">.</span><span class="n">BACKWARD</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">i</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"></span>
+</code></pre></div>
+
+</details>
 <h4 id="close">close</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span>
     <span class="bp">self</span>
@@ -2297,7 +2598,7 @@
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f5870c8e7b8</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f10a779b940</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -2382,7 +2683,7 @@
 
 <span class="w">            </span><span class="n">self</span><span class="p">.</span><span class="n">do_motor_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">self</span><span class="p">.</span><span class="n">router</span><span class="p">.</span><span class="n">process_tm</span><span class="p">()</span><span class="w"></span>
+<span class="w">            </span><span class="n">self</span><span class="p">.</span><span class="n">router</span><span class="p">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="n">self</span><span class="p">.</span><span class="n">plot_enable</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Home.&#39;</span><span class="p">)</span><span class="w"></span>
 
@@ -2664,7 +2965,7 @@
 
         # <span class="nv">take</span> <span class="nv">time</span> <span class="nv">to</span> <span class="nv">log</span> <span class="nv">TM</span> <span class="nv">and</span> <span class="nv">update</span> <span class="nv">display</span> <span class="nv">before</span> <span class="nv">doing</span> <span class="k">next</span> <span class="nv">cmd</span>
 
-        # <span class="nv">self</span>.<span class="nv">router</span>.<span class="nv">process_tm</span><span class="ss">()</span>
+        <span class="nv">self</span>.<span class="nv">router</span>.<span class="nv">process_tm</span><span class="ss">(</span><span class="nv">plot_enable</span><span class="o">=</span><span class="nv">self</span>.<span class="nv">plot_enable</span><span class="ss">)</span>
 
         <span class="k">return</span>
 </code></pre></div>

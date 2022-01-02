@@ -761,6 +761,8 @@
 
                 <span class="n">stepper_n</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper_dirs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)</span>
+
                 <span class="n">steps_taken</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 
                 <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dx</span>
@@ -1245,6 +1247,8 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
             <span class="s s-Atom">if</span> <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="s s-Atom">:</span>
 
                 <span class="s s-Atom">stepper_n</span><span class="p">.</span><span class="nf">onestep</span><span class="p">(</span><span class="s s-Atom">style</span><span class="o">=</span><span class="s s-Atom">style</span><span class="p">,</span> <span class="s s-Atom">direction</span><span class="o">=</span><span class="s s-Atom">stepper_dirs</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">])</span>
+
+                <span class="s s-Atom">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="s s-Atom">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
 
                 <span class="s s-Atom">steps_taken</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">+=</span> <span class="mi">1</span>
 
