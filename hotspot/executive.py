@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT'}
 HR = '-' * 80
+MENU_STR = HR + f'\nListening for user input for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
+
 
 class Executive:
     '''
@@ -167,22 +169,16 @@ class Executive:
             .csv-formatted file containing a sequence of commands, one per col.
             Data spec described in docstring of sequence() function.
         '''
-        # First, require that a home position be set. This also tells the 
-        # robot where the raft starts at.
-        self.cal_home()
-
         # Allow user input to change the mode.
         input_thread = threading.Thread(target=self._get_kbd,
             args=(self.kbd_queue,),
             daemon=True
         )
         input_thread.start()
-        print(HR)
-        print(f'Listening for user input for mode changes. Type a mode char and press enter:\n{MODES}')
-        print(HR)
+        print(MENU_STR)
 
-        # Start off in STARE mode to await user input.
-        self.mode = 'STARE'
+        # Start off in WAIT mode to await user input.
+        self.mode = 'WAIT'
         self.last_mode = self.mode
         running = True
         while running:
@@ -206,11 +202,13 @@ class Executive:
                         continue
 
                 if self.mode == 'CAL_HOME':
-                    self.cal_home()
+                    self.cal_home_auto()
                     self.mode = 'WAIT'
+                    print(MENU_STR)
                 elif self.mode == 'HOME':
-                    self.home()
+                    self.go_home()
                     self.mode = 'WAIT'
+                    print(MENU_STR)
                 elif self.mode == 'SEQ':
                     self.sequence(fname)
                 elif self.mode == 'WAIT':
@@ -267,7 +265,7 @@ class Executive:
         [self.steppers[key].release() for key in self.steppers.keys()]
 
         # Worst case, about how far would we have to move before hitting NW?
-        max_distance = self.robot.surf.nw - self.robot.surf.se
+        max_distance = np.linalg.norm(self.robot.surf.nw - self.robot.surf.se)
         max_radians = max_distance / const.PULLEY_RADIUS
         max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
 
@@ -277,13 +275,19 @@ class Executive:
             self.steppers['nw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
             time.sleep(1e-4)
             i -= 1
+            if not i % 1000:
+                progress = 100. * (max_steps - i) / max_steps
+                logger.info(f'Progress: {progress:.2f} %')
 
-        self.robot.raft.position = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, HOMING_OFFSET_Y))
+
+        pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
+        self.robot.raft.position = pos
+        self.robot.home = pos
         logger.info(f'Homed raft centroid is: {self.robot.raft.position}')
 
         # With a little more work, the number of steps here could be reduced,
         # but doing the same # of steps as before should always work.
-        logger.info('Retracting cables to home NE, SE, SW')
+        logger.info('Retracting cables to tension NE, SE, SW')
         i = max_steps
         while i > 0:
             self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
@@ -291,10 +295,23 @@ class Executive:
             self.steppers['sw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
             time.sleep(1e-4)
             i -= 1
+            if not i % 1000:
+                progress = 100. * (max_steps - i) / max_steps
+                logger.info(f'Progress: {progress:.2f} %')
+
+        packet = {'algorithm':
+            {
+                'Time UTC (s)': time.time(),
+                'Position Command (m)' : pos,
+                'Motor Delta Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
+            }
+        }
+        self.tm_queue.put(packet)
+        self.router.process_tm(plot_enable=self.plot_enable)
         return
 
 
-    def home(self):
+    def go_home(self):
         '''
         Clear all commands in the queue and drive to the home position.
         '''
@@ -373,7 +390,7 @@ class Executive:
         #steps_taken = hw.all_steppers_serial(self.ser, angs)
 
         self.cumulative_steps += np.array(steps_taken)
-        logger.info(f'Cumulative steps:{self.cumulative_steps}')
+        logger.debug(f'Cumulative steps:{self.cumulative_steps}')
 
         packet = {'Motor Cmd':
             {
