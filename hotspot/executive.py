@@ -75,8 +75,13 @@ class Executive:
         raft = alg.Raft((0,0), w, h)
         self.robot = alg.Robot(surf, raft, self.tm_queue)
 
-        kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-        kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+        if const.STEPPER_STYLE in [stepper.SINGLE, stepper.DOUBLE]:
+            assert const.MICROSTEP_NUM == 1, 'const.MICROSTEP_NUM multiplier must be 1 for single- or double-stepping mode.'
+            kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
+            kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
+        else:
+            kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
+            kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         # This mapping should match the physical setup. kit0 is closest to the
         # parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2
         # is terminals M3+M4
@@ -269,35 +274,40 @@ class Executive:
         max_radians = max_distance / const.PULLEY_RADIUS
         max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
 
+        # To avoid waiting an annoyingly long time for nothing, do a little
+        # chunk at a time. User can request homing again if it's not complete.
+        max_steps = max(1, max_steps // 4)
         logger.info('Homing to NW')
+        report_interval = 100
         i = max_steps
         while i > 0:
-            self.steppers['nw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            self.steppers['nw'].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
             time.sleep(1e-4)
             i -= 1
-            if not i % 1000:
+            if not i % report_interval:
                 progress = 100. * (max_steps - i) / max_steps
                 logger.info(f'Progress: {progress:.2f} %')
-
-
-        pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
-        self.robot.raft.position = pos
-        self.robot.home = pos
-        logger.info(f'Homed raft centroid is: {self.robot.raft.position}')
 
         # With a little more work, the number of steps here could be reduced,
         # but doing the same # of steps as before should always work.
         logger.info('Retracting cables to tension NE, SE, SW')
-        i = max_steps
+        i = max_steps // 2
         while i > 0:
-            self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            self.steppers['se'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            self.steppers['sw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
+            self.steppers['ne'].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
+            self.steppers['se'].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
+            self.steppers['sw'].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
             time.sleep(1e-4)
             i -= 1
-            if not i % 1000:
+            if not i % report_interval:
                 progress = 100. * (max_steps - i) / max_steps
                 logger.info(f'Progress: {progress:.2f} %')
+
+        pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
+        self.robot.raft.position = pos
+        self.robot.home = pos
+        logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
+        logger.warning('Verify that the raft has been driven to one of its\n'
+            + ' limits! If not, request CAL_HOME again.')
 
         packet = {'algorithm':
             {
@@ -340,7 +350,7 @@ class Executive:
         ----------
         fname
             .csv-formatted file containing a sequence of commands, one per col:
-            - flasher_cmds: TODO:  not sure how LabJack wants command info
+            - flasher_cmds: 1 or 0 depending on whether that address is enabled
             - pos_cmd_0s: 0th element of position command coordinate
             - pos_cmd_1s: 1st element of position command coordinate
         '''
@@ -382,23 +392,56 @@ class Executive:
             Command packet dictionary with keys for position commands to pass
             to control algorithm
         '''
+        def send_pos_cmd(cmd_tuple: tuple):
+            '''
+            Helper to send position commands to control algorithm and collect
+            results
+            '''
+            motor_cmds = self.robot.process_input(cmd_tuple)
+            # bootleg OrderedDict
+            angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
+            steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
+            #steps_taken = hw.all_steppers_serial(self.ser, angs)
+            self.cumulative_steps += np.array(steps_taken)
+            logger.debug(f'Cumulative steps:{self.cumulative_steps}')
+
+
         logger.debug(f'Move cmd: {cmd}')
-        motor_cmds = self.robot.process_input(cmd['pos_cmd'])
-        # bootleg OrderedDict
-        angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
-        steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
-        #steps_taken = hw.all_steppers_serial(self.ser, angs)
+        # HACK: ECM: stepper tension slush fund:
+        # back off tension before moving, do move, then tension back up to avoid
+        # skipping.
+        slack = 75
+        for _ in range(slack):
+            [self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.FORWARD) for key in self.steppers.keys()]
 
-        self.cumulative_steps += np.array(steps_taken)
-        logger.debug(f'Cumulative steps:{self.cumulative_steps}')
 
-        packet = {'Motor Cmd':
-            {
-                'Time UTC (s)': time.time(),
-                'Motor Steps Taken' : steps_taken
-            }
-        }
-        self.tm_queue.put(packet)
+        # HACK: Linear approximation only holds for small distances, so
+        # chunk up big moves into tiny bits. ECM: This should really probably
+        # happen inside the control algorithm itself, or even better, ditch
+        # the linear approximation and do the math to find out how each motor
+        # should move at each point in the move.
+        MAX_DIST = .01
+        pos_before = self.robot.raft.position
+        pos_after = cmd['pos_cmd']
+        dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        while dist_to_go > MAX_DIST:
+            logger.debug(f'Dist. to go in this move: {dist_to_go}')
+            # determine a position MAX_DIST away from the starting pos along
+            # the line of travel
+            v = np.array(pos_after) - np.array(pos_before)
+            u = v / np.linalg.norm(v) # the unit vector pointing along the line
+            logger.debug(f'Direction vector: {v}, Unit vector: {u}')
+            pos_cmd = pos_before + MAX_DIST * u
+            logger.debug(f'Intermediate move: {pos_cmd}')
+            send_pos_cmd(pos_cmd) # alg updates raft position
+            # calculate new dist to go
+            pos_before = self.robot.raft.position
+            dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        logger.debug(f'Final move: {pos_after}')
+
+        # HACK: ECM: take tension back up once in position
+        for _ in range(slack):
+            [self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD) for key in self.steppers.keys()]
         return
 
 
