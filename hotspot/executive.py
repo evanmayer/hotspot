@@ -297,6 +297,12 @@ class Executive:
                 progress = 100. * (num_steps - i) / num_steps
                 logger.info(f'Progress: {progress:.2f} %')
 
+        # Ensure all steppers start on a single step boundary
+        for key in self.steppers.keys():
+            self.steppers[key].onestep(style=stepper.DOUBLE, direction=stepper.FORWARD)
+            time.sleep(100*const.STEP_WAIT)
+            self.steppers[key].onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD)
+
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
@@ -403,7 +409,7 @@ class Executive:
         # HACK: ECM: stepper tension slush fund:
         # back off tension before moving, do move, then tension back up to avoid
         # skipping.
-        slack = 10 * const.MICROSTEP_NUM
+        slack = 20 * const.MICROSTEP_NUM
         for _ in range(slack):
             for key in self.steppers.keys(): 
                 self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.FORWARD)
@@ -435,9 +441,8 @@ class Executive:
         send_pos_cmd(pos_after)
 
         # HACK: ECM: take tension back up once in position
-        for k in range(slack):
+        for k in range(slack+1): # a dirty, dirty hack to get another step in in case of skips
             for key in self.steppers.keys():
-                print(k, key)
                 self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
                 time.sleep(const.STEP_WAIT)
         return

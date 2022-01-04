@@ -193,13 +193,13 @@ class Robot:
         Returns
         -------
         motor_cmds : dict of tuples
-            dict containing pairs of (radians, rad_per_sec) motor commands. 
+            dict containing motor commands in radians. 
         '''
         motor_cmds = {
-            'sw': (0., 0.),
-            'nw': (0., 0.),
-            'ne': (0., 0.),
-            'se': (0., 0.)
+            'sw': 0.,
+            'nw': 0.,
+            'ne': 0.,
+            'se': 0.
         }
 
         # Input checking, this is just in case of malformed inputs.

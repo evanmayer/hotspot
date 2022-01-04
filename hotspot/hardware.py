@@ -218,6 +218,7 @@ def spawn_all_threads(handle, states: list):
     states
         iterable of integers describing the states each relay should take
     '''
+    logger.debug(f'LJ states: {states}')
     for key in RELAY_DICT.keys():
         thread = threading.Thread(
             target=threaded_write,
