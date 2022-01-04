@@ -125,7 +125,7 @@ After attaching the cables to the spools, the other end should be routed through
 
 Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process can be done by hand.
 
-## Effector
+## Raft
 
 The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.
 
@@ -176,6 +176,24 @@ For example, to move to a single coordinate and flash all addresses:
 | flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
 |:-----------------------:|:----------:|:----------:|
 | 1 1 1 1 1 1 1 1 1 1 1 1 | .5         | .5         |
+
+to move to a single coordinate and flash only the center Hawkeye:
+
+| flasher_cmds  | pos_cmd_0s | pos_cmd_1s |
+|:-------------:|:----------:|:----------:|
+| 1 0 0 0 0 0 0 0 0 0 0 0 | .5         | .5         |
+
+to move to a single coordinate and flash the center and inner ring Hawkeyes:
+
+| flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
+|:-----------------------:|:----------:|:----------:|
+| 1 1 0 0 0 0 0 0 0 0 0 0 | .5         | .5         |
+
+to move to a single coordinate and flash all Hawkeyes (center, inner ring, outer ring):
+
+| flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
+|:-----------------------:|:----------:|:----------:|
+| 1 1 1 0 0 0 0 0 0 0 0 0 | .5         | .5         |
 
 Building up a sequence of moves allows a grid or shape to be scanned.
 

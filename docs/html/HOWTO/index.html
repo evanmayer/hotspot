@@ -517,7 +517,7 @@ chmod +x Miniconda.sh
 <p>Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Motors should be oriented relative to the cable such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.</p>
 <p>After attaching the cables to the spools, the other end should be routed through the ~.9mm hole in the motor mount bracket.</p>
 <p>Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process can be done by hand.</p>
-<h2 id="effector">Effector</h2>
+<h2 id="raft">Raft</h2>
 <p>The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies <a href="http://www.hawkeyetechnologies.com/source-selection/pulsable/">IR-50</a> emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.</p>
 <p>The effector is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down.</p>
 <h2 id="frame">Frame</h2>
@@ -581,6 +581,57 @@ chmod +x Miniconda.sh
 <tbody>
 <tr>
 <td align="center">1 1 1 1 1 1 1 1 1 1 1 1</td>
+<td align="center">.5</td>
+<td align="center">.5</td>
+</tr>
+</tbody>
+</table>
+<p>to move to a single coordinate and flash only the center Hawkeye:</p>
+<table>
+<thead>
+<tr>
+<th align="center">flasher_cmds</th>
+<th align="center">pos_cmd_0s</th>
+<th align="center">pos_cmd_1s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1 0 0 0 0 0 0 0 0 0 0 0</td>
+<td align="center">.5</td>
+<td align="center">.5</td>
+</tr>
+</tbody>
+</table>
+<p>to move to a single coordinate and flash the center and inner ring Hawkeyes:</p>
+<table>
+<thead>
+<tr>
+<th align="center">flasher_cmds</th>
+<th align="center">pos_cmd_0s</th>
+<th align="center">pos_cmd_1s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1 1 0 0 0 0 0 0 0 0 0 0</td>
+<td align="center">.5</td>
+<td align="center">.5</td>
+</tr>
+</tbody>
+</table>
+<p>to move to a single coordinate and flash all Hawkeyes (center, inner ring, outer ring):</p>
+<table>
+<thead>
+<tr>
+<th align="center">flasher_cmds</th>
+<th align="center">pos_cmd_0s</th>
+<th align="center">pos_cmd_1s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1 1 1 0 0 0 0 0 0 0 0 0</td>
 <td align="center">.5</td>
 <td align="center">.5</td>
 </tr>

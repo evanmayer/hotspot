@@ -989,6 +989,8 @@
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;LJ states: </span><span class="si">{</span><span class="n">states</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">RELAY_DICT</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 
         <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
@@ -1388,6 +1390,8 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 <span class="s1">        iterable of integers describing the states each relay should take</span>
 
 <span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
+
+    <span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;LJ states: {states}&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="k">key</span> <span class="k">in</span> <span class="n">RELAY_DICT</span><span class="p">.</span><span class="k">keys</span><span class="p">()</span><span class="o">:</span>
 
