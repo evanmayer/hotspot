@@ -123,6 +123,8 @@ Positive motor rotation is defined by convention to spin the shaft clockwise whe
 
 After attaching the cables to the spools, the other end should be routed through the ~.9mm hole in the motor mount bracket.
 
+Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process can be done by hand.
+
 ## Effector
 
 The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.
@@ -167,7 +169,7 @@ The profile files are multi-line .csv files in `hotspot/data/input/profiles`. Ea
 
 ![profile](docs/img/profile.png)
 
-Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 10 Hz), and which sources are enabled are configurable with the `flasher_cmds` column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index to address mapping is defined in the dictionary at the top of `hardware.py`. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.
+Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 5 Hz), and which sources are enabled are configurable with the `flasher_cmds` column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index to address mapping is defined in the dictionary at the top of `hardware.py`. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.
 
 For example, to move to a single coordinate and flash all addresses:
 
@@ -225,6 +227,29 @@ And when prompted for the raft's position during home calibration:
 | Input Loc. | X     | Y     |
 |:----------:|:-----:|:-----:|
 | HOME       | 0.179 | 0.172 |
+
+# Operation
+
+When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program.
+
+## Pre-mapping checks
+
+1. Make sure that 12 V is being supplied to both motor driver boards in the stack, that the polarity is correct, and that the power supply output is on.
+2. Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.
+3. Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion. If the cable is taut before homing, this is also fine, but the homing routine may need to be run a few times before the raft reaches the home position.
+4. Ensure the Hawkeye source signal lines won't interfere with raft operation.
+5. Ensure the `hotspot` `conda` env is active.
+
+## Mapping
+
+1. Start the program with `python main.py ./data/input/geometry/<geometry.csv> ./data/input/profiles/<profile.csv>`
+2. Perform a homing calibration: `c`, `RETURN` key. 
+3. The NW motor will drive the raft to the NW corner while the NE, SW, SE axes go slack, and begin skipping steps after reaching the limit. This (and some noise) is normal.
+4. Verify that the raft reached its home against the NW corner, and that the other axes achieved tension. If not, GOTO 2.
+5. Perform a mapping sequence: `s`, `RETURN` key. 
+6. The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Before beginning each move, the axes will back off tension to avoid skipping steps, and should re-tension upon arrival.
+7. You may request a mode change at any time. Mode changes are processed at the end of each move.
+8. Upon completing a sequence, it may be repeated by changing to any other mode and requesting the sequence mode again.
 
 # Example Call Graph
 

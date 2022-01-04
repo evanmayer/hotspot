@@ -859,9 +859,19 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span> <span class="o">=</span> <span class="n">alg</span><span class="o">.</span><span class="n">Robot</span><span class="p">(</span><span class="n">surf</span><span class="p">,</span> <span class="n">raft</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="p">)</span>
 
-        <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span> <span class="ow">in</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">SINGLE</span><span class="p">,</span> <span class="n">stepper</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">]:</span>
 
-        <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;const.MICROSTEP_NUM multiplier must be 1 for single- or double-stepping mode.&#39;</span>
+
+            <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+
+            <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+
+            <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
 
         <span class="c1"># This mapping should match the physical setup. kit0 is closest to the</span>
 
@@ -880,10 +890,6 @@
             <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper1</span>
 
         <span class="p">}</span>
-
-        <span class="c1"># should be ~0 for closed loop shapes</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">try_open</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">MODEL_NAME</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">MODE</span><span class="p">)</span>
 
@@ -1169,10 +1175,6 @@
 
 <span class="sd">            preventing us from choosing SW or SE as limit finding locations.</span>
 
-<span class="sd">        - We do not know where the raft starts out, so we must move the maximum</span>
-
-<span class="sd">            possible number of steps to get to NW, given the surface geometry.</span>
-
 <span class="sd">        - Corners form a rectangle.</span>
 
 <span class="sd">        - Stepper torque is sufficient to hold the raft once at NW while SW,</span>
@@ -1193,23 +1195,55 @@
 
         <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
 
-        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="c1"># valid for single or double steps</span>
+
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">num_steps</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Homing to NW&#39;</span><span class="p">)</span>
 
-        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
+        <span class="n">report_interval</span> <span class="o">=</span> <span class="mi">100</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">num_steps</span>
 
         <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
 
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
             <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="n">report_interval</span><span class="p">:</span>
 
-                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_steps</span>
+                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_steps</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Retracting cables to tension NE, SE, SW&#39;</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">num_steps</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="n">report_interval</span><span class="p">:</span>
+
+                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_steps</span>
 
                 <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
 
@@ -1219,33 +1253,9 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">pos</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Homed raft centroid is: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Raft is homed with centroid position </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1"># With a little more work, the number of steps here could be reduced,</span>
-
-        <span class="c1"># but doing the same # of steps as before should always work.</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Retracting cables to tension NE, SE, SW&#39;</span><span class="p">)</span>
-
-        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
-
-        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
-
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
-
-            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span><span class="p">:</span>
-
-                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_steps</span>
-
-                <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Verify that the raft has been driven to one of its limits and all cables are taut. If not, request CAL_HOME again.&#39;</span><span class="p">)</span>
 
         <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
 
@@ -1319,7 +1329,7 @@
 
 <span class="sd">            .csv-formatted file containing a sequence of commands, one per col:</span>
 
-<span class="sd">            - flasher_cmds: TODO:  not sure how LabJack wants command info</span>
+<span class="sd">            - flasher_cmds: 1 or 0 depending on whether that address is enabled</span>
 
 <span class="sd">            - pos_cmd_0s: 0th element of position command coordinate</span>
 
@@ -1357,6 +1367,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">do_labjack_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
 
+        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Raft centroid: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Command completed. Sequence progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
 
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
@@ -1387,41 +1399,109 @@
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
+        <span class="k">def</span> <span class="nf">send_pos_cmd</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+
+            <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">            Helper to send position commands to control algorithm and collect</span>
+
+<span class="sd">            results</span>
+
+<span class="sd">            &#39;&#39;&#39;</span>
+
+            <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">)</span>
+
+            <span class="c1"># bootleg OrderedDict</span>
+
+            <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+
+            <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+
+            <span class="c1">#steps_taken = hw.all_steppers_serial(self.ser, angs)</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move cmd: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># HACK: ECM: stepper tension slush fund:</span>
 
-        <span class="c1"># bootleg OrderedDict</span>
+        <span class="c1"># back off tension before moving, do move, then tension back up to avoid</span>
 
-        <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+        <span class="c1"># skipping.</span>
 
-        <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+        <span class="n">slack</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span>
 
-        <span class="c1">#steps_taken = hw.all_steppers_serial(self.ser, angs)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slack</span><span class="p">):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cumulative steps:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">)</span>
 
-        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Motor Cmd&#39;</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
-            <span class="p">{</span>
+        <span class="c1"># HACK: Linear approximation only holds for small distances, so</span>
 
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+        <span class="c1"># chunk up big moves into tiny bits. ECM: This should really probably</span>
 
-                <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
+        <span class="c1"># happen inside the control algorithm itself, or even better, ditch</span>
 
-            <span class="p">}</span>
+        <span class="c1"># the linear approximation and do the math to find out how each motor</span>
 
-        <span class="p">}</span>
+        <span class="c1"># should move at each point in the move.</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="n">MAX_DIST</span> <span class="o">=</span> <span class="mf">.015</span>
+
+        <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
+
+        <span class="n">pos_after</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>
+
+        <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
+
+        <span class="k">while</span> <span class="n">dist_to_go</span> <span class="o">&gt;</span> <span class="n">MAX_DIST</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Dist. to go in this move: </span><span class="si">{</span><span class="n">dist_to_go</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="c1"># determine a position MAX_DIST away from the starting pos along</span>
+
+            <span class="c1"># the line of travel</span>
+
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span>
+
+            <span class="n">u</span> <span class="o">=</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="c1"># the unit vector pointing along the line</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Direction vector: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">, Unit vector: </span><span class="si">{</span><span class="n">u</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_before</span> <span class="o">+</span> <span class="n">MAX_DIST</span> <span class="o">*</span> <span class="n">u</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Intermediate move: </span><span class="si">{</span><span class="n">pos_cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="c1"># alg updates raft position</span>
+
+            <span class="c1"># calculate new dist to go</span>
+
+            <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
+
+            <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Final move: </span><span class="si">{</span><span class="n">pos_after</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span>
+
+        <span class="c1"># HACK: ECM: take tension back up once in position</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slack</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
         <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 
-        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># Hz</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">5.</span> <span class="c1"># Hz</span>
 
         <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -1631,9 +1711,19 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span> <span class="o">=</span> <span class="n">alg</span><span class="o">.</span><span class="n">Robot</span><span class="p">(</span><span class="n">surf</span><span class="p">,</span> <span class="n">raft</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="p">)</span>
 
-        <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span> <span class="ow">in</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">SINGLE</span><span class="p">,</span> <span class="n">stepper</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">]:</span>
 
-        <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+            <span class="nb">assert</span> <span class="k">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;const.MICROSTEP_NUM multiplier must be 1 for single- or double-stepping mode.&#39;</span>
+
+            <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+
+            <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">kit0</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">HAT_0_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
+
+            <span class="n">kit1</span> <span class="o">=</span> <span class="n">MotorKit</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">HAT_1_ADDR</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">PWM_FREQ</span><span class="p">)</span>
 
         <span class="c1"># This mapping should match the physical setup. kit0 is closest to the</span>
 
@@ -1652,10 +1742,6 @@
             <span class="s1">&#39;se&#39;</span><span class="p">:</span> <span class="n">kit1</span><span class="o">.</span><span class="n">stepper1</span>
 
         <span class="p">}</span>
-
-        <span class="c1"># should be ~0 for closed loop shapes</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="n">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">try_open</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">MODEL_NAME</span><span class="p">,</span> <span class="n">hw</span><span class="o">.</span><span class="n">MODE</span><span class="p">)</span>
 
@@ -1941,10 +2027,6 @@
 
 <span class="sd">            preventing us from choosing SW or SE as limit finding locations.</span>
 
-<span class="sd">        - We do not know where the raft starts out, so we must move the maximum</span>
-
-<span class="sd">            possible number of steps to get to NW, given the surface geometry.</span>
-
 <span class="sd">        - Corners form a rectangle.</span>
 
 <span class="sd">        - Stepper torque is sufficient to hold the raft once at NW while SW,</span>
@@ -1965,23 +2047,55 @@
 
         <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
 
-        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span>
+        <span class="c1"># valid for single or double steps</span>
+
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span>
+
+        <span class="n">num_steps</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Homing to NW&#39;</span><span class="p">)</span>
 
-        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
+        <span class="n">report_interval</span> <span class="o">=</span> <span class="mi">100</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">num_steps</span>
 
         <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">DOUBLE</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
 
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
             <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="n">report_interval</span><span class="p">:</span>
 
-                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_steps</span>
+                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_steps</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Progress: {progress:.2f} %&#39;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Retracting cables to tension NE, SE, SW&#39;</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">num_steps</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="n">report_interval</span><span class="p">:</span>
+
+                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_steps</span>
 
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Progress: {progress:.2f} %&#39;</span><span class="p">)</span>
 
@@ -1991,33 +2105,9 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">pos</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Homed raft centroid is: {self.robot.raft.position}&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft is homed with centroid position {self.robot.raft.position}&#39;</span><span class="p">)</span>
 
-        <span class="c1"># With a little more work, the number of steps here could be reduced,</span>
-
-        <span class="c1"># but doing the same # of steps as before should always work.</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Retracting cables to tension NE, SE, SW&#39;</span><span class="p">)</span>
-
-        <span class="n">i</span> <span class="o">=</span> <span class="n">max_steps</span>
-
-        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">MICROSTEP</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
-
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
-
-            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span><span class="p">:</span>
-
-                <span class="n">progress</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_steps</span>
-
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Progress: {progress:.2f} %&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Verify that the raft has been driven to one of its limits and all cables are taut. If not, request CAL_HOME again.&#39;</span><span class="p">)</span>
 
         <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
 
@@ -2091,7 +2181,7 @@
 
 <span class="sd">            .csv-formatted file containing a sequence of commands, one per col:</span>
 
-<span class="sd">            - flasher_cmds: TODO:  not sure how LabJack wants command info</span>
+<span class="sd">            - flasher_cmds: 1 or 0 depending on whether that address is enabled</span>
 
 <span class="sd">            - pos_cmd_0s: 0th element of position command coordinate</span>
 
@@ -2129,6 +2219,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">do_labjack_tasks</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
 
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft centroid: {self.robot.raft.position}&#39;</span><span class="p">)</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Command completed. Sequence progress: {progress:.2f} %&#39;</span><span class="p">)</span>
 
         <span class="c1"># take time to log TM and update display before doing next cmd</span>
@@ -2159,41 +2251,109 @@
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
+        <span class="n">def</span> <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">:</span> <span class="n">tuple</span><span class="p">):</span>
+
+            <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">            Helper to send position commands to control algorithm and collect</span>
+
+<span class="sd">            results</span>
+
+<span class="sd">            &#39;&#39;&#39;</span>
+
+            <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">)</span>
+
+            <span class="c1"># bootleg OrderedDict</span>
+
+            <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+
+            <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+
+            <span class="c1">#steps_taken = hw.all_steppers_serial(self.ser, angs)</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Move cmd: {cmd}&#39;</span><span class="p">)</span>
 
-        <span class="n">motor_cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># HACK: ECM: stepper tension slush fund:</span>
 
-        <span class="c1"># bootleg OrderedDict</span>
+        <span class="c1"># back off tension before moving, do move, then tension back up to avoid</span>
 
-        <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]]]</span>
+        <span class="c1"># skipping.</span>
 
-        <span class="n">steps_taken</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">]],</span> <span class="n">angs</span><span class="p">)</span>
+        <span class="n">slack</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">MICROSTEP_NUM</span>
 
-        <span class="c1">#steps_taken = hw.all_steppers_serial(self.ser, angs)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slack</span><span class="p">):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">cumulative_steps</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Cumulative steps:{self.cumulative_steps}&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">)</span>
 
-        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Motor Cmd&#39;</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
-            <span class="p">{</span>
+        <span class="c1"># HACK: Linear approximation only holds for small distances, so</span>
 
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+        <span class="c1"># chunk up big moves into tiny bits. ECM: This should really probably</span>
 
-                <span class="s1">&#39;Motor Steps Taken&#39;</span> <span class="p">:</span> <span class="n">steps_taken</span>
+        <span class="c1"># happen inside the control algorithm itself, or even better, ditch</span>
 
-            <span class="p">}</span>
+        <span class="c1"># the linear approximation and do the math to find out how each motor</span>
 
-        <span class="p">}</span>
+        <span class="c1"># should move at each point in the move.</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="n">MAX_DIST</span> <span class="o">=</span> <span class="o">.</span><span class="mi">015</span>
+
+        <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
+
+        <span class="n">pos_after</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>
+
+        <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
+
+        <span class="k">while</span> <span class="n">dist_to_go</span> <span class="o">&gt;</span> <span class="n">MAX_DIST</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Dist. to go in this move: {dist_to_go}&#39;</span><span class="p">)</span>
+
+            <span class="c1"># determine a position MAX_DIST away from the starting pos along</span>
+
+            <span class="c1"># the line of travel</span>
+
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span>
+
+            <span class="n">u</span> <span class="o">=</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="c1"># the unit vector pointing along the line</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Direction vector: {v}, Unit vector: {u}&#39;</span><span class="p">)</span>
+
+            <span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_before</span> <span class="o">+</span> <span class="n">MAX_DIST</span> <span class="o">*</span> <span class="n">u</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Intermediate move: {pos_cmd}&#39;</span><span class="p">)</span>
+
+            <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="c1"># alg updates raft position</span>
+
+            <span class="c1"># calculate new dist to go</span>
+
+            <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
+
+            <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span>
+
+        <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span>
+
+        <span class="c1"># HACK: ECM: take tension back up once in position</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slack</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="k">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">)</span>
+
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
         <span class="k">return</span>
 
     <span class="n">def</span> <span class="n">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="n">dict</span><span class="p">):</span>
 
-        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># Hz</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">5.</span> <span class="c1"># Hz</span>
 
         <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -2399,8 +2559,6 @@ position according to offsets in constants.py which depend on the
 - All cables are slack, but without excessive cable played out.
 - Hawkeye signaling wires protrude from the S side of the raft,
     preventing us from choosing SW or SE as limit finding locations.
-- We do not know where the raft starts out, so we must move the maximum
-    possible number of steps to get to NW, given the surface geometry.
 - Corners form a rectangle.
 - Stepper torque is sufficient to hold the raft once at NW while SW,
     SE, NE retract.</p>
@@ -2428,10 +2586,6 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">            preventing us from choosing SW or SE as limit finding locations.</span>
 
-<span class="s1">        - We do not know where the raft starts out, so we must move the maximum</span>
-
-<span class="s1">            possible number of steps to get to NW, given the surface geometry.</span>
-
 <span class="s1">        - Corners form a rectangle.</span>
 
 <span class="s1">        - Stepper torque is sufficient to hold the raft once at NW while SW,</span>
@@ -2452,23 +2606,55 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">        max_radians = max_distance / const.PULLEY_RADIUS</span>
 
-<span class="s1">        max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)</span>
+<span class="s1">        # valid for single or double steps</span>
+
+<span class="s1">        max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / (360. / 200. / 1)).astype(int)</span>
+
+<span class="s1">        num_steps = max(1, max_steps)</span>
 
 <span class="s1">        logger.info(&#39;</span><span class="n">Homing</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">NW</span><span class="s1">&#39;)</span>
 
-<span class="s1">        i = max_steps</span>
+<span class="s1">        report_interval = 100</span>
+
+<span class="s1">        i = num_steps</span>
 
 <span class="s1">        while i &gt; 0:</span>
 
-<span class="s1">            self.steppers[&#39;</span><span class="n">nw</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+<span class="s1">            self.steppers[&#39;</span><span class="n">nw</span><span class="s1">&#39;].onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD)</span>
 
-<span class="s1">            time.sleep(1e-4)</span>
+<span class="s1">            time.sleep(const.STEP_WAIT)</span>
 
 <span class="s1">            i -= 1</span>
 
-<span class="s1">            if not i % 1000:</span>
+<span class="s1">            if not i % report_interval:</span>
 
-<span class="s1">                progress = 100. * (max_steps - i) / max_steps</span>
+<span class="s1">                progress = 100. * (num_steps - i) / num_steps</span>
+
+<span class="s1">                logger.info(f&#39;</span><span class="nl">Progress</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">progress</span><span class="p">:</span><span class="mf">.2</span><span class="n">f</span><span class="err">}</span><span class="w"> </span><span class="o">%</span><span class="s1">&#39;)</span>
+
+<span class="s1">        logger.info(&#39;</span><span class="n">Retracting</span><span class="w"> </span><span class="n">cables</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">tension</span><span class="w"> </span><span class="n">NE</span><span class="p">,</span><span class="w"> </span><span class="n">SE</span><span class="p">,</span><span class="w"> </span><span class="n">SW</span><span class="s1">&#39;)</span>
+
+<span class="s1">        i = num_steps</span>
+
+<span class="s1">        while i &gt; 0:</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">ne</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+
+<span class="s1">            time.sleep(const.STEP_WAIT)</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">se</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+
+<span class="s1">            time.sleep(const.STEP_WAIT)</span>
+
+<span class="s1">            self.steppers[&#39;</span><span class="n">sw</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
+
+<span class="s1">            time.sleep(const.STEP_WAIT)</span>
+
+<span class="s1">            i -= 1</span>
+
+<span class="s1">            if not i % report_interval:</span>
+
+<span class="s1">                progress = 100. * (num_steps - i) / num_steps</span>
 
 <span class="s1">                logger.info(f&#39;</span><span class="nl">Progress</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">progress</span><span class="p">:</span><span class="mf">.2</span><span class="n">f</span><span class="err">}</span><span class="w"> </span><span class="o">%</span><span class="s1">&#39;)</span>
 
@@ -2478,33 +2664,9 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">        self.robot.home = pos</span>
 
-<span class="s1">        logger.info(f&#39;</span><span class="n">Homed</span><span class="w"> </span><span class="n">raft</span><span class="w"> </span><span class="n">centroid</span><span class="w"> </span><span class="k">is</span><span class="err">:</span><span class="w"> </span><span class="err">{</span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="err">}</span><span class="s1">&#39;)</span>
+<span class="s1">        logger.info(f&#39;</span><span class="n">Raft</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">homed</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">centroid</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="err">{</span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="err">}</span><span class="s1">&#39;)</span>
 
-<span class="s1">        # With a little more work, the number of steps here could be reduced,</span>
-
-<span class="s1">        # but doing the same # of steps as before should always work.</span>
-
-<span class="s1">        logger.info(&#39;</span><span class="n">Retracting</span><span class="w"> </span><span class="n">cables</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">tension</span><span class="w"> </span><span class="n">NE</span><span class="p">,</span><span class="w"> </span><span class="n">SE</span><span class="p">,</span><span class="w"> </span><span class="n">SW</span><span class="s1">&#39;)</span>
-
-<span class="s1">        i = max_steps</span>
-
-<span class="s1">        while i &gt; 0:</span>
-
-<span class="s1">            self.steppers[&#39;</span><span class="n">ne</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
-
-<span class="s1">            self.steppers[&#39;</span><span class="n">se</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
-
-<span class="s1">            self.steppers[&#39;</span><span class="n">sw</span><span class="s1">&#39;].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)</span>
-
-<span class="s1">            time.sleep(1e-4)</span>
-
-<span class="s1">            i -= 1</span>
-
-<span class="s1">            if not i % 1000:</span>
-
-<span class="s1">                progress = 100. * (max_steps - i) / max_steps</span>
-
-<span class="s1">                logger.info(f&#39;</span><span class="nl">Progress</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">progress</span><span class="p">:</span><span class="mf">.2</span><span class="n">f</span><span class="err">}</span><span class="w"> </span><span class="o">%</span><span class="s1">&#39;)</span>
+<span class="s1">        logger.warning(&#39;</span><span class="n">Verify</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">raft</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="n">been</span><span class="w"> </span><span class="n">driven</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">its</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="ow">all</span><span class="w"> </span><span class="n">cables</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">taut</span><span class="p">.</span><span class="w"> </span><span class="k">If</span><span class="w"> </span><span class="ow">not</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="n">CAL_HOME</span><span class="w"> </span><span class="n">again</span><span class="p">.</span><span class="s1">&#39;)</span>
 
 <span class="s1">        packet = {&#39;</span><span class="n">algorithm</span><span class="s1">&#39;:</span>
 
@@ -2557,7 +2719,7 @@ position according to offsets in constants.py which depend on the
 <summary>View Source</summary>
 <div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">do_labjack_tasks</span><span class="ss">(</span><span class="nv">self</span>, <span class="nv">cmd</span>: <span class="nv">dict</span><span class="ss">)</span>:
 
-        <span class="nv">freq</span> <span class="o">=</span> <span class="mi">10</span>. # <span class="nv">Hz</span>
+        <span class="nv">freq</span> <span class="o">=</span> <span class="mi">5</span>. # <span class="nv">Hz</span>
 
         <span class="nv">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -2656,35 +2818,103 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">        &#39;&#39;&#39;</span><span class="w"></span>
 
+<span class="w">        </span><span class="n">def</span><span class="w"> </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="nl">cmd_tuple</span><span class="p">:</span><span class="w"> </span><span class="n">tuple</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">            </span><span class="s1">&#39;&#39;&#39;</span>
+
+<span class="s1">            Helper to send position commands to control algorithm and collect</span>
+
+<span class="s1">            results</span>
+
+<span class="s1">            &#39;&#39;&#39;</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">motor_cmds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">bootleg</span><span class="w"> </span><span class="n">OrderedDict</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">angs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">cmd for cmd in [motor_cmds[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="o">[</span><span class="n">&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;</span><span class="o">]</span><span class="err">]]</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">steps_taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">all_steppers</span><span class="p">(</span><span class="o">[</span><span class="n">self.steppers[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="o">[</span><span class="n">&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;</span><span class="o">]</span><span class="err">]</span><span class="p">,</span><span class="w"> </span><span class="n">angs</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">#steps_taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">all_steppers_serial</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">angs</span><span class="p">)</span><span class="w"></span>
+
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Move cmd: {cmd}&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">motor_cmds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">process_input</span><span class="p">(</span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nl">HACK</span><span class="p">:</span><span class="w"> </span><span class="nl">ECM</span><span class="p">:</span><span class="w"> </span><span class="n">stepper</span><span class="w"> </span><span class="n">tension</span><span class="w"> </span><span class="n">slush</span><span class="w"> </span><span class="nl">fund</span><span class="p">:</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">bootleg</span><span class="w"> </span><span class="n">OrderedDict</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="k">off</span><span class="w"> </span><span class="n">tension</span><span class="w"> </span><span class="k">before</span><span class="w"> </span><span class="n">moving</span><span class="p">,</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="n">move</span><span class="p">,</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">tension</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="n">up</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">avoid</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">angs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">cmd for cmd in [motor_cmds[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="o">[</span><span class="n">&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;</span><span class="o">]</span><span class="err">]]</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">skipping</span><span class="p">.</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">steps_taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">all_steppers</span><span class="p">(</span><span class="o">[</span><span class="n">self.steppers[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="o">[</span><span class="n">&#39;sw&#39;, &#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;</span><span class="o">]</span><span class="err">]</span><span class="p">,</span><span class="w"> </span><span class="n">angs</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">slack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">MICROSTEP_NUM</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">#steps_taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">all_steppers_serial</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">angs</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">range</span><span class="p">(</span><span class="n">slack</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">cumulative_steps</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">steps_taken</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()</span><span class="err">:</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Cumulative steps:{self.cumulative_steps}&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">key</span><span class="o">]</span><span class="p">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">const</span><span class="p">.</span><span class="n">STEPPER_STYLE</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="p">.</span><span class="n">FORWARD</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">packet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">{</span><span class="s1">&#39;Motor Cmd&#39;</span><span class="err">:</span><span class="w"></span>
+<span class="w">                </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="p">.</span><span class="n">STEP_WAIT</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="err">{</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nl">HACK</span><span class="p">:</span><span class="w"> </span><span class="n">Linear</span><span class="w"> </span><span class="n">approximation</span><span class="w"> </span><span class="k">only</span><span class="w"> </span><span class="n">holds</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">small</span><span class="w"> </span><span class="n">distances</span><span class="p">,</span><span class="w"> </span><span class="n">so</span><span class="w"></span>
 
-<span class="w">                </span><span class="s1">&#39;Time UTC (s)&#39;</span><span class="err">:</span><span class="w"> </span><span class="nc">time</span><span class="p">.</span><span class="nc">time</span><span class="p">(),</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">chunk</span><span class="w"> </span><span class="n">up</span><span class="w"> </span><span class="n">big</span><span class="w"> </span><span class="n">moves</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">tiny</span><span class="w"> </span><span class="n">bits</span><span class="p">.</span><span class="w"> </span><span class="nl">ECM</span><span class="p">:</span><span class="w"> </span><span class="n">This</span><span class="w"> </span><span class="n">should</span><span class="w"> </span><span class="n">really</span><span class="w"> </span><span class="n">probably</span><span class="w"></span>
 
-<span class="w">                </span><span class="s1">&#39;Motor Steps Taken&#39;</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">steps_taken</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">happen</span><span class="w"> </span><span class="n">inside</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">control</span><span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="n">itself</span><span class="p">,</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">even</span><span class="w"> </span><span class="n">better</span><span class="p">,</span><span class="w"> </span><span class="n">ditch</span><span class="w"></span>
 
-<span class="w">            </span><span class="err">}</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">linear</span><span class="w"> </span><span class="n">approximation</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">find</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">how</span><span class="w"> </span><span class="k">each</span><span class="w"> </span><span class="n">motor</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">}</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">should</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="k">each</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">move</span><span class="p">.</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">tm_queue</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">.015</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">pos_before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">pos_after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nl">MAX_DIST</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Dist. to go in this move: {dist_to_go}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">determine</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="n">away</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">starting</span><span class="w"> </span><span class="n">pos</span><span class="w"> </span><span class="n">along</span><span class="w"></span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">travel</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">unit</span><span class="w"> </span><span class="n">vector</span><span class="w"> </span><span class="n">pointing</span><span class="w"> </span><span class="n">along</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">line</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Direction vector: {v}, Unit vector: {u}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">pos_cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pos_before</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">u</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Intermediate move: {pos_cmd}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">alg</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">raft</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">calculate</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">dist</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">go</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">pos_before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nl">HACK</span><span class="p">:</span><span class="w"> </span><span class="nl">ECM</span><span class="p">:</span><span class="w"> </span><span class="n">take</span><span class="w"> </span><span class="n">tension</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="n">up</span><span class="w"> </span><span class="n">once</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">range</span><span class="p">(</span><span class="n">slack</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">                </span><span class="k">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="k">key</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">key</span><span class="o">]</span><span class="p">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">const</span><span class="p">.</span><span class="n">STEPPER_STYLE</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="o">=</span><span class="n">stepper</span><span class="p">.</span><span class="n">BACKWARD</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">                </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="p">.</span><span class="n">STEP_WAIT</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="k">return</span><span class="w"></span>
 </code></pre></div>
@@ -2693,7 +2923,7 @@ position according to offsets in constants.py which depend on the
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f8c711669b0</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f8aba7329b0</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -2975,7 +3205,7 @@ position according to offsets in constants.py which depend on the
 <td></td>
 </tr>
 <tr>
-<td>- flasher_cmds: TODO:  not sure how LabJack wants command info</td>
+<td>- flasher_cmds: 1 or 0 depending on whether that address is enabled</td>
 <td></td>
 <td></td>
 <td></td>
@@ -3012,7 +3242,7 @@ position according to offsets in constants.py which depend on the
 
             .<span class="nv">csv</span><span class="o">-</span><span class="nv">formatted</span> <span class="nv">file</span> <span class="nv">containing</span> <span class="nv">a</span> <span class="nv">sequence</span> <span class="nv">of</span> <span class="nv">commands</span>, <span class="nv">one</span> <span class="nv">per</span> <span class="nv">col</span>:
 
-            <span class="o">-</span> <span class="nv">flasher_cmds</span>: <span class="nv">TODO</span>:  <span class="nv">not</span> <span class="nv">sure</span> <span class="nv">how</span> <span class="nv">LabJack</span> <span class="nv">wants</span> <span class="nv">command</span> <span class="nv">info</span>
+            <span class="o">-</span> <span class="nv">flasher_cmds</span>: <span class="mi">1</span> <span class="nv">or</span> <span class="mi">0</span> <span class="nv">depending</span> <span class="nv">on</span> <span class="nv">whether</span> <span class="nv">that</span> <span class="nv">address</span> <span class="nv">is</span> <span class="nv">enabled</span>
 
             <span class="o">-</span> <span class="nv">pos_cmd_0s</span>: <span class="mi">0</span><span class="nv">th</span> <span class="nv">element</span> <span class="nv">of</span> <span class="nv">position</span> <span class="nv">command</span> <span class="nv">coordinate</span>
 
@@ -3049,6 +3279,8 @@ position according to offsets in constants.py which depend on the
         <span class="nv">self</span>.<span class="nv">do_motor_tasks</span><span class="ss">(</span><span class="nv">cmd</span><span class="ss">)</span>
 
         <span class="nv">self</span>.<span class="nv">do_labjack_tasks</span><span class="ss">(</span><span class="nv">cmd</span><span class="ss">)</span>
+
+        <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="nv">f</span><span class="s1">&#39;</span><span class="s">Raft centroid: {self.robot.raft.position}</span><span class="s1">&#39;</span><span class="ss">)</span>
 
         <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="nv">f</span><span class="s1">&#39;</span><span class="s">Command completed. Sequence progress: {progress:.2f} %</span><span class="s1">&#39;</span><span class="ss">)</span>
 

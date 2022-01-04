@@ -1043,6 +1043,8 @@
 
         <span class="c1"># update the commanded position</span>
 
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Commanded position: </span><span class="si">{</span><span class="n">pos_cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_cmd</span>
 
         <span class="c1"># update the raft&#39;s position to move its corners</span>
@@ -1050,6 +1052,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos_cmd</span>
 
         <span class="n">lengths_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Lengths after move:</span><span class="si">{</span><span class="n">lengths_after</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
 
@@ -1190,7 +1194,7 @@
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Robot</span><span class="p">(</span>
     <span class="n">surf</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">TestSurface</span><span class="p">,</span>
     <span class="n">raft</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">Raft</span><span class="p">,</span>
-    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f8c711669b0</span><span class="o">&gt;&gt;</span>
+    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f8aba7329b0</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1346,6 +1350,8 @@
 
         <span class="c1"># update the commanded position</span>
 
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded position: {pos_cmd}&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_cmd</span>
 
         <span class="c1"># update the raft&#39;s position to move its corners</span>
@@ -1353,6 +1359,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos_cmd</span>
 
         <span class="n">lengths_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Lengths after move:{lengths_after}&#39;</span><span class="p">)</span>
 
         <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
 
@@ -1506,6 +1514,8 @@ from rear.</p>
 
         <span class="c1"># update the commanded position</span>
 
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded position: {pos_cmd}&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_cmd</span>
 
         <span class="c1"># update the raft&#39;s position to move its corners</span>
@@ -1513,6 +1523,8 @@ from rear.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos_cmd</span>
 
         <span class="n">lengths_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Lengths after move:{lengths_after}&#39;</span><span class="p">)</span>
 
         <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
 

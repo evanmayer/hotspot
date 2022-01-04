@@ -516,6 +516,7 @@ chmod +x Miniconda.sh
 <p><img alt="View of spool and M3 setscrew" src="../docs/img/spool_side_view.jpg" /></p>
 <p>Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Motors should be oriented relative to the cable such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.</p>
 <p>After attaching the cables to the spools, the other end should be routed through the ~.9mm hole in the motor mount bracket.</p>
+<p>Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process can be done by hand.</p>
 <h2 id="effector">Effector</h2>
 <p>The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies <a href="http://www.hawkeyetechnologies.com/source-selection/pulsable/">IR-50</a> emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.</p>
 <p>The effector is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down.</p>
@@ -567,7 +568,7 @@ chmod +x Miniconda.sh
 <h3 id="profile">Profile</h3>
 <p>The profile files are multi-line .csv files in <code>hotspot/data/input/profiles</code>. Each one defines a new position to which the robot should move, in the coordinate system defined above.</p>
 <p><img alt="profile" src="../docs/img/profile.png" /></p>
-<p>Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 10 Hz), and which sources are enabled are configurable with the <code>flasher_cmds</code> column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index to address mapping is defined in the dictionary at the top of <code>hardware.py</code>. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.</p>
+<p>Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 5 Hz), and which sources are enabled are configurable with the <code>flasher_cmds</code> column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index to address mapping is defined in the dictionary at the top of <code>hardware.py</code>. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.</p>
 <p>For example, to move to a single coordinate and flash all addresses:</p>
 <table>
 <thead>
@@ -689,6 +690,27 @@ Raft height: $0.040 \pm 0.001$ m</p>
 </tr>
 </tbody>
 </table>
+<h1 id="operation">Operation</h1>
+<p>When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program.</p>
+<h2 id="pre-mapping-checks">Pre-mapping checks</h2>
+<ol>
+<li>Make sure that 12 V is being supplied to both motor driver boards in the stack, that the polarity is correct, and that the power supply output is on.</li>
+<li>Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.</li>
+<li>Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion. If the cable is taut before homing, this is also fine, but the homing routine may need to be run a few times before the raft reaches the home position.</li>
+<li>Ensure the Hawkeye source signal lines won't interfere with raft operation.</li>
+<li>Ensure the <code>hotspot</code> <code>conda</code> env is active.</li>
+</ol>
+<h2 id="mapping">Mapping</h2>
+<ol>
+<li>Start the program with <code>python main.py ./data/input/geometry/&lt;geometry.csv&gt; ./data/input/profiles/&lt;profile.csv&gt;</code></li>
+<li>Perform a homing calibration: <code>c</code>, <code>RETURN</code> key. </li>
+<li>The NW motor will drive the raft to the NW corner while the NE, SW, SE axes go slack, and begin skipping steps after reaching the limit. This (and some noise) is normal.</li>
+<li>Verify that the raft reached its home against the NW corner, and that the other axes achieved tension. If not, GOTO 2.</li>
+<li>Perform a mapping sequence: <code>s</code>, <code>RETURN</code> key. </li>
+<li>The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Before beginning each move, the axes will back off tension to avoid skipping steps, and should re-tension upon arrival.</li>
+<li>You may request a mode change at any time. Mode changes are processed at the end of each move.</li>
+<li>Upon completing a sequence, it may be repeated by changing to any other mode and requesting the sequence mode again.</li>
+</ol>
 <h1 id="example-call-graph">Example Call Graph</h1>
 <p>Without motors or LabJack attached, so does not include overhead of those libraries.</p>
 <p><img alt="callgraph" src="../docs/img/pycallgraph.png" /></p>
