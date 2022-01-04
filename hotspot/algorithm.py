@@ -209,13 +209,14 @@ class Robot:
             logger.warning(f'Position command malformed: distance: {distance}')
             return motor_cmds
 
-
         lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
         # update the commanded position
+        logger.debug(f'Commanded position: {pos_cmd}')
         self.pos_cmd = pos_cmd
         # update the raft's position to move its corners
         self.raft.position = pos_cmd
         lengths_after = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
+        logger.debug(f'Lengths after move:{lengths_after}')
 
         delta_lengths = lengths_after - lengths_before
         delta_angles = delta_lengths / const.PULLEY_RADIUS

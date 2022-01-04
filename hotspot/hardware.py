@@ -66,8 +66,7 @@ def all_steppers(steppers: list, radians: list):
     radians = np.array(radians)[order]
     steppers = np.array(steppers)[order]
 
-    # avoid skipping by biasing steps to positive direction with ceil (more slack)
-    steps_to_go = np.ceil(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
+    steps_to_go = np.round(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
     stepper_dirs = [stepper.FORWARD] * 4
     for i, direction in enumerate(directions):
         if direction == -1:
@@ -84,12 +83,12 @@ def all_steppers(steppers: list, radians: list):
             # decide whether to step or not
             if deltas[i] > 0:
                 stepper_n.onestep(style=style, direction=stepper_dirs[i])
-                time.sleep(1e-4)
-                steps_taken[i] += 1
+                time.sleep(const.STEP_WAIT)
+                steps_taken[i] += 1 * stepper_dirs[i]
                 deltas[i] -= 2 * dx
             deltas[i] += 2 * dy[i]
 
-    return steps_taken * directions
+    return
 
 
 def all_steppers_serial(ser, radians: list):
