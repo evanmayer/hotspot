@@ -66,7 +66,10 @@ def all_steppers(steppers: list, radians: list):
     radians = np.array(radians)[order]
     steppers = np.array(steppers)[order]
 
-    steps_to_go = np.round(np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP).astype(int)
+    steps_float = np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP
+    steps_to_go = np.round(steps_float).astype(int)
+    err = steps_float - steps_to_go
+
     stepper_dirs = [stepper.FORWARD] * 4
     for i, direction in enumerate(directions):
         if direction == -1:
@@ -84,7 +87,7 @@ def all_steppers(steppers: list, radians: list):
             if deltas[i] > 0:
                 stepper_n.onestep(style=style, direction=stepper_dirs[i])
                 time.sleep(const.STEP_WAIT)
-                steps_taken[i] += 1 * stepper_dirs[i]
+                steps_taken[i] += directions[i]
                 deltas[i] -= 2 * dx
             deltas[i] += 2 * dy[i]
 

@@ -92,6 +92,8 @@ class Executive:
             'se': kit1.stepper1
         }
 
+        self.stepper_net_steps = [0] * 4
+
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
 
@@ -192,6 +194,9 @@ class Executive:
                     if 'c' == kbd_in:
                         logger.info('Home calibration requested.')
                         self.mode = 'CAL_HOME'
+                    elif 'i' == kbd_in:
+                        logger.info('Home position override requested.')
+                        self.mode = 'INPUT_HOME'
                     elif 'h' == kbd_in:
                         logger.info('Moving to home requested.')
                         self.mode = 'HOME'
@@ -206,6 +211,10 @@ class Executive:
 
                 if self.mode == 'CAL_HOME':
                     self.cal_home_auto()
+                    self.mode = 'WAIT'
+                    print(MENU_STR)
+                elif self.mode == 'INPUT_HOME':
+                    self.cal_home()
                     self.mode = 'WAIT'
                     print(MENU_STR)
                 elif self.mode == 'HOME':
@@ -398,53 +407,17 @@ class Executive:
             Helper to send position commands to control algorithm and collect
             results
             '''
-            motor_cmds = self.robot.process_input(cmd_tuple)
+            motor_cmds = self.robot.process_input(cmd_tuple) 
             # bootleg OrderedDict
-            angs = [cmd for cmd in [motor_cmds[key] for key in ['sw', 'nw', 'ne', 'se']]]
-            steps_taken = hw.all_steppers([self.steppers[key] for key in ['sw', 'nw', 'ne', 'se']], angs)
+            keys = ['sw', 'nw', 'ne', 'se']
+            angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
+            hw.all_steppers([self.steppers[key] for key in keys], angs)
             #steps_taken = hw.all_steppers_serial(self.ser, angs)
 
-
         logger.debug(f'Move cmd: {cmd}')
-        # HACK: ECM: stepper tension slush fund:
-        # back off tension before moving, do move, then tension back up to avoid
-        # skipping.
-        slack = 20 * const.MICROSTEP_NUM
-        for _ in range(slack):
-            for key in self.steppers.keys(): 
-                self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.FORWARD)
-                time.sleep(const.STEP_WAIT)
-
-        # HACK: Linear approximation only holds for small distances, so
-        # chunk up big moves into tiny bits. ECM: This should really probably
-        # happen inside the control algorithm itself, or even better, ditch
-        # the linear approximation and do the math to find out how each motor
-        # should move at each point in the move.
-        MAX_DIST = .015
-        pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
-        dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
-        while dist_to_go > MAX_DIST:
-            logger.debug(f'Dist. to go in this move: {dist_to_go}')
-            # determine a position MAX_DIST away from the starting pos along
-            # the line of travel
-            v = np.array(pos_after) - np.array(pos_before)
-            u = v / np.linalg.norm(v) # the unit vector pointing along the line
-            logger.debug(f'Direction vector: {v}, Unit vector: {u}')
-            pos_cmd = pos_before + MAX_DIST * u
-            logger.debug(f'Intermediate move: {pos_cmd}')
-            send_pos_cmd(pos_cmd) # alg updates raft position
-            # calculate new dist to go
-            pos_before = self.robot.raft.position
-            dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
-        logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after)
 
-        # HACK: ECM: take tension back up once in position
-        for k in range(slack+1): # a dirty, dirty hack to get another step in in case of skips
-            for key in self.steppers.keys():
-                self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
-                time.sleep(const.STEP_WAIT)
         return
 
 
