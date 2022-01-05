@@ -64,13 +64,54 @@ def test_Raft_init():
             f'{coord} != {accessor_list[i]}'
 
 
+def multiple_robot_process_input(this_robot: alg.Robot, pos_delta: tuple):
+    '''
+    Helper function for exercising move cmds of any robot fixture
+    '''
+    this_robot.raft.position = (
+        (this_robot.surf.ne[0] - this_robot.surf.nw[0]) / 2,
+        (this_robot.surf.ne[1] - this_robot.surf.se[1]) / 2
+    )
+    pos_delta = np.array(pos_delta)
+    pos_cmd = tuple(this_robot.raft.position + pos_delta)
+
+    sw_d_before = np.linalg.norm(this_robot.surf.sw - this_robot.raft.sw)
+    nw_d_before = np.linalg.norm(this_robot.surf.nw - this_robot.raft.nw)
+    ne_d_before = np.linalg.norm(this_robot.surf.ne - this_robot.raft.ne)
+    se_d_before = np.linalg.norm(this_robot.surf.se - this_robot.raft.se)
+
+    sw_d_after = np.linalg.norm(this_robot.surf.sw - (this_robot.raft.sw + pos_delta))
+    nw_d_after = np.linalg.norm(this_robot.surf.nw - (this_robot.raft.nw + pos_delta))
+    ne_d_after = np.linalg.norm(this_robot.surf.ne - (this_robot.raft.ne + pos_delta))
+    se_d_after = np.linalg.norm(this_robot.surf.se - (this_robot.raft.se + pos_delta))
+
+    delta_sw = sw_d_after - sw_d_before
+    delta_nw = nw_d_after - nw_d_before
+    delta_ne = ne_d_after - ne_d_before
+    delta_se = se_d_after - se_d_before
+
+    rad_sw = delta_sw / const.PULLEY_RADIUS
+    rad_nw = delta_nw / const.PULLEY_RADIUS
+    rad_ne = delta_ne / const.PULLEY_RADIUS
+    rad_se = delta_se / const.PULLEY_RADIUS
+
+    cmds = this_robot.process_input(pos_cmd)
+
+    assert (abs(cmds['sw'] - rad_sw) < EPS), f"Incorrect value calculated for SW in movement toward N: {cmds['sw']}"
+    assert (abs(cmds['nw'] - rad_nw) < EPS), f"Incorrect value calculated for NW in movement toward N: {cmds['nw']}"
+    assert (abs(cmds['ne'] - rad_ne) < EPS), f"Incorrect value calculated for NE in movement toward N: {cmds['ne']}"
+    assert (abs(cmds['se'] - rad_se) < EPS), f"Incorrect value calculated for SE in movement toward N: {cmds['se']}"
+
+    return
 # ------------------------------------------------------------------------------
 # Fixtures
 # ------------------------------------------------------------------------------
 @pytest.fixture(scope='class')
 def robot():
-    # Class scope cuts down on time spent init-ing
-    # Used by any test function that needs a default robot instance
+    '''
+    Class scope cuts down on time spent init-ing
+    Used by any test function that needs a default robot instance
+    '''
     sw = (0,0)
     nw = (0,1)
     ne = (1,1)
@@ -79,16 +120,67 @@ def robot():
 
     w = .1
     h = .1
-    pos = (0.5,0.5)
+    pos = (
+        (surf.ne[0] - surf.nw[0]) / 2,
+        (surf.ne[1] - surf.se[1]) / 2
+    )
+    raft = alg.Raft(pos, w, h)
+    robot = alg.Robot(surf, raft, mp.Queue())
+    yield robot
+
+
+@pytest.fixture(scope='class')
+def robot_surf_rect():
+    '''
+    Class scope cuts down on time spent init-ing
+    Used by any test function that needs a rectangular surf instance instead
+    of a square one
+    '''
+    sw = (0,0)
+    nw = (0,2)
+    ne = (1,2)
+    se = (1,0)
+    surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
+
+    w = .1
+    h = .1
+    pos = (
+        (surf.ne[0] - surf.nw[0]) / 2,
+        (surf.ne[1] - surf.se[1]) / 2
+    )
+    raft = alg.Raft(pos, w, h)
+    robot = alg.Robot(surf, raft, mp.Queue())
+    yield robot
+
+
+@pytest.fixture(scope='class')
+def robot_raft_rect():
+    '''
+    Class scope cuts down on time spent init-ing
+    Used by any test function that needs a rectangular raft instance instead
+    of a square one
+    '''
+    sw = (0,0)
+    nw = (0,1)
+    ne = (1,1)
+    se = (1,0)
+    surf = alg.TestSurface(sw=sw, se=se, nw=nw, ne=ne)
+
+    w = .2
+    h = .1
+    pos = (
+        (surf.ne[0] - surf.nw[0]) / 2,
+        (surf.ne[1] - surf.se[1]) / 2
+    )
     raft = alg.Raft(pos, w, h)
     robot = alg.Robot(surf, raft, mp.Queue())
     yield robot
 
 
 # ------------------------------------------------------------------------------
-# Default test class: reuses one default-init robot instance for maintainability
+# Test class: reuses robot instances for maintainability/speed
 # ------------------------------------------------------------------------------
-@ pytest.mark.usefixtures('robot')
+@pytest.mark.usefixtures('robot', 'robot_surf_rect', 'robot_raft_rect')
 class TestDefault(object):
     def test_Robot_init(self, robot):
         assert all(np.isinf(robot.pos_cmd))
@@ -96,67 +188,72 @@ class TestDefault(object):
 
 
     @pytest.mark.parametrize('pos_cmd', [(.1,.1), (.9,.1), (.1,.9), (.5,.5), (.9,.9)])
-    def test_Robot_bounds_check_good(self, robot, pos_cmd):
+    def test_default_Robot_bounds_check_good(self, robot, pos_cmd):
         robot.pos_cmd = pos_cmd
+
+
+    @pytest.mark.parametrize('pos_cmd', [(.1,.1), (.9,.1), (.1,1.9), (.5,.5), (.9,1.9)])
+    def test_surf_rect_Robot_bounds_check_good(self, robot_surf_rect, pos_cmd):
+        robot_surf_rect.pos_cmd = pos_cmd
+
+
+    @pytest.mark.parametrize('pos_cmd', [(.1,.1), (.9,.1), (.1,.9), (.5,.5), (.9,.9)])
+    def test_raft_rect_Robot_bounds_check_good(self, robot_raft_rect, pos_cmd):
+        robot_raft_rect.pos_cmd = pos_cmd
 
 
     @pytest.mark.parametrize('pos_cmd',
         [( 0.0, 0.0), ( 0.0, 1.0), ( 1.0, 1.0), ( 1.0, 0.0), # edges
          (-1.0,-1.0), (-1.0, 0.5), (-1.0, 1.5), ( 0.5, 1.5), # outside quadrants
          ( 1.5, 1.5), ( 1.5, 0.5), ( 1.5,-1.0), ( 0.5,-1.0)])
-    def test_Robot_bounds_check_bad(self, robot, pos_cmd):
+    def test_default_Robot_bounds_check_bad(self, robot, pos_cmd):
         with pytest.raises(ValueError):
             robot.pos_cmd = pos_cmd
 
 
-    def test_Robot_process_input_sw(self, robot):
-        robot.raft.position = (.5, .5)
-        pos_cmd = (
-            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
-            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
-        )
-        
-        cmds = robot.process_input(pos_cmd)
-
-        assert (abs(cmds['sw'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['sw'][0]}"
-        assert (abs(cmds['ne'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SW: {cmds['ne'][0]}"
+    @pytest.mark.parametrize('pos_cmd',
+        [( 0.0, 0.0), ( 0.0, 2.0), ( 1.0, 2.0), ( 1.0, 0.0), # edges
+         (-1.0,-1.0), (-1.0, 0.5), (-1.0, 1.5), ( 0.5, 2.5), # outside quadrants
+         ( 1.5, 1.5), ( 1.5, 0.5), ( 1.5,-1.0), ( 0.5,-1.0)])
+    def test_surf_rect_Robot_bounds_check_bad(self, robot_surf_rect, pos_cmd):
+        with pytest.raises(ValueError):
+            robot_surf_rect.pos_cmd = pos_cmd
 
 
-    def test_Robot_process_input_nw(self, robot):
-        robot.raft.position = (.5, .5)
-        pos_cmd = (
-            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
-            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
-        )
-        
-        cmds = robot.process_input(pos_cmd)
-
-        assert (abs(cmds['se'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['se'][0]}"
-        assert (abs(cmds['nw'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NW: {cmds['nw'][0]}"
+    @pytest.mark.parametrize('pos_cmd',
+        [( 0.0, 0.0), ( 0.0, 1.0), ( 1.0, 1.0), ( 1.0, 0.0), # edges
+         (-1.0,-1.0), (-1.0, 0.5), (-1.0, 1.5), ( 0.5, 1.5), # outside quadrants
+         ( 1.5, 1.5), ( 1.5, 0.5), ( 1.5,-1.0), ( 0.5,-1.0)])
+    def test_raft_rect_Robot_bounds_check_bad(self, robot_raft_rect, pos_cmd):
+        with pytest.raises(ValueError):
+            robot_raft_rect.pos_cmd = pos_cmd
 
 
-    def test_Robot_process_input_ne(self, robot):
-        robot.raft.position = (.5, .5)
-        pos_cmd = (
-            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
-            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
-        )
-        
-        cmds = robot.process_input(pos_cmd)
+    all_pos_cmds = [
+        (-0.1, -0.1), # to SW
+        (-0.1,  0.1), # to NW
+        ( 0.1,  0.1), # to NE
+        ( 0.1, -0.1), # to SE
+        ( 0.0,  0.1), # to N
+        ( 0.0,  0.2),
+        ( 0.0, -0.1), # to S
+        ( 0.0, -0.2),
+        ( 0.1,  0.0), # to E
+        ( 0.2,  0.0),
+        (-0.1,  0.0), # to W
+        (-0.2,  0.0),
+    ]
 
-        assert (abs(cmds['sw'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['sw'][0]}"
-        assert (abs(cmds['ne'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward NE: {cmds['ne'][0]}"
+    @pytest.mark.parametrize('pos_delta', all_pos_cmds)
+    def test_default_Robot_process_input(self, robot, pos_delta: tuple):
+        multiple_robot_process_input(robot, pos_delta)
 
 
-    def test_Robot_process_input_se(self, robot):
-        robot.raft.position = (.5, .5)
-        pos_cmd = (
-            0.5 + 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2),
-            0.5 - 2. * const.PULLEY_RADIUS * np.pi / np.sqrt(2)
-        )
-        
-        cmds = robot.process_input(pos_cmd)
+    @pytest.mark.parametrize('pos_delta', all_pos_cmds)
+    def test_surf_rect_Robot_process_input(self, robot_surf_rect, pos_delta: tuple):
+        multiple_robot_process_input(robot_surf_rect, pos_delta)
 
-        assert (abs(cmds['se'] + 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['se'][0]}"
-        assert (abs(cmds['nw'] - 2. * np.pi) < EPS), f"Incorrect value calculated for movement toward SE: {cmds['nw'][0]}"
 
+    @pytest.mark.parametrize('pos_delta', all_pos_cmds)
+    def test_raft_rect_Robot_process_input(self, robot_raft_rect, pos_delta: tuple):
+        multiple_robot_process_input(robot_raft_rect, pos_delta)
