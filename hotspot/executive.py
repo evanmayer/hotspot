@@ -411,7 +411,10 @@ class Executive:
             # bootleg OrderedDict
             keys = ['sw', 'nw', 'ne', 'se']
             angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
-            hw.all_steppers([self.steppers[key] for key in keys], angs)
+            order, steps_taken = hw.all_steppers([self.steppers[key] for key in keys], angs)
+            for i in range(len(steps_taken)):
+                self.stepper_net_steps[i] += steps_taken[i]
+            logger.debug(f'Net steps: {self.stepper_net_steps}')
             #steps_taken = hw.all_steppers_serial(self.ser, angs)
 
         logger.debug(f'Move cmd: {cmd}')

@@ -32,6 +32,38 @@ MODE = 'USB'
 # -----------------------------------------------------------------------------
 # Stepper functions
 # -----------------------------------------------------------------------------
+def all_steppers_dumb(steppers: list, radians: list):
+    '''Command the number of steps that minimizes the position error'''
+    style = const.STEPPER_STYLE
+
+    directions = np.sign(radians)
+
+    # Perform steps in an order that avoids over-tension to mitigate skipping
+    # steps: positive steps first to unwind cable, then negative
+    order = np.argsort(directions)[::-1].astype(int)
+    directions = np.array(directions)[order]
+    radians = np.array(radians)[order]
+    steppers = np.array(steppers)[order]
+
+    steps_float = np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP
+    steps_to_go = np.round(steps_float).astype(int)
+
+    stepper_dirs = [stepper.FORWARD] * 4
+    for i, direction in enumerate(directions):
+        if direction == -1:
+            stepper_dirs[i] = stepper.BACKWARD
+    
+    steps_taken = [0] * 4
+    for i, stepper_n in enumerate(steppers):
+        for _ in range(steps_to_go[i]):
+            stepper_n.onestep(style=style, direction=stepper_dirs[i])
+            time.sleep(const.STEP_WAIT)
+            steps_taken[i] += directions[i]
+    logger.debug(f'Order {order}: steps: {steps_taken}')
+
+    return order, steps_taken
+
+
 def all_steppers(steppers: list, radians: list):
     '''
     The number of steps any motor must take on each loop execution can be cast
@@ -87,11 +119,11 @@ def all_steppers(steppers: list, radians: list):
             if deltas[i] > 0:
                 stepper_n.onestep(style=style, direction=stepper_dirs[i])
                 time.sleep(const.STEP_WAIT)
-                steps_taken[i] += directions[i]
+                steps_taken[order[i]] += directions[i]
                 deltas[i] -= 2 * dx
             deltas[i] += 2 * dy[i]
 
-    return
+    return order, steps_taken
 
 
 def all_steppers_serial(ser, radians: list):
@@ -191,7 +223,6 @@ def threaded_write(handle, target: int, value: int):
     target
         LabJack relay address integer
     '''
-    logger.debug(f'Trying address {target} state {value}')
     written = False
     while(1):
         try:
@@ -221,7 +252,6 @@ def spawn_all_threads(handle, states: list):
     states
         iterable of integers describing the states each relay should take
     '''
-    logger.debug(f'LJ states: {states}')
     for key in RELAY_DICT.keys():
         thread = threading.Thread(
             target=threaded_write,
