@@ -140,7 +140,7 @@ class Executive:
             encoding='utf8'
             )
 
-        if isinstance(rows, list):
+        if isinstance(rows, np.ndarray):
             self.sequence_len = len(rows)
         else:
             self.sequence_len = 1

@@ -135,8 +135,6 @@ The effector is attached to the cables by simply passing them through the raft's
 
 The 3D printed CFRP stepper motor mounts are attached to the beam mapper frame by 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts.
 
-A 3D printed CFRP "homing bar" with a corner reference feature sticks out into the mapping region to provide a repeatable location for placing the corner of the effector raft. This part is attached to the beam mapper frame with one 5/16-18 x 2" or 2.25" bolt with nyloc "jam" nut. Ensure the arm is pressed flat against the inside of the frame, no matter where it is attached.
-
 Two aluminum registration tabs are screwed into the end of each frame piece opposite the black plastic end caps, using a 5/16-18 x 1/4" screw. They are long enough to reach an edge of the mirror regardless of if the mirror's corners have been machined off. These tabs register the frame to a third edge of the mirror, so **it is important that they not be bent**.
 
 Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. 
@@ -201,17 +199,15 @@ Building up a sequence of moves allows a grid or shape to be scanned.
 
 Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated, given the separation between the movable and fixed frame faces.
 
-The eyelets of the motor mounts measured $6.19 \pm 0.5$ mm from the frame to the face of the motor mount, and $7.96 \pm 0.02$ mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of $0.014 \pm 0.001$ m. This value will be used to calculate eyelet y-positions as a function of frame separation.
+The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
 
 The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.
-
-The final piece of information needed for the robot to move is the initial position, the home position. The installed position of the corner feature on the underside of the homing bar is measured, so that when the raft is nested in the corner feature, a repeatable and known raft centroid position is acheived. The homed centroid position is entered at the command line when prompted.
 
 ## Example Geometry Calculation
 
 This is an example of the measurements needed to create a geoemtry file. Actual values listed here should not be used unless they have been verified against actual hardware, as raft and endpoint dimensions could have changed due to hardware revisions.
 
-For a benchtop test, the frame separation is $0.392 \pm 0.001$ m, so the north side y-coordinates are $0.392 - 0.014 = 0.378$ m.
+For a benchtop test, the frame separation is 0.392 +/- 0.001 m, so the north side y-coordinates are 0.392 - 0.014 = 0.378 m.
 
 | Feature               | X               | Y               |
 |:---------------------:|:---------------:|:---------------:|
@@ -221,14 +217,14 @@ For a benchtop test, the frame separation is $0.392 \pm 0.001$ m, so the north s
 | NW                    | 0.057 +/- 0.001 | 0.378 +/- 0.001 |
 | Homing feature corner | 0.155 +/- 0.001 | 0.151 +/- 0.001 |
 
-The dimensions of the raft attachment points were measured. These distances are the distances between the points on the raft where the cables exit the eyelets. The eyelets themselves were located $1.2$ mm from each edge of the raft. This modifies the effective position of the homing feature by $(+0.001, +0.001)$ m. 
+The dimensions of the raft attachment points were measured. These distances are the distances between the points on the raft where the cables exit the eyelets. The eyelets themselves were located 1.2 mm from each edge of the raft. This modifies the effective position of the homing feature by (+0.001, +0.001) m. 
 
-Raft width:  $0.045 \pm 0.001$ m
-Raft height: $0.040 \pm 0.001$ m
+Raft width:  0.045 +/- 0.001 m
+Raft height: 0.040 +/- 0.001 m
 
 Together, the location of the raft centroid when it is nested at the HOME location:
 
-$r = (0.156 + 0.045/2, 0.152 - 0.040/2)$
+r = (0.156 + 0.045/2, 0.152 - 0.040/2)
 
 Therefore, the input file for this shape would read:
 
@@ -298,22 +294,3 @@ To re-generate the call graph image, directory, run
 pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=../doc/img/pycallgraph.png -- main.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
 ```
 You must have `graphviz` installed using your operating system's package manager. For most accurate graph and timing information, do this with all peripheral hardware attached, so the call graphs include interfacing with the motor drivers and LabJack.
-
-# Test Fixture Setup
-
-For testing the software and hardware together, we set up the raspberry pi and the steppers on an optics bench in Steward Observatory Lab 168. This allows us to affix the steppers to something a roughly known distance apart. This was done to allow testing of the algorithms while the frame was in development.
-
-## Stepper Fixture
-
-Steppers are attached to the optics bench for testing via 3D-printed brackets. 1/4-20 socket head cap screws affix the bracket to the bench, and M3 screws affix the steppers to the brackets.
-
-![Test bench setup](docs/img/spool_side_view.jpg "Test bench setup")
-![Test bench setup](docs/img/spool_bench_mounted.jpg)
-
-## Fishing line routing
-
-On the optics bench, the fishing line was routed from the motor spools to the raft via 3D printed posts, forming 4 corners of a rectangle to emulate the operational configuration. These posts were 3D printed 1/4-20 screws in PETG plastic, with ~.9mm (as designed, not as printed) holes in the top to allow routing the fishing line through.
-
-## Test raft
-
-For testing purposes, the raft was another 3D printed part, a rectangular plastic coupon with four holes to accept M3 screws for tying down the ends of the fishing line a known distance apart. This was done in lieu of having a raft of Hawkeye sources ready.
