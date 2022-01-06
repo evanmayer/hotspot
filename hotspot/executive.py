@@ -378,6 +378,8 @@ class Executive:
         num_remaining = self.cmd_queue.qsize()
 
         if num_remaining < 1:
+            if self.plot_enable:
+                self.router.run_gui_event_loop()
             return
         else:
             cmd = self.cmd_queue.get()

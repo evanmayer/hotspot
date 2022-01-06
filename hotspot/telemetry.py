@@ -134,6 +134,11 @@ class DataRouter:
                 self.update_display()
 
 
+    def run_gui_event_loop(self):
+        plt.pause(1)
+        return
+
+
     def update_display(self):
         '''
         Function to update plotters.
