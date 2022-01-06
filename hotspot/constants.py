@@ -41,11 +41,7 @@ HOMING_OFFSET_Y = -0.0252
 
 # Not sure how issuing step commands to multiple motors too fast will mess
 # with the motor hat timing, so wait a bit just to be safe
-STEP_WAIT = 1e-3
-
-# Backup vars in case we need to switch to arduino motor control over serial
-# SERIAL_PORT = '/dev/ttyACM0'
-# SERIAL_BAUD = 115200
+STEP_WAIT = 1e-4
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))

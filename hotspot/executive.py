@@ -1,11 +1,10 @@
-# This file houses the code to coordinate starting, running, and stopping
-# the various processes/threads needed.
+# This file houses the code to process inputs, send commands to motors and IR
+# sources, and log/display telemetry
 
 import logging
 import multiprocessing as mp
 import numpy as np
 import os
-import serial
 import sys
 import threading
 import time
@@ -43,8 +42,8 @@ class Executive:
     def __init__(self, geometry_file: str, plot_enable=False):
         logger.debug('Executive init')
         # Set defaults
-        self.mode = 'CAL_HOME'
-        self.last_mode = 'CAL_HOME'
+        self.mode = 'WAIT'
+        self.last_mode = 'WAIT'
         self.kbd_queue = mp.Queue(1)
         self.cmd_queue = mp.Queue(const.MAX_QLEN)
         self.tm_queue = mp.Queue(const.MAX_QLEN)
@@ -80,6 +79,8 @@ class Executive:
             kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
             kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
         else:
+            if const.STEPPER_STYLE == stepper.INTERLEAVE:
+                assert const.MICROSTEP_NUM == 2, 'const.MICROSTEP_NUM multiplier must be 2 for interleaved stepping mode.'
             kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
             kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
         # This mapping should match the physical setup. kit0 is closest to the
@@ -92,8 +93,8 @@ class Executive:
             'se': kit1.stepper1
         }
 
-        # Keep track of total steps taken after homing. Closed paths
-        # should maintain 0 net steps.
+        # Keep track of total steps taken post-homing. Closed loop paths
+        # should maintain ~0 net steps.
         self.stepper_net_steps = np.array([0] * 4)
         # Keep track of rounding errors in steps to correct them as they
         # accumulate
@@ -102,8 +103,6 @@ class Executive:
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
 
-        #self.ser = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD)
-        # time.sleep(2)
         return
 
 
@@ -140,7 +139,13 @@ class Executive:
             skip_header=1,
             encoding='utf8'
             )
-        self.sequence_len = len(rows)
+
+        if isinstance(rows, list):
+            self.sequence_len = len(rows)
+        else:
+            self.sequence_len = 1
+            rows = np.array([rows])
+
         if (self.sequence_len > const.MAX_QLEN):
             logger.warn(f'Input command number {len(rows)} exceeds command'
                 + ' queue length {const.MAX_QLEN}. Increase'
@@ -180,7 +185,8 @@ class Executive:
             Data spec described in docstring of sequence() function.
         '''
         # Allow user input to change the mode.
-        input_thread = threading.Thread(target=self._get_kbd,
+        input_thread = threading.Thread(
+            target=self._get_kbd,
             args=(self.kbd_queue,),
             daemon=True
         )
@@ -311,12 +317,6 @@ class Executive:
                 progress = 100. * (num_steps - i) / num_steps
                 logger.info(f'Progress: {progress:.2f} %')
 
-        # Ensure all steppers start on a single step boundary
-        for key in self.steppers.keys():
-            self.steppers[key].onestep(style=stepper.DOUBLE, direction=stepper.FORWARD)
-            time.sleep(100*const.STEP_WAIT)
-            self.steppers[key].onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD)
-
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
@@ -388,7 +388,6 @@ class Executive:
         self.do_labjack_tasks(cmd)
         logger.info(f'Raft centroid: {self.robot.raft.position}')
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
-        # take time to log TM and update display before doing next cmd
         self.router.process_tm(plot_enable=self.plot_enable)
         return
 
@@ -437,8 +436,6 @@ class Executive:
                         stepper_dir = stepper.FORWARD
                     [self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir) for _ in range(steps_to_go)]
 
-            #steps_taken = hw.all_steppers_serial(self.ser, angs)
-
         logger.debug(f'Move cmd: {cmd}')
         pos_after = cmd['pos_cmd']
         send_pos_cmd(pos_after)
@@ -473,5 +470,4 @@ class Executive:
 
     def close(self):
         [self.steppers[key].release() for key in self.steppers.keys()]
-        #self.ser.close()
         return

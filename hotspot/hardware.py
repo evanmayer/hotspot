@@ -2,7 +2,6 @@
 
 import logging
 import numpy as np
-import serial
 import threading
 import time
 
@@ -32,38 +31,6 @@ MODE = 'USB'
 # -----------------------------------------------------------------------------
 # Stepper functions
 # -----------------------------------------------------------------------------
-def all_steppers_dumb(steppers: list, radians: list):
-    '''Command the number of steps that minimizes the position error'''
-    style = const.STEPPER_STYLE
-
-    directions = np.sign(radians)
-
-    # Perform steps in an order that avoids over-tension to mitigate skipping
-    # steps: positive steps first to unwind cable, then negative
-    order = np.argsort(directions)[::-1].astype(int)
-    directions = np.array(directions)[order]
-    radians = np.array(radians)[order]
-    steppers = np.array(steppers)[order]
-
-    steps_float = np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP
-    steps_to_go = np.round(steps_float).astype(int)
-
-    stepper_dirs = [stepper.FORWARD] * 4
-    for i, direction in enumerate(directions):
-        if direction == -1:
-            stepper_dirs[i] = stepper.BACKWARD
-    
-    steps_taken = [0] * 4
-    for i, stepper_n in enumerate(steppers):
-        for _ in range(steps_to_go[i]):
-            stepper_n.onestep(style=style, direction=stepper_dirs[i])
-            time.sleep(const.STEP_WAIT)
-            steps_taken[i] += directions[i]
-    logger.debug(f'Order {order}: steps: {steps_taken}')
-
-    return order, steps_taken
-
-
 def all_steppers(steppers: list, radians: list):
     '''
     The number of steps any motor must take on each loop execution can be cast
@@ -128,28 +95,6 @@ def all_steppers(steppers: list, radians: list):
             deltas[i] += 2 * dy[i]
 
     return order, steps_taken, err[order]
-
-
-def all_steppers_serial(ser, radians: list):
-    '''
-    Step by passing the number of steps as a sequence of integers over serial.
-    This is included as a contingency in the event that Arduino is necessary.
-
-    Parameters
-    ----------
-    serial
-        pySerial Serial instance
-    radians
-        iterable of signed angle to move each stepper (radians)
-    
-    Returns
-    -------
-    '''
-    # arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier
-    steps_to_go = np.round(np.array(radians) * const.DEG_PER_RAD / (360. / 200. / 8.)).astype(int).astype(str)
-    step_str = ','.join(steps_to_go) + '\n'
-    ser.write(step_str.encode())
-    return steps_to_go.astype(int)
 
 
 # -----------------------------------------------------------------------------
@@ -289,22 +234,3 @@ def spawn_all_threads_off(handle):
 
 if __name__ == '__main__':
     pass
-    # import serial
-    # import time
-
-    # with serial.Serial('COM5', 115200) as ser:
-    #     time.sleep(2)
-    #     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))
-    #     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))
-
-    # from hw_context import MotorKit
-    # kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-    # kit1 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-    # steppers = [
-    #     kit1.stepper2, # sw
-    #     kit0.stepper1, # ne
-    #     kit0.stepper2, # nw
-    #     kit1.stepper1] # se
-    # all_steppers(steppers, [np.pi/4., 0, np.pi/4., 0])
-    # all_steppers(steppers, [0, -np.pi/4., 0, -np.pi/4.])
-    # [stepper.release() for stepper in steppers]
