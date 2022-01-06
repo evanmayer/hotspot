@@ -98,9 +98,13 @@ def all_steppers(steppers: list, radians: list):
     radians = np.array(radians)[order]
     steppers = np.array(steppers)[order]
 
-    steps_float = np.abs(radians) * const.DEG_PER_RAD / const.DEG_PER_STEP
-    steps_to_go = np.round(steps_float).astype(int)
+    steps_float = radians * const.DEG_PER_RAD / const.DEG_PER_STEP
+    # Use ceil instead of round here to bias the step count toward slack.
+    # We can detect and correct at the end of each move, using the accumulated
+    # rounding errors.
+    steps_to_go = np.ceil(steps_float).astype(int)
     err = steps_float - steps_to_go
+    steps_to_go = np.abs(steps_to_go)
 
     stepper_dirs = [stepper.FORWARD] * 4
     for i, direction in enumerate(directions):
@@ -119,11 +123,11 @@ def all_steppers(steppers: list, radians: list):
             if deltas[i] > 0:
                 stepper_n.onestep(style=style, direction=stepper_dirs[i])
                 time.sleep(const.STEP_WAIT)
-                steps_taken[order[i]] += directions[i]
+                steps_taken[order[i]] += directions[i].astype(int)
                 deltas[i] -= 2 * dx
             deltas[i] += 2 * dy[i]
 
-    return order, steps_taken
+    return order, steps_taken, err[order]
 
 
 def all_steppers_serial(ser, radians: list):

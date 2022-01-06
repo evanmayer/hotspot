@@ -11,10 +11,10 @@ from hotspot.hw_context import stepper
 HAT_0_ADDR = 0x60
 HAT_1_ADDR = 0x61
 
+PWM_FREQ = 1600
+
 # Adafruit stepper style. Used to enable/disable microstepping.
 STEPPER_STYLE = stepper.INTERLEAVE
-
-PWM_FREQ = 1600
 
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.

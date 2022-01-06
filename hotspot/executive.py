@@ -92,7 +92,12 @@ class Executive:
             'se': kit1.stepper1
         }
 
-        self.stepper_net_steps = [0] * 4
+        # Keep track of total steps taken after homing. Closed paths
+        # should maintain 0 net steps.
+        self.stepper_net_steps = np.array([0] * 4)
+        # Keep track of rounding errors in steps to correct them as they
+        # accumulate
+        self.net_step_error = np.array([0.] * 4)
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
@@ -411,10 +416,27 @@ class Executive:
             # bootleg OrderedDict
             keys = ['sw', 'nw', 'ne', 'se']
             angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
-            order, steps_taken = hw.all_steppers([self.steppers[key] for key in keys], angs)
-            for i in range(len(steps_taken)):
-                self.stepper_net_steps[i] += steps_taken[i]
+            order, steps_taken, err = hw.all_steppers([self.steppers[key] for key in keys], angs)
+            
+            # Perform corrections for rounding errors
+            self.stepper_net_steps += steps_taken
+            self.net_step_error += err
             logger.debug(f'Net steps: {self.stepper_net_steps}')
+            logger.debug(f'Net step error incurred by rounding: {self.net_step_error}')
+            for i, step_err in enumerate(self.net_step_error):
+                # If off by more than a step, fix it.
+                if np.abs(step_err) >= 1:
+                    steps_to_go = np.round(step_err).astype(int)
+                    logger.debug(f'Correcting {steps_to_go} steps on {keys[i]}')
+                    # correct in the opposite direction of error
+                    self.stepper_net_steps[i] += -steps_to_go
+                    self.net_step_error[i] += -steps_to_go
+                    stepper_dir = stepper.BACKWARD
+                    direction = np.sign(steps_to_go)
+                    if direction == -1:
+                        stepper_dir = stepper.FORWARD
+                    [self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir) for _ in range(steps_to_go)]
+
             #steps_taken = hw.all_steppers_serial(self.ser, angs)
 
         logger.debug(f'Move cmd: {cmd}')
