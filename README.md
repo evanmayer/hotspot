@@ -12,8 +12,6 @@ Code for simulating and driving a cable-driven parallel robot for mapping beams 
 
 Run `python main.py -h` for the docstring describing the command line interface.
 
-You will be prompted to enter the position of the centroid of the end effector (raft), then the robot will await a command. Choices are described onscreen.
-
 ### Example
 
 ``` bash

@@ -393,13 +393,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#all_steppers_serial" class="md-nav__link">
-    all_steppers_serial
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#spawn_all_threads" class="md-nav__link">
     spawn_all_threads
   </a>
@@ -551,13 +544,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#all_steppers_serial" class="md-nav__link">
-    all_steppers_serial
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#spawn_all_threads" class="md-nav__link">
     spawn_all_threads
   </a>
@@ -624,8 +610,6 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="kn">import</span> <span class="nn">serial</span>
 
 <span class="kn">import</span> <span class="nn">threading</span>
 
@@ -729,7 +713,19 @@
 
     <span class="n">steppers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">steppers</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
 
-    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">steps_float</span> <span class="o">=</span> <span class="n">radians</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span>
+
+    <span class="c1"># Use ceil instead of round here to bias the step count toward slack.</span>
+
+    <span class="c1"># We can detect and correct at the end of each move, using the accumulated</span>
+
+    <span class="c1"># rounding errors.</span>
+
+    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">ceil</span><span class="p">(</span><span class="n">steps_float</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">err</span> <span class="o">=</span> <span class="n">steps_float</span> <span class="o">-</span> <span class="n">steps_to_go</span>
+
+    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span>
 
     <span class="n">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
 
@@ -763,49 +759,13 @@
 
                 <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
 
-                <span class="n">steps_taken</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">stepper_dirs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">steps_taken</span><span class="p">[</span><span class="n">order</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">directions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
 
                 <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dx</span>
 
             <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
-    <span class="k">return</span>
-
-<span class="k">def</span> <span class="nf">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
-
-    <span class="sd">&#39;&#39;&#39;</span>
-
-<span class="sd">    Step by passing the number of steps as a sequence of integers over serial.</span>
-
-<span class="sd">    This is included as a contingency in the event that Arduino is necessary.</span>
-
-<span class="sd">    Parameters</span>
-
-<span class="sd">    ----------</span>
-
-<span class="sd">    serial</span>
-
-<span class="sd">        pySerial Serial instance</span>
-
-<span class="sd">    radians</span>
-
-<span class="sd">        iterable of signed angle to move each stepper (radians)</span>
-
-<span class="sd">    Returns</span>
-
-<span class="sd">    -------</span>
-
-<span class="sd">    &#39;&#39;&#39;</span>
-
-    <span class="c1"># arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier</span>
-
-    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mf">8.</span><span class="p">))</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
-
-    <span class="n">step_str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-
-    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">step_str</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
-
-    <span class="k">return</span> <span class="n">steps_to_go</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">order</span><span class="p">,</span> <span class="n">steps_taken</span><span class="p">,</span> <span class="n">err</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
 
 <span class="c1"># -----------------------------------------------------------------------------</span>
 
@@ -935,8 +895,6 @@
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Trying address </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1"> state </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-
     <span class="n">written</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
@@ -988,8 +946,6 @@
 <span class="sd">        iterable of integers describing the states each relay should take</span>
 
 <span class="sd">    &#39;&#39;&#39;</span>
-
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;LJ states: </span><span class="si">{</span><span class="n">states</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">RELAY_DICT</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 
@@ -1044,40 +1000,6 @@
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
 
     <span class="k">pass</span>
-
-    <span class="c1"># import serial</span>
-
-    <span class="c1"># import time</span>
-
-    <span class="c1"># with serial.Serial(&#39;COM5&#39;, 115200) as ser:</span>
-
-    <span class="c1">#     time.sleep(2)</span>
-
-    <span class="c1">#     all_steppers_serial(ser, np.array(4*[2. * np.pi / 10.]))</span>
-
-    <span class="c1">#     all_steppers_serial(ser, np.array(4*[-2. * np.pi]))</span>
-
-    <span class="c1"># from hw_context import MotorKit</span>
-
-    <span class="c1"># kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)</span>
-
-    <span class="c1"># kit1 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)</span>
-
-    <span class="c1"># steppers = [</span>
-
-    <span class="c1">#     kit1.stepper2, # sw</span>
-
-    <span class="c1">#     kit0.stepper1, # ne</span>
-
-    <span class="c1">#     kit0.stepper2, # nw</span>
-
-    <span class="c1">#     kit1.stepper1] # se</span>
-
-    <span class="c1"># all_steppers(steppers, [np.pi/4., 0, np.pi/4., 0])</span>
-
-    <span class="c1"># all_steppers(steppers, [0, -np.pi/4., 0, -np.pi/4.])</span>
-
-    <span class="c1"># [stepper.release() for stepper in steppers]</span>
 </code></pre></div>
 
 </details>
@@ -1218,7 +1140,19 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 
     <span class="s s-Atom">steppers</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">steppers</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
 
-    <span class="s s-Atom">steps_to_go</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="s s-Atom">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)</span> <span class="o">*</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_RAD</span> <span class="o">/</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_STEP</span><span class="p">).</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+    <span class="s s-Atom">steps_float</span> <span class="o">=</span> <span class="s s-Atom">radians</span> <span class="o">*</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_RAD</span> <span class="o">/</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_STEP</span>
+
+    <span class="s s-Atom">#</span> <span class="nv">Use</span> <span class="s s-Atom">ceil</span> <span class="s s-Atom">instead</span> <span class="s s-Atom">of</span> <span class="s s-Atom">round</span> <span class="s s-Atom">here</span> <span class="s s-Atom">to</span> <span class="s s-Atom">bias</span> <span class="s s-Atom">the</span> <span class="s s-Atom">step</span> <span class="s s-Atom">count</span> <span class="s s-Atom">toward</span> <span class="s s-Atom">slack</span><span class="p">.</span>
+
+    <span class="s s-Atom">#</span> <span class="nv">We</span> <span class="s s-Atom">can</span> <span class="s s-Atom">detect</span> <span class="s s-Atom">and</span> <span class="s s-Atom">correct</span> <span class="s s-Atom">at</span> <span class="s s-Atom">the</span> <span class="s s-Atom">end</span> <span class="s s-Atom">of</span> <span class="s s-Atom">each</span> <span class="s s-Atom">move</span><span class="p">,</span> <span class="s s-Atom">using</span> <span class="s s-Atom">the</span> <span class="s s-Atom">accumulated</span>
+
+    <span class="s s-Atom">#</span> <span class="s s-Atom">rounding</span> <span class="s s-Atom">errors</span><span class="p">.</span>
+
+    <span class="s s-Atom">steps_to_go</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">ceil</span><span class="p">(</span><span class="s s-Atom">steps_float</span><span class="p">).</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+
+    <span class="s s-Atom">err</span> <span class="o">=</span> <span class="s s-Atom">steps_float</span> <span class="o">-</span> <span class="s s-Atom">steps_to_go</span>
+
+    <span class="s s-Atom">steps_to_go</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="s s-Atom">steps_to_go</span><span class="p">)</span>
 
     <span class="s s-Atom">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="s s-Atom">stepper</span><span class="p">.</span><span class="nv">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
 
@@ -1252,87 +1186,13 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 
                 <span class="s s-Atom">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="s s-Atom">const</span><span class="p">.</span><span class="nv">STEP_WAIT</span><span class="p">)</span>
 
-                <span class="s s-Atom">steps_taken</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">+=</span> <span class="mi">1</span> <span class="o">*</span> <span class="s s-Atom">stepper_dirs</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span>
+                <span class="s s-Atom">steps_taken</span><span class="p">[</span><span class="s s-Atom">order</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]]</span> <span class="s s-Atom">+=</span> <span class="s s-Atom">directions</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">].</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
 
                 <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dx</span>
 
             <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dy</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span>
 
-    <span class="s s-Atom">return</span>
-</code></pre></div>
-
-</details>
-<h3 id="all_steppers_serial">all_steppers_serial</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">all_steppers_serial</span><span class="p">(</span>
-    <span class="n">ser</span><span class="p">,</span>
-    <span class="n">radians</span><span class="p">:</span><span class="nb">list</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<p>Step by passing the number of steps as a sequence of integers over serial.</p>
-<p>This is included as a contingency in the event that Arduino is necessary.</p>
-<p><strong>Parameters:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>serial</td>
-<td>None</td>
-<td>pySerial Serial instance</td>
-<td>None</td>
-</tr>
-<tr>
-<td>radians</td>
-<td>None</td>
-<td>iterable of signed angle to move each stepper (radians)</td>
-<td>None</td>
-</tr>
-</tbody>
-</table>
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">all_steppers_serial</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="n">list</span><span class="p">):</span>
-
-    <span class="sd">&#39;&#39;&#39;</span>
-
-<span class="sd">    Step by passing the number of steps as a sequence of integers over serial.</span>
-
-<span class="sd">    This is included as a contingency in the event that Arduino is necessary.</span>
-
-<span class="sd">    Parameters</span>
-
-<span class="sd">    ----------</span>
-
-<span class="sd">    serial</span>
-
-<span class="sd">        pySerial Serial instance</span>
-
-<span class="sd">    radians</span>
-
-<span class="sd">        iterable of signed angle to move each stepper (radians)</span>
-
-<span class="sd">    Returns</span>
-
-<span class="sd">    -------</span>
-
-<span class="sd">    &#39;&#39;&#39;</span>
-
-    <span class="c1"># arduino has stepping mode hardcoded, so dont allow runtime changes of steps to radian modifier</span>
-
-    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="p">(</span><span class="mf">360.</span> <span class="o">/</span> <span class="mf">200.</span> <span class="o">/</span> <span class="mf">8.</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
-
-    <span class="n">step_str</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-
-    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">step_str</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
-
-    <span class="k">return</span> <span class="n">steps_to_go</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span>
+    <span class="s s-Atom">return</span> <span class="s s-Atom">order</span><span class="p">,</span> <span class="s s-Atom">steps_taken</span><span class="p">,</span> <span class="s s-Atom">err</span><span class="p">[</span><span class="s s-Atom">order</span><span class="p">]</span>
 </code></pre></div>
 
 </details>
@@ -1390,8 +1250,6 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 <span class="s1">        iterable of integers describing the states each relay should take</span>
 
 <span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
-
-    <span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;LJ states: {states}&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="k">key</span> <span class="k">in</span> <span class="n">RELAY_DICT</span><span class="p">.</span><span class="k">keys</span><span class="p">()</span><span class="o">:</span>
 
@@ -1530,8 +1388,6 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 <span class="s1">        LabJack relay address integer</span>
 
 <span class="s1">    </span><span class="se">&#39;&#39;</span><span class="s1">&#39;</span>
-
-    <span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Trying address {target} state {value}&#39;</span><span class="p">)</span>
 
     <span class="n">written</span> <span class="o">=</span> <span class="no">False</span>
 

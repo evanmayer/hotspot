@@ -511,11 +511,11 @@
 
 <span class="n">HAT_1_ADDR</span> <span class="o">=</span> <span class="mh">0x61</span>
 
+<span class="n">PWM_FREQ</span> <span class="o">=</span> <span class="mi">1600</span>
+
 <span class="c1"># Adafruit stepper style. Used to enable/disable microstepping.</span>
 
 <span class="n">STEPPER_STYLE</span> <span class="o">=</span> <span class="n">stepper</span><span class="o">.</span><span class="n">INTERLEAVE</span>
-
-<span class="n">PWM_FREQ</span> <span class="o">=</span> <span class="mi">1600</span>
 
 <span class="c1"># Adafruit microstepping modifier. Divides each single step by the modifier:</span>
 
@@ -555,13 +555,7 @@
 
 <span class="c1"># with the motor hat timing, so wait a bit just to be safe</span>
 
-<span class="n">STEP_WAIT</span> <span class="o">=</span> <span class="mf">1e-3</span>
-
-<span class="c1"># Backup vars in case we need to switch to arduino motor control over serial</span>
-
-<span class="c1"># SERIAL_PORT = &#39;/dev/ttyACM0&#39;</span>
-
-<span class="c1"># SERIAL_BAUD = 115200</span>
+<span class="n">STEP_WAIT</span> <span class="o">=</span> <span class="mf">1e-4</span>
 
 <span class="c1"># Helps with I/O</span>
 
