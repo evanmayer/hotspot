@@ -529,7 +529,8 @@ chmod +x Miniconda.sh
 <h2 id="coordinate-system">Coordinate System</h2>
 <p>In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another. The x-axis is in the plane of contact between the "south" frame and an edge of the mirror. The y-axis is in the contact plane between the side aluminum registration tab and a perpendicular mirror edge. The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.</p>
 <h2 id="input-files">Input Files</h2>
-<p>There are two types of input files: geometry and profile.</p>
+<p>There are two types of input files: geometry and profile.
+<code>.ipynb</code> files are provided in the input directories to assist with making these input files.</p>
 <h3 id="geometry">Geometry</h3>
 <p>Geometry files are one-line .csv files in <code>hotspot/data/input/geometry</code>. Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. For example:</p>
 <table>
@@ -638,8 +639,8 @@ chmod +x Miniconda.sh
 </table>
 <p>Building up a sequence of moves allows a grid or shape to be scanned.</p>
 <h2 id="input-file-creation">Input File Creation</h2>
-<p>Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated, given the separation between the movable and fixed frame faces.</p>
-<p>The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.</p>
+<p>Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.</p>
+<p>The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.</p>
 <p>The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.</p>
 <h2 id="example-geometry-calculation">Example Geometry Calculation</h2>
 <p>This is an example of the measurements needed to create a geoemtry file. Actual values listed here should not be used unless they have been verified against actual hardware, as raft and endpoint dimensions could have changed due to hardware revisions.</p>

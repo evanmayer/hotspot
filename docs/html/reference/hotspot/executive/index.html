@@ -1387,6 +1387,10 @@
 
         <span class="k">if</span> <span class="n">num_remaining</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">:</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">run_gui_event_loop</span><span class="p">()</span>
+
             <span class="k">return</span>
 
         <span class="k">else</span><span class="p">:</span>
@@ -2235,6 +2239,10 @@
 
         <span class="k">if</span> <span class="n">num_remaining</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">:</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">run_gui_event_loop</span><span class="p">()</span>
+
             <span class="k">return</span>
 
         <span class="k">else</span><span class="p">:</span>
@@ -2883,7 +2891,7 @@ position according to offsets in constants.py which depend on the
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f100ee449b0</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f393d9459b0</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -3241,6 +3249,10 @@ position according to offsets in constants.py which depend on the
         <span class="nv">num_remaining</span> <span class="o">=</span> <span class="nv">self</span>.<span class="nv">cmd_queue</span>.<span class="nv">qsize</span><span class="ss">()</span>
 
         <span class="k">if</span> <span class="nv">num_remaining</span> <span class="o">&lt;</span> <span class="mi">1</span>:
+
+            <span class="k">if</span> <span class="nv">self</span>.<span class="nv">plot_enable</span>:
+
+                <span class="nv">self</span>.<span class="nv">router</span>.<span class="nv">run_gui_event_loop</span><span class="ss">()</span>
 
             <span class="k">return</span>
 

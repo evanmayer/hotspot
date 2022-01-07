@@ -457,6 +457,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#run_gui_event_loop" class="md-nav__link">
+    run_gui_event_loop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#update_display" class="md-nav__link">
     update_display
   </a>
@@ -587,6 +594,13 @@
           <li class="md-nav__item">
   <a href="#process_tm" class="md-nav__link">
     process_tm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run_gui_event_loop" class="md-nav__link">
+    run_gui_event_loop
   </a>
   
 </li>
@@ -883,6 +897,12 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">update_display</span><span class="p">()</span>
 
+    <span class="k">def</span> <span class="nf">run_gui_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
     <span class="k">def</span> <span class="nf">update_display</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="sd">&#39;&#39;&#39;</span>
@@ -924,7 +944,7 @@
 <h2 id="classes">Classes</h2>
 <h3 id="datarouter">DataRouter</h3>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">DataRouter</span><span class="p">(</span>
-    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f100ee449b0</span><span class="o">&gt;&gt;</span>
+    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f393d9459b0</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1031,6 +1051,12 @@
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nl">plot_enable</span><span class="p">:</span><span class="w"></span>
 
 <span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">update_display</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">run_gui_event_loop</span><span class="p">(</span><span class="n">self</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">plt</span><span class="p">.</span><span class="n">pause</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"></span>
 
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">update_display</span><span class="p">(</span><span class="n">self</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
@@ -1183,6 +1209,22 @@ Values can be 1- or 2-D.</p>
             <span class="k">if</span> <span class="nv">plot_enable</span>:
 
                 <span class="nv">self</span>.<span class="nv">update_display</span><span class="ss">()</span>
+</code></pre></div>
+
+</details>
+<h4 id="run_gui_event_loop">run_gui_event_loop</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">run_gui_event_loop</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">run_gui_event_loop</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
+
+        <span class="nv">plt</span>.<span class="k">pause</span><span class="ss">(</span><span class="mi">1</span><span class="ss">)</span>
+
+        <span class="k">return</span>
 </code></pre></div>
 
 </details>
