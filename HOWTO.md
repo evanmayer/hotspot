@@ -149,6 +149,7 @@ When all of these pieces are attached to the frame, it is ready to install onto 
 ## Input Files
 
 There are two types of input files: geometry and profile.
+`.ipynb` files are provided in the input directories to assist with making these input files.
 
 ### Geometry
 Geometry files are one-line .csv files in `hotspot/data/input/geometry`. Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. For example:
@@ -197,9 +198,9 @@ Building up a sequence of moves allows a grid or shape to be scanned.
 
 ## Input File Creation
 
-Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated, given the separation between the movable and fixed frame faces.
+Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
 
-The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
+The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
 
 The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.
 
