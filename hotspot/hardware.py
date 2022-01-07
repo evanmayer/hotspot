@@ -66,10 +66,9 @@ def all_steppers(steppers: list, radians: list):
     steppers = np.array(steppers)[order]
 
     steps_float = radians * const.DEG_PER_RAD / const.DEG_PER_STEP
-    # Use ceil instead of round here to bias the step count toward slack.
     # We can detect and correct at the end of each move, using the accumulated
     # rounding errors.
-    steps_to_go = np.ceil(steps_float).astype(int)
+    steps_to_go = np.round(steps_float).astype(int)
     err = steps_float - steps_to_go
     steps_to_go = np.abs(steps_to_go)
 
