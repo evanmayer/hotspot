@@ -14,6 +14,9 @@ HAT_1_ADDR = 0x61
 PWM_FREQ = 1600
 
 # Adafruit stepper style. Used to enable/disable microstepping.
+# ECM: Mess with this at your peril. Microstepping has less torque,
+# and is more prone to skipping steps in the high-tension situations
+# these motors are subject to.
 STEPPER_STYLE = stepper.INTERLEAVE
 
 # Adafruit microstepping modifier. Divides each single step by the modifier:
@@ -27,7 +30,7 @@ DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
 DEG_PER_RAD = 180. / np.pi
 
 # Used for converting linear distances into rotational ones
-PULLEY_RADIUS = 0.03 / 2.
+PULLEY_RADIUS = 0.0302 / 2.
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
@@ -41,7 +44,7 @@ HOMING_OFFSET_Y = -0.0252
 
 # Not sure how issuing step commands to multiple motors too fast will mess
 # with the motor hat timing, so wait a bit just to be safe
-STEP_WAIT = 1e-4
+STEP_WAIT = 1e-7
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))

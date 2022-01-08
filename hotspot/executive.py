@@ -139,12 +139,8 @@ class Executive:
             skip_header=1,
             encoding='utf8'
             )
-
-        if isinstance(rows, np.ndarray):
-            self.sequence_len = len(rows)
-        else:
-            self.sequence_len = 1
-            rows = np.array([rows])
+        rows = np.atleast_1d(rows)
+        self.sequence_len = len(rows)
 
         if (self.sequence_len > const.MAX_QLEN):
             logger.warn(f'Input command number {len(rows)} exceeds command'
@@ -291,7 +287,7 @@ class Executive:
         # valid for single or double steps
         max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / (360. / 200. / 1)).astype(int)
 
-        num_steps = max(1, max_steps)
+        num_steps = max(1, max_steps // 1) 
         logger.info('Homing to NW')
         report_interval = 100
         i = num_steps
@@ -378,8 +374,7 @@ class Executive:
         num_remaining = self.cmd_queue.qsize()
 
         if num_remaining < 1:
-            if self.plot_enable:
-                self.router.run_gui_event_loop()
+            self.mode = 'WAIT'
             return
         else:
             cmd = self.cmd_queue.get()
@@ -395,6 +390,8 @@ class Executive:
 
 
     def wait(self):
+        if self.plot_enable:
+            self.router.run_gui_event_loop()
         return
 
 
@@ -426,7 +423,7 @@ class Executive:
             logger.debug(f'Net step error incurred by rounding: {self.net_step_error}')
             for i, step_err in enumerate(self.net_step_error):
                 # If off by more than a step, fix it.
-                if np.abs(step_err) >= 1:
+                if np.abs(step_err) >= 0.5:
                     steps_to_go = np.round(step_err).astype(int)
                     logger.debug(f'Correcting {steps_to_go} steps on {keys[i]}')
                     # correct in the opposite direction of error
@@ -436,7 +433,9 @@ class Executive:
                     direction = np.sign(steps_to_go)
                     if direction == -1:
                         stepper_dir = stepper.FORWARD
-                    [self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir) for _ in range(steps_to_go)]
+                    for _ in range(abs(steps_to_go)):
+                        self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
+                        time.sleep(const.STEP_WAIT)
 
         logger.debug(f'Move cmd: {cmd}')
         pos_after = cmd['pos_cmd']
