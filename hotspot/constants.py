@@ -14,6 +14,9 @@ HAT_1_ADDR = 0x61
 PWM_FREQ = 1600
 
 # Adafruit stepper style. Used to enable/disable microstepping.
+# ECM: Mess with this at your peril. Microstepping has less torque,
+# and is more prone to skipping steps in the high-tension situations
+# these motors are subject to.
 STEPPER_STYLE = stepper.INTERLEAVE
 
 # Adafruit microstepping modifier. Divides each single step by the modifier:

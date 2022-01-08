@@ -423,7 +423,7 @@ class Executive:
             logger.debug(f'Net step error incurred by rounding: {self.net_step_error}')
             for i, step_err in enumerate(self.net_step_error):
                 # If off by more than a step, fix it.
-                if np.abs(step_err) >= 1:
+                if np.abs(step_err) >= 0.5:
                     steps_to_go = np.round(step_err).astype(int)
                     logger.debug(f'Correcting {steps_to_go} steps on {keys[i]}')
                     # correct in the opposite direction of error
