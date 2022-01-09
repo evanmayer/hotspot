@@ -239,6 +239,14 @@ Geometry file creation is scripted in `create_geometry.ipynb`.
 
 When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program.
 
+## A Note on Homing
+
+Homing a system with no stall sensing in the motor driver solution and no limit switches is possible, but crude. To get around the fact that there is no feedback, the current homing solution is to release all but one axis, then issue enough retracting steps to the remaining motor to ensure the raft has reached the limit of its travel toward that axis (NW at the time of writing). This axis is then held while the other steppers issue enough retracting steps to ensure all cables are taut. The raft is then in a known position and orientation relative to the frame, so the mapper is homed.
+
+![example homed position, lid off](docs/img/home_pos.jpeg)
+
+It is a simple, hands-free homing solution, but there is plenty of room for improvement here. Sensors would not be hard to add, would speed up homing, and would reduce the wear on cables (and probably motors) due to the current solution.
+
 ## Pre-mapping checks
 
 1. Make sure that 12 V is being supplied to both motor driver boards in the stack, that the polarity is correct, and that the power supply output is on.
@@ -247,14 +255,6 @@ When a surface geometry file has been created and the profile for the given shap
 4. Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion. If the cable is taut before homing, this is also fine, but the homing routine may need to be run a few times before the raft reaches the home position.
 5. Ensure the Hawkeye source signal lines won't interfere with raft operation.
 6. Ensure the `hotspot` `conda` env is active: `conda activate hotspot`.
-
-## A Note on Homing
-
-Homing a system with no stall sensing in the motor driver solution and no limit switches is possible, but crude. To get around the fact that there is no feedback, the current homing solution is to release all but one axis, then issue enough retracting steps to the remaining motor to ensure the raft has reached the limit of its travel toward that axis (NW at the time of writing). This axis is then held while the other steppers issue enough retracting steps to ensure all cables are taut. The raft is then in a known position and orientation relative to the frame, so the mapper is homed.
-
-![example homed position, lid off](docs/img/home_pos.jpeg)
-
-It is a simple, hands-free homing solution, but there is plenty of room for improvement here. Sensors would not be hard to add, would speed up homing, and would reduce the wear on cables (and probably motors) due to the current solution.
 
 ## Mapping
 
