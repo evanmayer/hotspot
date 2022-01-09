@@ -2,6 +2,8 @@
 
 This doc contains instructions for various tasks related to setting up and running the `hotspot` mirror mapper.
 
+![hotspot packed for Kitt Peak](docs/img/allup.jpeg)
+
 # Setting Up the Environment
 
 First, check that the environment setup has not been done before. If 
@@ -77,6 +79,8 @@ To power both the motors and Hawkeyes simultaneously, use a **GW Instek GPS-4303
 
 The motor driver board must be powered via its own power supply, since the raspberry pi cannot provide the requisite voltage or current. For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat. It's easiest to use leads with grabber probes to grab onto the +/- jumpers. 
 
+![12 V to driver boards](docs/img/power_grabber.jpeg)
+
 The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.
 
 ### LabJack
@@ -149,7 +153,9 @@ The raft is attached to the cables by simply passing them through the raft's eye
 
 ### Cable Maintenance
 
-The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each corner. If the cables need to be changed (e.g., they are worn), an exacto blade can be used to break the CA glue in the corners and remove the lid. The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. An replacement can be found at any tackle store or Wal-Mart.
+The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each corner. If the cables need to be changed (e.g., they are worn), an exacto blade can be used to break the CA glue in the corners and remove the lid. The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart.
+
+![mid-cable-replacement](docs/img/cable_replacement.jpeg)
 
 ## Frame
 
@@ -242,11 +248,19 @@ When a surface geometry file has been created and the profile for the given shap
 5. Ensure the Hawkeye source signal lines won't interfere with raft operation.
 6. Ensure the `hotspot` `conda` env is active: `conda activate hotspot`.
 
+## A Note on Homing
+
+Homing a system with no stall sensing in the motor driver solution and no limit switches is possible, but crude. To get around the fact that there is no feedback, the current homing solution is to release all but one axis, then issue enough retracting steps to the remaining motor to ensure the raft has reached the limit of its travel toward that axis (NW at the time of writing). This axis is then held while the other steppers issue enough retracting steps to ensure all cables are taut. The raft is then in a known position and orientation relative to the frame, so the mapper is homed.
+
+![example homed position, lid off](docs/img/home_pos.jpeg)
+
+It is a simple, hands-free homing solution, but there is plenty of room for improvement here. Sensors would not be hard to add, would speed up homing, and would reduce the wear on cables (and probably motors) due to the current solution.
+
 ## Mapping
 
 1. Start the program with `python main.py ./data/input/geometry/<geometry.csv> ./data/input/profiles/<profile.csv>`
 2. Perform a homing calibration: `c`, `RETURN` key. 
-3. The NW motor will drive the raft to the NW corner while the NE, SW, SE axes go slack, and NW should begin skipping steps after reaching the limit. This (and some noise) is normal.
+3. The NW motor will drive the raft to the NW corner while the NE, SW, SE axes go slack, and NW should begin skipping steps after reaching the limit. This (and some noise) is normal. The other axes then tension automatically.
 4. Verify that the raft reached its home against the NW corner, and that the other axes achieved tension. If not, GOTO 2.
 5. Perform a mapping sequence: `s`, `RETURN` key. 
 6. The raft will drive to each location and flash the Hawkeyes at each point in the sequence.

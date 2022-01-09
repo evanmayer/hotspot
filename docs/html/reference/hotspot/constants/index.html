@@ -515,6 +515,12 @@
 
 <span class="c1"># Adafruit stepper style. Used to enable/disable microstepping.</span>
 
+<span class="c1"># ECM: Mess with this at your peril. Microstepping has less torque,</span>
+
+<span class="c1"># and is more prone to skipping steps in the high-tension situations</span>
+
+<span class="c1"># these motors are subject to.</span>
+
 <span class="n">STEPPER_STYLE</span> <span class="o">=</span> <span class="n">stepper</span><span class="o">.</span><span class="n">INTERLEAVE</span>
 
 <span class="c1"># Adafruit microstepping modifier. Divides each single step by the modifier:</span>
@@ -533,7 +539,7 @@
 
 <span class="c1"># Used for converting linear distances into rotational ones</span>
 
-<span class="n">PULLEY_RADIUS</span> <span class="o">=</span> <span class="mf">0.03</span> <span class="o">/</span> <span class="mf">2.</span>
+<span class="n">PULLEY_RADIUS</span> <span class="o">=</span> <span class="mf">0.0302</span> <span class="o">/</span> <span class="mf">2.</span>
 
 <span class="c1"># Limits the total number of commands that may be in the command queue at once.</span>
 
@@ -555,7 +561,7 @@
 
 <span class="c1"># with the motor hat timing, so wait a bit just to be safe</span>
 
-<span class="n">STEP_WAIT</span> <span class="o">=</span> <span class="mf">1e-4</span>
+<span class="n">STEP_WAIT</span> <span class="o">=</span> <span class="mf">1e-7</span>
 
 <span class="c1"># Helps with I/O</span>
 
