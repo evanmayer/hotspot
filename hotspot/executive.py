@@ -436,10 +436,6 @@ class Executive:
                     for _ in range(abs(steps_to_go)):
                         self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
                         time.sleep(const.STEP_WAIT)
-            
-            # HACK FIXME ECM: fudge a correction as anti-backlash
-            [self.steppers[key].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD) for key in keys]
-
 
         logger.debug(f'Move cmd: {cmd}')
         pos_after = cmd['pos_cmd']
