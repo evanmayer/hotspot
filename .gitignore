@@ -134,5 +134,5 @@ dmypy.json
 # data files
 *.hdf5
 
-# original image files from photogrammetry
-verification/img/orig/
+# image files from photogrammetry
+verification/img/
