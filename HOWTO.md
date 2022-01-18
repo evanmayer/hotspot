@@ -6,6 +6,8 @@ This doc contains instructions for various tasks related to setting up and runni
 
 # Setting Up the Environment
 
+#### Is the environment set up?
+
 First, check that the environment setup has not been done before. If 
 
 ```bash
@@ -15,6 +17,8 @@ succeeds, skip these steps.
 
 ## Python Dependencies
 ### Anaconda
+
+#### Is Anaconda set up?
 
 If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda like this:
 
@@ -31,6 +35,8 @@ conda env create -f hotspot.yml
 ```
 
 It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as Adafruit's `adafruit-circuitpython-motorkit` library for driving the steppers, and the `labjack-ljm` library for controlling the Hawkeye IR sources via the LabJack. There are also packages for documentation.
+
+#### Is the LabJack library installed?
 
 > **NOTE:** Driving Hawkeye sources with LabJack Python modules requires both the system libraries and the Python interface to be installed.
 
@@ -64,11 +70,17 @@ In order to verify that basic low-level functionality is unbroken, run `pytest` 
 
 ## Enable Raspberry Pi Hardware
 
-The Raspberry Pi should have at least two [motor driver hat boards](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi). These are PCBs with onboard chips that talk to the Raspberry Pi on an I2C bus via the 2x20 header pins. They issue commands to the motor driver chips, which handle the delivery and timing of greater voltage and current than the Raspberry Pi is capable of on its own.
+#### Can the Raspberry Pi talk to the motor drivers?
 
-Follow the steps for [Enabling I2C communication](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi/installing-software#enable-i2c-1106864-2) from Adafruit. > **NOTE:** A backup pdf is saved in the `pdf` dir.
+The Raspberry Pi should have at least two [motor driver hat boards](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi). These are blue PCBs with onboard chips that talk to the Raspberry Pi on an I2C bus via the 2x20 header pins. They issue commands to the motor driver chips, which handle the delivery and timing of greater voltage and current than the Raspberry Pi is capable of on its own.
+
+If you are using a factory fresh Raspberry Pi, follow the steps for [Enabling I2C communication](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi/installing-software#enable-i2c-1106864-2) from Adafruit. 
+
+> **NOTE:** A backup pdf of instructions for this is saved in the `pdf` dir.
 
 ## Power
+
+#### Are the power supply settings correct?
 
 To power both the motors and Hawkeyes simultaneously, use a **GW Instek GPS-4303** power supply or equivalent; channels must supply:
 
@@ -80,17 +92,30 @@ Set the GW Instek GPS-4303 CH1, CH2, and optionally CH3 supply as shown:
 
 ![PSU Settings](docs/img/psu_settings.jpeg)
 
+Ensure the current limit knobs for each channel are sufficient to keep the power supply in constant voltage mode, even when the motors and Hawkeyes are drawing current. The C.V. indicator light should stay green.
+
 ### Motors
 
-The motor driver board must be powered via its own power supply, since the Raspberry Pi cannot provide the requisite voltage or current. For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat. It's easiest to use leads with grabber probes to grab onto the +/- jumpers. 
+#### Do the motor drivers have power?
+
+The Raspberry Pi cannot provide the requisite voltage or current to the motors on its own, so external power must be supplied. 
+The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.
+
+For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. 
+
+A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat.
 
 ![12 V to driver boards](docs/img/motor_power.jpeg)
 
-The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.
+As you can see, it's easiest to use leads with grabber probes to grab onto the +/- jumpers. 
 
 ### LabJack
 
-The LabJack T7 with PS12DC power switching board also needs its own power supply. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. 
+#### Do the Hawkeyes have power via the LabJack?
+
+The LabJack T7 with PS12DC power switching board also needs its own power supply.
+
+A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. 
 
 The Hawkeye IR-50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in `pdf` dir). The design target temperature is 750 C, requiring a voltage of 6.7V and a current of ~134mA per source, for a total current draw of ~1.74A when all sources are turned on. In practice, Hawkeye sources have not drawn quite this much current.
 
@@ -98,11 +123,17 @@ Connect the power supply and Hawkeye source wires to the LabJack as shown:
 
 ![LabJack Wiring](docs/img/labjack_wiring.jpeg)
 
+##### Optional: MCE CLK Sync
+
+It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use the power supply CH3 set to 5V, and attach to +5V and GND to the terminal labeled S4.
+
 ## Communication
 
 ### Raspberry Pi
 
-You can log in to the Raspberry Pi via `ssh`. In order for your computer to "see" the it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
+#### Can you talk to the Raspberry Pi?
+
+You can log in to the Raspberry Pi via `ssh`. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
 
 1. By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
 1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
@@ -122,9 +153,11 @@ The first option is the easiest, but depends on having access to an exisiting ne
  ssh -X pi@timepi.local
 ```
 
- `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic raspberry pi case.
+ `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.
 
 ### Motors
+
+#### Can the motor drivers command the motors?
 
 If they are not already connected, motors should be connected to the screw terminals of the pi's stepper hat like this:
 
@@ -142,7 +175,11 @@ It doesn't really matter which terminal maps to which corner, but it really does
 
 ## Spools
 
-If they are not already attached, the spools should be fixed to the 5 mm stepper motor shaft via one M3 setscrew. The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.
+#### Can the motors make the lines longer and shorter?
+
+If they are not already attached, the spools should be fixed to the 5 mm stepper motor shaft via one M3 setscrew. 
+
+The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.
 
 ![View of spool and M3 setscrew](docs/img/spool_side_view.jpg)
 
@@ -150,23 +187,31 @@ If they are not already attached, the spools should be fixed to the 5 mm stepper
 
 After attaching the cables to the spools, the other end should be threaded through the ~.9mm hole in the motor mount bracket.
 
-> **NOTE:** All cables should be long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be.
+> **NOTE:** All cables should be long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be (~25.5").
 
 Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process should be done by hand.
 
 ## Raft
 
+#### Will moving the lines move the Hawkeyes?
+
 The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.
 
-The raft is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down. The raft cap with the Hawkeye emitters must be removed to access the screws.
+If the raft is not already attached to the cables, the raft cap with the Hawkeye emitters must be removed to access the screws to fix the affix the lines.
+
+Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down. 
 
 ### Cable Maintenance
+
+#### What if a cable breaks?
 
 The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each corner. If the cables need to be changed (e.g., they are worn), an exacto blade can be used to break the CA glue in the corners and remove the lid. The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart, but a spool of extra cable should already be stored with the beam mapper.
 
 ![mid-cable-replacement](docs/img/cable_replacement.jpeg)
 
 ## Frame
+
+#### Is the frame fully assembled?
 
 The 3D printed stepper motor mounts are attached to the beam mapper frame by 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts.
 
@@ -192,8 +237,14 @@ Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end
 There are two types of input files: `geometry` and `profile`
 `.ipynb` files are provided in the input directories to assist with making these input files.
 
+The Raspberry Pi does not have Jupyter installed, so you may want to run these notebooks on your own machine.
+
 ### Geometry
-Geometry files are one-line .csv files in `hotspot/data/input/geometry`. Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. A simplistic example:
+Geometry files are one-line .csv files in `hotspot/data/input/geometry`. 
+
+`create_geometry.ipynb` is provided to script the creation of geometry files.
+
+Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. A simplistic example:
 
 | sw_0  | sw_1  | nw_0  | nw_1  | se_0  | se_1  | ne_0  | ne_1  | w  | h |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
@@ -203,9 +254,17 @@ Geometry files are one-line .csv files in `hotspot/data/input/geometry`. Each on
 
 Each corner point is the location of an eyelet through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.
 
+> **NOTE:** Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
+
+> The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
+
+> The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.
+
 ### Profile
 
 Profile files are multi-line .csv files in `hotspot/data/input/profiles`. Each one defines a new position to which the robot should move, in the coordinate system defined above.
+
+`geometry/create_profile.ipynb` is provided to script the creation of profiles.
 
 ![profile](docs/img/profile.png)
 
@@ -236,16 +295,6 @@ to move to a single coordinate and flash all Hawkeyes (center, inner ring, outer
 | 1 1 1 0 0 0 0 0 0 0 0 0 | .5         | .5         |
 
 Building up a sequence of moves allows a shape to be scanned.
-
-## Input File Creation
-
-Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
-
-The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
-
-The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.
-
-Geometry file creation is scripted in `create_geometry.ipynb`.
 
 ## Output Files
 
