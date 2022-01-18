@@ -445,6 +445,14 @@ class Executive:
 
 
     def do_labjack_tasks(self, cmd: dict):
+        packet = {'LabJack Cmd':
+            {
+                'Time UTC (s)': time.time(),
+                'Addresses Turned On' : 1 + np.where(np.array(cmd['flasher_cmds']) > 0)[0],
+            }
+        }
+        self.tm_queue.put(packet)
+        
         freq = 5. # Hz
         num_blinks = 10
         flipflop = 0
@@ -459,13 +467,7 @@ class Executive:
             # sleep off remaining time to fudge actions at frequency freq
             time.sleep((1. / freq) - (time.time()-start_time))
         hw.spawn_all_threads_off(self.lj_instance)
-        packet = {'LabJack Cmd':
-            {
-                'Time UTC (s)': time.time(),
-                'Addresses Turned On' : 1 + np.where(np.array(cmd['flasher_cmds']) > 0)[0],
-            }
-        }
-        self.tm_queue.put(packet)
+        
         return
 
 
