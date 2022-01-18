@@ -481,27 +481,32 @@ chmod +x Miniconda.sh
 </code></pre></div>
 
 <h1 id="software-testing-with-pytest">Software Testing with <code>pytest</code></h1>
-<p>In order to verify that basic low-level functionality is unbroken, run <code>pytest</code> from the toplevel directory.</p>
+<p>In order to verify that basic low-level functionality is unbroken, run <code>pytest</code> from the toplevel directory of the repo.</p>
 <h1 id="setting-up-the-hardware">Setting Up the Hardware</h1>
 <h2 id="enable-raspberry-pi-hardware">Enable Raspberry Pi Hardware</h2>
-<p>The raspberry pi should have at least two <a href="https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi">motor driver hat boards</a>. These are PCBs with onboard chips that talk to the raspberry pi on an I2C bus via the 2x20 header pins. They issue commands to the motor driver chips, which handle the delivery and timing of greater voltage and current than the raspberry pi is capable of on its own.</p>
+<p>The Raspberry Pi should have at least two <a href="https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi">motor driver hat boards</a>. These are PCBs with onboard chips that talk to the Raspberry Pi on an I2C bus via the 2x20 header pins. They issue commands to the motor driver chips, which handle the delivery and timing of greater voltage and current than the Raspberry Pi is capable of on its own.</p>
 <p>Follow the steps for <a href="https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi/installing-software#enable-i2c-1106864-2">Enabling I2C communication</a> from Adafruit. &gt; <strong>NOTE:</strong> A backup pdf is saved in the <code>pdf</code> dir.</p>
 <h2 id="power">Power</h2>
 <p>To power both the motors and Hawkeyes simultaneously, use a <strong>GW Instek GPS-4303</strong> power supply or equivalent; channels must supply:</p>
 <ul>
-<li>12 V constant voltage, 4 A peak instantaneous current</li>
-<li>6.7 V constant voltage, 2 A peak instantaneous current</li>
+<li>12V constant voltage, 4A peak instantaneous current</li>
+<li>6.7V constant voltage, 2A peak instantaneous current</li>
+<li>5V constant voltage, 1A peak instantaneous current (optional, for chopped signal to TIME MCE CLK card)</li>
 </ul>
+<p>Set the GW Instek GPS-4303 CH1, CH2, and optionally CH3 supply as shown:</p>
+<p><img alt="PSU Settings" src="../docs/img/psu_settings.jpeg" /></p>
 <h3 id="motors">Motors</h3>
-<p>The motor driver board must be powered via its own power supply, since the raspberry pi cannot provide the requisite voltage or current. For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat. It's easiest to use leads with grabber probes to grab onto the +/- jumpers. </p>
-<p><img alt="12 V to driver boards" src="../docs/img/power_grabber.jpeg" /></p>
+<p>The motor driver board must be powered via its own power supply, since the Raspberry Pi cannot provide the requisite voltage or current. For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat. It's easiest to use leads with grabber probes to grab onto the +/- jumpers. </p>
+<p><img alt="12 V to driver boards" src="../docs/img/motor_power.jpeg" /></p>
 <p>The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.</p>
 <h3 id="labjack">LabJack</h3>
-<p>The LabJack board also needs its own power supply to drive the voltage/current that is switched via the breakout board. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. The voltage of this power supply will depend on what is hooked up to the switchable terminals. If you are using LEDs to stand in for Hawkeye IR sources (e.g. for testing), 3.3V is fine.</p>
-<p>The Hawkeye IR-50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in <code>pdf</code> dir). The design target temperature is 750 C, requiring a voltage of 6.7 V and a current of ~134 mA per source, for a total current draw of ~1.74 A when all sources are turned on. In practice, Hawkeye sources have not drawn quite this much current.</p>
+<p>The LabJack T7 with PS12DC power switching board also needs its own power supply. A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. </p>
+<p>The Hawkeye IR-50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in <code>pdf</code> dir). The design target temperature is 750 C, requiring a voltage of 6.7V and a current of ~134mA per source, for a total current draw of ~1.74A when all sources are turned on. In practice, Hawkeye sources have not drawn quite this much current.</p>
+<p>Connect the power supply and Hawkeye source wires to the LabJack as shown:</p>
+<p><img alt="LabJack Wiring" src="../docs/img/labjack_wiring.jpeg" /></p>
 <h2 id="communication">Communication</h2>
 <h3 id="raspberry-pi">Raspberry Pi</h3>
-<p>You can log in to the raspberry pi via <code>ssh</code>. In order for your computer to "see" the raspberry pi, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):</p>
+<p>You can log in to the Raspberry Pi via <code>ssh</code>. In order for your computer to "see" the it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):</p>
 <ol>
 <li>By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than <a href="https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi">wireless</a>.</li>
 <li>By connecting directly to the pi via an Ethernet patch cable and setting up a <a href="https://en.wikipedia.org/wiki/Link-local_address">link-local</a> connection</li>
@@ -516,7 +521,7 @@ chmod +x Miniconda.sh
  ssh -X pi@timepi.local</code></p>
 <p><code>-X</code> allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic raspberry pi case.</p>
 <h3 id="motors_1">Motors</h3>
-<p>Motors should be connected to the screw terminals of the pi's stepper hat like this:</p>
+<p>If they are not already connected, motors should be connected to the screw terminals of the pi's stepper hat like this:</p>
 <p><img alt="Stepper Wiring Example" src="../docs/img/stepper_wiring.jpg" /></p>
 <p>Getting the order right ensures the stepper's coils are energized in the correct sequence to get it to rotate.</p>
 <p>The stepper motors themselves have NEMA-17 spec hole patterns, which mate to the 3D printed motor mount brackets which we will attach to the beam mapper frame. Each stepper motor should be attached to its motor mount using M3 x 0.5 x 10 mm screws. Use lubricant, because metal on plastic will be squeaky.</p>
@@ -524,7 +529,7 @@ chmod +x Miniconda.sh
 <p>In general, the driver board closest to the Pi (0n bottom) will be <code>kit0</code> (although this can be double-checked by looking at the address - <code>0x60</code> is the default I2C address for the hat, which can be changed by bridging the HAT pads A0-A4, so the board addressed by <code>0x60</code> will have no pads bridged). The terminal blocks M1-M2 are used for <code>stepper1</code> on each HAT, and M3-M4 are used for <code>stepper2</code>.</p>
 <p>It doesn't really matter which terminal maps to which corner, but it really does matter that the code and physical arrangement agree.</p>
 <h2 id="spools">Spools</h2>
-<p>The spools are each attached to the 5 mm stepper motor shaft via one M3 setscrew. The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.</p>
+<p>If they are not already attached, the spools should be fixed to the 5 mm stepper motor shaft via one M3 setscrew. The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.</p>
 <p><img alt="View of spool and M3 setscrew" src="../docs/img/spool_side_view.jpg" /></p>
 <blockquote>
 <p><strong>NOTE:</strong> Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.</p>
@@ -536,9 +541,9 @@ chmod +x Miniconda.sh
 <p>Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process should be done by hand.</p>
 <h2 id="raft">Raft</h2>
 <p>The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies <a href="http://www.hawkeyetechnologies.com/source-selection/pulsable/">IR-50</a> emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.</p>
-<p>The raft is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down.</p>
+<p>The raft is attached to the cables by simply passing them through the raft's eyelets, wrapping ends of the fishing line around the screws in each corner of the raft, and screwing them down. The raft cap with the Hawkeye emitters must be removed to access the screws.</p>
 <h3 id="cable-maintenance">Cable Maintenance</h3>
-<p>The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each corner. If the cables need to be changed (e.g., they are worn), an exacto blade can be used to break the CA glue in the corners and remove the lid. The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart.</p>
+<p>The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each corner. If the cables need to be changed (e.g., they are worn), an exacto blade can be used to break the CA glue in the corners and remove the lid. The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart, but a spool of extra cable should already be stored with the beam mapper.</p>
 <p><img alt="mid-cable-replacement" src="../docs/img/cable_replacement.jpeg" /></p>
 <h2 id="frame">Frame</h2>
 <p>The 3D printed stepper motor mounts are attached to the beam mapper frame by 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts.</p>
@@ -547,15 +552,19 @@ chmod +x Miniconda.sh
 <p><strong>NOTE:</strong> These tabs register the frame to a third edge of the mirror, so <strong>it is important that they not be bent</strong>.</p>
 </blockquote>
 <p>Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. </p>
-<p>When all of these pieces are attached to the frame, it is ready to install onto a mirror for mapping. The frame should be opened wide enough to allow it to fit over a mirror, then clamped down to register against two opposite faces.</p>
-<h1 id="physical-installation-and-input-file-creation">Physical Installation and Input File Creation</h1>
+<h1 id="input-file-creation">Input File Creation</h1>
 <h2 id="coordinate-system">Coordinate System</h2>
-<p>In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another. The x-axis is in the plane of contact between the "south" frame and an edge of the mirror. The y-axis is in the contact plane between the side aluminum registration tab and a perpendicular mirror edge. The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.</p>
+<p>In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another.</p>
+<ul>
+<li><strong>x-axis</strong>: plane of contact between the "south" frame and an edge of the mirror</li>
+<li><strong>y-axis</strong>: plane of contact between the "west" side aluminum registration tab and a perpendicular mirror edge.</li>
+</ul>
+<p>The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.</p>
 <h2 id="input-files">Input Files</h2>
-<p>There are two types of input files: <code>geometry</code> and <code>profile</code>.
+<p>There are two types of input files: <code>geometry</code> and <code>profile</code>
 <code>.ipynb</code> files are provided in the input directories to assist with making these input files.</p>
 <h3 id="geometry">Geometry</h3>
-<p>Geometry files are one-line .csv files in <code>hotspot/data/input/geometry</code>. Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. For example:</p>
+<p>Geometry files are one-line .csv files in <code>hotspot/data/input/geometry</code>. Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. A simplistic example:</p>
 <table>
 <thead>
 <tr>
@@ -586,8 +595,8 @@ chmod +x Miniconda.sh
 </tr>
 </tbody>
 </table>
-<p><img alt="geoemtry" src="../docs/img/geometry.png" /></p>
-<p>Each corner point is the location of an eyelet through which the cable passes, expressed relative to the origin described above. The width and height of the raft are defined by the separations between eyelets on the raft, through which the cable passes.</p>
+<p><img alt="geometry" src="../docs/img/geometry.png" /></p>
+<p>Each corner point is the location of an eyelet through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.</p>
 <h3 id="profile">Profile</h3>
 <p>Profile files are multi-line .csv files in <code>hotspot/data/input/profiles</code>. Each one defines a new position to which the robot should move, in the coordinate system defined above.</p>
 <p><img alt="profile" src="../docs/img/profile.png" /></p>
@@ -661,24 +670,71 @@ chmod +x Miniconda.sh
 </tbody>
 </table>
 <p>Building up a sequence of moves allows a shape to be scanned.</p>
-<h2 id="input-file-creation">Input File Creation</h2>
+<h2 id="input-file-creation_1">Input File Creation</h2>
 <p>Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.</p>
 <p>The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.</p>
 <p>The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.</p>
 <p>Geometry file creation is scripted in <code>create_geometry.ipynb</code>.</p>
-<h1 id="operation">Operation</h1>
-<p>When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program.</p>
-<h2 id="a-note-on-homing">A Note on Homing</h2>
-<p>Homing a system with no stall sensing in the motor driver solution and no limit switches is possible, but crude. To get around the fact that there is no feedback, the current homing solution is to release all but one axis, then issue enough retracting steps to the remaining motor to ensure the raft has reached the limit of its travel toward that axis (NW at the time of writing). This axis is then held while the other steppers issue enough retracting steps to ensure all cables are taut. The raft is then in a known position and orientation relative to the frame, so the mapper is homed.</p>
+<h2 id="output-files">Output Files</h2>
+<p>Output files store telemetry for each run in <code>data/output</code>. They are timestamped <code>.hdf5</code> files.</p>
+<h1 id="physical-installation-and-operation">Physical Installation and Operation</h1>
+<h2 id="physical-installation">Physical Installation</h2>
+<h3 id="general-tips">General tips</h3>
+<ul>
+<li>
+<p>Having two people helps.</p>
+</li>
+<li>
+<p><em><span style="color:red"><strong>BE VERY CAREFUL</strong> about touching the buttons on the black slide-adjust nuts</span></em></p>
+<ul>
+<li>If you are adjusting the mapper spacing and you let them off of the threaded rod, they will disassemble themselves rapidly. You don't want to lose any parts.</li>
+<li>If you are loosening or tightening the mapper down to anything, when the mapper is under tension, touching the button could release tension rapidly, potentially causing a fall, which you do not want.</li>
+</ul>
+</li>
+<li>
+<p>Bring a power strip to make moving the PSU and Raspberry Pi to various mirrors easier. Bring a long ethernet cable to plug the Raspberry Pi into the rack's network switch.</p>
+</li>
+<li>
+<p>Don't bother trying to tape Eccosorb to anything. Just pinch it in between the mirror and threaded rod. This also helps keep the threaded rod from marring the mirror surface.</p>
+</li>
+<li>
+<p>Keep as much stuff as possible out of the path of the beam.</p>
+</li>
+</ul>
+<h3 id="k1">K1</h3>
+<p>Underneath shutter, highest up. Put a step ladder inside the K-mirror frame to make the lift easier. Route Hawkeye cables around back of K1 and down.</p>
+<p><code>python main.py ./data/input/geometry/K1.csv ./data/input/profiles/K1_&lt;profile&gt;.csv</code></p>
+<p><img alt="K1" src="../docs/img/K1_orientation.jpeg" /></p>
+<h3 id="k2">K2</h3>
+<p>Should be easy. Remove the anti-head-smasher foam first.</p>
+<p><code>python main.py ./data/input/geometry/K2.csv ./data/input/profiles/K2_&lt;profile&gt;.csv</code></p>
+<p><img alt="K2" src="../docs/img/K2_orientation.jpeg" /></p>
+<h3 id="k3">K3</h3>
+<p>Pucker factor 11. Gravity is working against you, and you're right on top of F1, but snug things down good and tight when mounting the mapper and you will be fine. I used a crescent wrench on the black slide-adjust nuts for this one. Be careful not to release the slide-adjust nuts when using the wrench.</p>
+<p><code>python main.py ./data/input/geometry/K3.csv ./data/input/profiles/K3_&lt;profile&gt;.csv</code></p>
+<p><img alt="K3" src="../docs/img/K3_orientation.jpeg" /></p>
+<h3 id="f1">F1</h3>
+<p>Another easy one.</p>
+<p><code>python main.py ./data/input/geometry/F1.csv ./data/input/profiles/F1_&lt;profile&gt;.csv</code></p>
+<p><img alt="F1" src="../docs/img/F1_orientation.jpeg" /></p>
+<h3 id="p2">P2</h3>
+<p>Not currently reachable (clearance issues).</p>
+<h2 id="operation">Operation</h2>
+<p>When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program. There should already be geometry and profile files in the <code>data/input</code> directories.</p>
+<h3 id="a-note-on-homing">A Note on Homing</h3>
+<p>Homing a system with no stall sensing in the motor driver solution and no limit switches is possible, but crude. </p>
+<p>To get around the fact that there is no feedback, the current homing solution is to release all but one axis, then issue enough retracting steps to the remaining motor to ensure the raft has reached the limit of its travel toward that axis (NW at the time of writing). This axis is then held while the other steppers issue enough retracting steps to ensure all cables are taut. The raft is then in a known position and orientation relative to the frame, so the mapper is homed.</p>
+<p>You will hear and see vibration while this happens.</p>
 <p><img alt="example homed position, lid off" src="../docs/img/home_pos.jpeg" /></p>
 <p>It is a simple, hands-free homing solution, but there is plenty of room for improvement here. Sensors would not be hard to add, would speed up homing, and would reduce the wear on cables (and probably motors) due to the current solution.</p>
 <h2 id="pre-mapping-checks">Pre-mapping checks</h2>
 <ol>
-<li>Make sure that 12 V is being supplied to both motor driver boards in the stack, that the polarity is correct, and that the power supply output is on.</li>
-<li>Make sure that 6.7 V or less is being supplied to the LabJack switching board.</li>
+<li>Make sure that 12V is being supplied to both motor driver boards in the stack, that the polarity is correct.</li>
+<li>Make sure that 6.7V or less is being supplied to the LabJack switching board.</li>
+<li>Make sure the power supply output on.</li>
 <li>Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.</li>
 <li>Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion. If the cable is taut before homing, this is also fine, but the homing routine may need to be run a few times before the raft reaches the home position.</li>
-<li>Ensure the Hawkeye source signal lines won't interfere with raft operation.</li>
+<li>Ensure the Hawkeye source signal lines won't interfere with mapper operation.</li>
 <li>Ensure the <code>hotspot</code> <code>conda</code> env is active: <code>conda activate hotspot</code>.</li>
 </ol>
 <h2 id="mapping">Mapping</h2>
@@ -688,9 +744,11 @@ chmod +x Miniconda.sh
 <li>The NW motor will drive the raft to the NW corner while the NE, SW, SE axes go slack, and NW should begin skipping steps after reaching the limit. This (and some noise) is normal. The other axes then tension automatically.</li>
 <li>Verify that the raft reached its home against the NW corner, and that the other axes achieved tension. If not, GOTO 2.</li>
 <li>Perform a mapping sequence: <code>s</code>, <code>RETURN</code> key. </li>
-<li>The raft will drive to each location and flash the Hawkeyes at each point in the sequence.</li>
+<li>The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Observe the mapper, ensuring the Hawkeye signal cable does not interfere with the mapper.<ol>
 <li>You may request a mode change at any time. Mode changes are processed at the end of each move.</li>
 <li>You may abort the program with <code>Ctrl+C</code>.</li>
+</ol>
+</li>
 <li>Upon completing a sequence, it may be repeated by requesting the sequence mode again.</li>
 </ol>
 <h1 id="other-documentation">Other Documentation</h1>
