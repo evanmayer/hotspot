@@ -14,7 +14,7 @@ Run `python main.py -h` for the docstring describing the command line interface.
 
 ### Example
 
-``` bash
+```bash
 python main.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
 ```
 
@@ -28,7 +28,7 @@ I periodically use `conda env export --from-history | tee hotspot.yml` to dump w
 
 To update the environment as changes are made to `hotspot.yml`, run
 
-``` bash
+```bash
 conda env update --name hotspot --file hotspot.yml --prune
 ```
 
@@ -44,7 +44,7 @@ Driving Hawkeye sources with LabJack modules requires both the system libraries 
 Testing is accomplished with `pytest`. Passing tests are a prerequisite for committing code, and new code should come with new tests.
 
 To run the test suite defined in the `tests` dir, change dir to the toplevel dir of the repo and execute 
-``` bash
+```bash
 pytest
 ```
 

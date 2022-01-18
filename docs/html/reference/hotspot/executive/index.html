@@ -1501,6 +1501,20 @@
 
     <span class="k">def</span> <span class="nf">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
+
+            <span class="p">{</span>
+
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
         <span class="n">freq</span> <span class="o">=</span> <span class="mf">5.</span> <span class="c1"># Hz</span>
 
         <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
@@ -1528,20 +1542,6 @@
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">((</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">freq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">))</span>
 
         <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
-
-        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
-
-            <span class="p">{</span>
-
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-
-                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
-
-            <span class="p">}</span>
-
-        <span class="p">}</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
 
         <span class="k">return</span>
 
@@ -2353,6 +2353,20 @@
 
     <span class="n">def</span> <span class="n">do_labjack_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="n">dict</span><span class="p">):</span>
 
+        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
+
+            <span class="p">{</span>
+
+                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
         <span class="n">freq</span> <span class="o">=</span> <span class="mf">5.</span> <span class="c1"># Hz</span>
 
         <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
@@ -2380,20 +2394,6 @@
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">((</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">freq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">))</span>
 
         <span class="n">hw</span><span class="o">.</span><span class="n">spawn_all_threads_off</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_instance</span><span class="p">)</span>
-
-        <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LabJack Cmd&#39;</span><span class="p">:</span>
-
-            <span class="p">{</span>
-
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-
-                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
-
-            <span class="p">}</span>
-
-        <span class="p">}</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
 
         <span class="k">return</span>
 
@@ -2717,6 +2717,20 @@ position according to offsets in constants.py which depend on the
 <summary>View Source</summary>
 <div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">do_labjack_tasks</span><span class="ss">(</span><span class="nv">self</span>, <span class="nv">cmd</span>: <span class="nv">dict</span><span class="ss">)</span>:
 
+        <span class="nv">packet</span> <span class="o">=</span> {<span class="s1">&#39;</span><span class="s">LabJack Cmd</span><span class="s1">&#39;</span>:
+
+            {
+
+                <span class="s1">&#39;</span><span class="s">Time UTC (s)</span><span class="s1">&#39;</span>: <span class="nv">time</span>.<span class="nv">time</span><span class="ss">()</span>,
+
+                <span class="s1">&#39;</span><span class="s">Addresses Turned On</span><span class="s1">&#39;</span> : <span class="mi">1</span> <span class="o">+</span> <span class="nv">np</span>.<span class="nv">where</span><span class="ss">(</span><span class="nv">np</span>.<span class="nv">array</span><span class="ss">(</span><span class="nv">cmd</span>[<span class="s1">&#39;</span><span class="s">flasher_cmds</span><span class="s1">&#39;</span>]<span class="ss">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="ss">)</span>[<span class="mi">0</span>],
+
+            }
+
+        }
+
+        <span class="nv">self</span>.<span class="nv">tm_queue</span>.<span class="nv">put</span><span class="ss">(</span><span class="nv">packet</span><span class="ss">)</span>
+
         <span class="nv">freq</span> <span class="o">=</span> <span class="mi">5</span>. # <span class="nv">Hz</span>
 
         <span class="nv">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
@@ -2744,20 +2758,6 @@ position according to offsets in constants.py which depend on the
             <span class="nv">time</span>.<span class="nv">sleep</span><span class="ss">((</span><span class="mi">1</span>. <span class="o">/</span> <span class="nv">freq</span><span class="ss">)</span> <span class="o">-</span> <span class="ss">(</span><span class="nv">time</span>.<span class="nv">time</span><span class="ss">()</span><span class="o">-</span><span class="nv">start_time</span><span class="ss">))</span>
 
         <span class="nv">hw</span>.<span class="nv">spawn_all_threads_off</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">lj_instance</span><span class="ss">)</span>
-
-        <span class="nv">packet</span> <span class="o">=</span> {<span class="s1">&#39;</span><span class="s">LabJack Cmd</span><span class="s1">&#39;</span>:
-
-            {
-
-                <span class="s1">&#39;</span><span class="s">Time UTC (s)</span><span class="s1">&#39;</span>: <span class="nv">time</span>.<span class="nv">time</span><span class="ss">()</span>,
-
-                <span class="s1">&#39;</span><span class="s">Addresses Turned On</span><span class="s1">&#39;</span> : <span class="mi">1</span> <span class="o">+</span> <span class="nv">np</span>.<span class="nv">where</span><span class="ss">(</span><span class="nv">np</span>.<span class="nv">array</span><span class="ss">(</span><span class="nv">cmd</span>[<span class="s1">&#39;</span><span class="s">flasher_cmds</span><span class="s1">&#39;</span>]<span class="ss">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="ss">)</span>[<span class="mi">0</span>],
-
-            }
-
-        }
-
-        <span class="nv">self</span>.<span class="nv">tm_queue</span>.<span class="nv">put</span><span class="ss">(</span><span class="nv">packet</span><span class="ss">)</span>
 
         <span class="k">return</span>
 </code></pre></div>
@@ -2889,7 +2889,7 @@ position according to offsets in constants.py which depend on the
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f6b8f5e6fd0</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7fca5feec908</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
