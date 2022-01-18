@@ -325,7 +325,7 @@ It is a simple, hands-free homing solution, but there is plenty of room for impr
 
 1. Make sure that 12V is being supplied to both motor driver boards in the stack, that the polarity is correct.
 2. Make sure that 6.7V or less is being supplied to the LabJack switching board.
-3. Make sure the power supply output on.
+3. Make sure the power supply output is on.
 4. Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.
 5. Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion. If the cable is taut before homing, this is also fine, but the homing routine may need to be run a few times before the raft reaches the home position.
 6. Ensure the Hawkeye source signal lines won't interfere with mapper operation.
