@@ -514,11 +514,13 @@ chmod +x Miniconda.sh
 </ol>
 <p>The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy.</p>
 <p>The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:</p>
-<p><code>bash
- ping timepi.local</code></p>
+<div class="codehilite"><pre><span></span><code> ping timepi.local
+</code></pre></div>
+
 <p>The ssh command goes like this:</p>
-<p><code>bash
- ssh -X pi@timepi.local</code></p>
+<div class="codehilite"><pre><span></span><code> ssh -X pi@timepi.local
+</code></pre></div>
+
 <p><code>-X</code> allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic raspberry pi case.</p>
 <h3 id="motors_1">Motors</h3>
 <p>If they are not already connected, motors should be connected to the screw terminals of the pi's stepper hat like this:</p>

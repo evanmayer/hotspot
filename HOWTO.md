@@ -112,15 +112,15 @@ The first option is the easiest, but depends on having access to an exisiting ne
 
  The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:
  
- ```bash
+```bash
  ping timepi.local
- ```
+```
  
  The ssh command goes like this:
 
- ```bash
+```bash
  ssh -X pi@timepi.local
- ```
+```
 
  `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic raspberry pi case.
 
