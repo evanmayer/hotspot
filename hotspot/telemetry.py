@@ -44,7 +44,7 @@ class Visualizer:
             ax.set_title(varname)
             ax.grid(True)
         
-        time = file_handle[self.source]['Time UTC (s)']
+        time = file_handle[self.source]['Local Time (s)']
         data = file_handle[self.source][varname]
         dim = len(data.shape)
         if dim < 2: # 1D data
@@ -94,12 +94,12 @@ class DataRouter:
         Packet format:
         {
             'source' :
-                'Time UTC (s)' : value (all packets should have this key)
+                'Local Time (s)' : value (all packets should have this key)
                 'variable0' : value,
                 'variable1' : value
         }
         Times are referenced to UNIX epoch UTC. All packets should have the
-        key 'Time UTC (s)'.
+        key 'Local Time (s)'.
         Values can be 1- or 2-D.
         '''
         # Otherwise, create or add to output file on disk

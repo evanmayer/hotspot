@@ -321,7 +321,7 @@ class Executive:
 
         packet = {'algorithm':
             {
-                'Time UTC (s)': time.time(),
+                'Local Time (s)': time.time(),
                 'Position Command (m)' : pos,
                 'Motor Delta Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
             }
@@ -447,7 +447,7 @@ class Executive:
     def do_labjack_tasks(self, cmd: dict):
         packet = {'LabJack Cmd':
             {
-                'Time UTC (s)': time.time(),
+                'Local Time (s)': time.time(),
                 'Addresses Turned On' : 1 + np.where(np.array(cmd['flasher_cmds']) > 0)[0],
             }
         }

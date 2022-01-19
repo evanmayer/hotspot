@@ -230,7 +230,7 @@ class Robot:
         
         packet = {'algorithm':
             {
-                'Time UTC (s)': time.time(),
+                'Local Time (s)': time.time(),
                 'Position Command (m)' : pos_cmd,
                 'Motor Delta Angle Command (rad)' : delta_angles.flatten(),
             }
