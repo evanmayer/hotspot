@@ -8,9 +8,15 @@ This doc contains instructions for various tasks related to setting up and runni
 
 `hotspot` is a cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources, mounted on an adjustable frame. It clamps to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response. 
 
-# `timepi`, the Raspberry Pi control computer
+#### What is this document?
 
-The stepper motors and IR sources are controlled by logging into the Raspberry Pi and running the `main.py` application. You do not need to check out this repo onto a personal computer unless you wish to [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
+This document is a comprehensive how-to on setting up, maintaining, and running the mirror mapper. It contains all the information that would be needed to replace and reconfigure major components of the system, however unlikely that may be.
+
+It is organized in order of information flow: from the operator (you!) logging into the control computer, to setting up the software environment, connecting the power and signal cables, assembling the mapper frame, creating input files, mounting it on various mirrors, and operating the mapper. 
+
+# Using `timepi`, the Raspberry Pi control computer
+
+The mapper is controlled by logging into the Raspberry Pi and running the `main.py` application. This repo should already be checked out on it, and you do not need to check out this repo onto a personal computer unless you wish to [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
 
 #### Can you talk to the Raspberry Pi?
 
@@ -37,7 +43,7 @@ The first option is the easiest, but depends on having access to an exisiting ne
  `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.
 
 
-# Setting Up the Environment (Raspberry Pi)
+## Setting Up the Environment (Raspberry Pi)
 
 #### Is the environment set up?
 
@@ -48,7 +54,6 @@ conda activate hotspot
 ```
 succeeds, skip [these steps](#setting-up-the-environment-raspberry-pi).
 
-## Python Dependencies
 ### Anaconda
 
 #### Is Anaconda set up?
@@ -81,7 +86,7 @@ Once that is done, activate the env with
 conda activate hotspot
 ```
 
-## Keeping things up to date
+### Keeping things up to date
 
 If you need to install something new later on, remember to update `hotspot.yml` by doing 
 
