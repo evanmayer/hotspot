@@ -257,42 +257,15 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    Dependencies
-  </a>
-  
-    <nav class="md-nav" aria-label="Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#creating-a-conda-environment" class="md-nav__link">
-    Creating a conda environment
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#updating-yml-as-new-dependencies-are-needed" class="md-nav__link">
-    Updating .yml as new dependencies are needed
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#labjack-libraries" class="md-nav__link">
-    LabJack libraries
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#other-documentation" class="md-nav__link">
+    Other Documentation
+  </a>
   
 </li>
       
@@ -558,42 +531,15 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    Dependencies
-  </a>
-  
-    <nav class="md-nav" aria-label="Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#creating-a-conda-environment" class="md-nav__link">
-    Creating a conda environment
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#updating-yml-as-new-dependencies-are-needed" class="md-nav__link">
-    Updating .yml as new dependencies are needed
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#labjack-libraries" class="md-nav__link">
-    LabJack libraries
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#other-documentation" class="md-nav__link">
+    Other Documentation
+  </a>
   
 </li>
       
@@ -659,18 +605,8 @@
 <div class="codehilite"><pre><span></span><code>python main.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
 </code></pre></div>
 
-<h3 id="dependencies">Dependencies</h3>
-<h4 id="creating-a-conda-environment">Creating a conda environment</h4>
-<p>I use <a href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a> to keep my development environments separate. If there is a .yml file available that lists the dependencies I need, I run <code>conda env create -f &lt;filename&gt;.yml</code> to use it to make a new conda env with those dependencies. Conda parses the contents, creates a new env with the given name, and installs the required packages.</p>
-<h4 id="updating-yml-as-new-dependencies-are-needed">Updating .yml as new dependencies are needed</h4>
-<p>I periodically use <code>conda env export --from-history | tee hotspot.yml</code> to dump whatever I've manually installed so far into the .yml. This avoids specifying exact versions of packages, but will still try to install all the packages needed.</p>
-<p>To update the environment as changes are made to <code>hotspot.yml</code>, run</p>
-<div class="codehilite"><pre><span></span><code>conda env update --name hotspot --file hotspot.yml --prune
-</code></pre></div>
-
-<h4 id="labjack-libraries">LabJack libraries</h4>
-<p>Driving Hawkeye sources with LabJack modules requires both the system libraries and the Python interface to be installed.</p>
-<p><a href="https://labjack.com/support/software/installers/ljm">Download and install</a> the LJM libraries from LabJack, and the <code>hotspot.yml</code> file will handle the Python install via <code>pip</code>.</p>
+<h2 id="other-documentation">Other Documentation</h2>
+<p>See the <a href="HOWTO/">HOWTO</a>.</p>
 <h2 id="contributing">Contributing</h2>
 <h3 id="testing">Testing</h3>
 <p>Testing is accomplished with <code>pytest</code>. Passing tests are a prerequisite for committing code, and new code should come with new tests.</p>

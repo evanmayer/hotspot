@@ -18,25 +18,9 @@ Run `python main.py -h` for the docstring describing the command line interface.
 python main.py ./data/input/geometry/frame.csv ./data/input/profiles/circle.csv
 ```
 
-### Dependencies
+## Other Documentation
 
-#### Creating a conda environment
-I use [miniconda](https://docs.conda.io/en/latest/miniconda.html) to keep my development environments separate. If there is a .yml file available that lists the dependencies I need, I run `conda env create -f <filename>.yml` to use it to make a new conda env with those dependencies. Conda parses the contents, creates a new env with the given name, and installs the required packages.
-
-#### Updating .yml as new dependencies are needed
-I periodically use `conda env export --from-history | tee hotspot.yml` to dump whatever I've manually installed so far into the .yml. This avoids specifying exact versions of packages, but will still try to install all the packages needed.
-
-To update the environment as changes are made to `hotspot.yml`, run
-
-```bash
-conda env update --name hotspot --file hotspot.yml --prune
-```
-
-#### LabJack libraries
-
-Driving Hawkeye sources with LabJack modules requires both the system libraries and the Python interface to be installed.
-
-[Download and install](https://labjack.com/support/software/installers/ljm) the LJM libraries from LabJack, and the `hotspot.yml` file will handle the Python install via `pip`.
+See the [HOWTO](HOWTO.md).
 
 ## Contributing
 
