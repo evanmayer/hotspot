@@ -161,6 +161,8 @@ Connect the power supply and Hawkeye source wires to the LabJack as shown:
 
 ![LabJack Wiring](docs/img/labjack_wiring.jpeg)
 
+Finally, ensure the LabJack T7 is plugged into the Raspberry Pi's USB port.
+
 ##### Optional: MCE CLK Sync
 
 It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use the power supply CH3 set to 5V, and attach to +5V and GND to the terminal labeled S4.
