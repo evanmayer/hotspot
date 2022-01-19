@@ -234,9 +234,39 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Howto
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Howto
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-hotspot" class="md-nav__link">
+    What is hotspot?
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -426,6 +456,21 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-hotspot" class="md-nav__link">
+    What is hotspot?
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -443,14 +488,35 @@
                 
                 <h1 id="how-to">How To</h1>
 <p>This doc contains instructions for various tasks related to setting up and running the <code>hotspot</code> mirror mapper.</p>
+<h4 id="what-is-hotspot">What is <code>hotspot</code>?</h4>
 <p><img alt="hotspot packed for Kitt Peak" src="../docs/img/allup.jpeg" /></p>
-<h1 id="setting-up-the-environment">Setting Up the Environment</h1>
+<p><code>hotspot</code> is a cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources, mounted on an adjustable frame. It clamps to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response. </p>
+<h1 id="timepi-the-raspberry-pi-control-computer"><code>timepi</code>, the Raspberry Pi control computer</h1>
+<p>The stepper motors and IR sources are controlled by logging into the Raspberry Pi and running the <code>main.py</code> application. You do not need to check out this repo onto a personal computer unless you wish to <a href="#ok-but-is-there-an-easy-way-to-make-a-new-one">generate new input files</a>.</p>
+<h4 id="can-you-talk-to-the-raspberry-pi">Can you talk to the Raspberry Pi?</h4>
+<p>You can log in to the Raspberry Pi via <code>ssh</code>. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):</p>
+<ol>
+<li>By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than <a href="https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi">wireless</a>.</li>
+<li>By connecting directly to the pi via an Ethernet patch cable and setting up a <a href="https://en.wikipedia.org/wiki/Link-local_address">link-local</a> connection</li>
+<li>By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.</li>
+</ol>
+<p>The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy.</p>
+<p>The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:</p>
+<div class="codehilite"><pre><span></span><code> ping timepi.local
+</code></pre></div>
+
+<p>The ssh command goes like this:</p>
+<div class="codehilite"><pre><span></span><code> ssh -X pi@timepi.local
+</code></pre></div>
+
+<p><code>-X</code> allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.</p>
+<h1 id="setting-up-the-environment-raspberry-pi">Setting Up the Environment (Raspberry Pi)</h1>
 <h4 id="is-the-environment-set-up">Is the environment set up?</h4>
 <p>First, check that the environment setup has not been done before. If </p>
 <div class="codehilite"><pre><span></span><code>conda activate hotspot
 </code></pre></div>
 
-<p>succeeds, skip these steps.</p>
+<p>succeeds, skip <a href="#setting-up-the-environment-raspberry-pi">these steps</a>.</p>
 <h2 id="python-dependencies">Python Dependencies</h2>
 <h3 id="anaconda">Anaconda</h3>
 <h4 id="is-anaconda-set-up">Is Anaconda set up?</h4>
@@ -505,7 +571,7 @@ chmod +x Miniconda.sh
 <p><img alt="PSU Settings" src="../docs/img/psu_settings.jpeg" /></p>
 <p>Ensure the current limit knobs for each channel are sufficient to keep the power supply in constant voltage mode, even when the motors and Hawkeyes are drawing current. The C.V. indicator light should stay green.</p>
 <h3 id="motors">Motors</h3>
-<h4 id="do-the-motor-drivers-have-power">Do the motor drivers have power?</h4>
+<h4 id="do-the-motor-driver-boards-have-power">Do the motor driver boards have power?</h4>
 <p>The Raspberry Pi cannot provide the requisite voltage or current to the motors on its own, so external power must be supplied. 
 The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.</p>
 <p>For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. </p>
@@ -521,25 +587,7 @@ The motor controllers on each hat are designed to run with 5-12V, with a maximum
 <p><img alt="LabJack Wiring" src="../docs/img/labjack_wiring.jpeg" /></p>
 <h5 id="optional-mce-clk-sync">Optional: MCE CLK Sync</h5>
 <p>It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use the power supply CH3 set to 5V, and attach to +5V and GND to the terminal labeled S4.</p>
-<h2 id="communication">Communication</h2>
-<h3 id="raspberry-pi">Raspberry Pi</h3>
-<h4 id="can-you-talk-to-the-raspberry-pi">Can you talk to the Raspberry Pi?</h4>
-<p>You can log in to the Raspberry Pi via <code>ssh</code>. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):</p>
-<ol>
-<li>By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than <a href="https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi">wireless</a>.</li>
-<li>By connecting directly to the pi via an Ethernet patch cable and setting up a <a href="https://en.wikipedia.org/wiki/Link-local_address">link-local</a> connection</li>
-<li>By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.</li>
-</ol>
-<p>The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy.</p>
-<p>The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:</p>
-<div class="codehilite"><pre><span></span><code> ping timepi.local
-</code></pre></div>
-
-<p>The ssh command goes like this:</p>
-<div class="codehilite"><pre><span></span><code> ssh -X pi@timepi.local
-</code></pre></div>
-
-<p><code>-X</code> allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.</p>
+<h2 id="motion-outputs">Motion Outputs</h2>
 <h3 id="motors_1">Motors</h3>
 <h4 id="can-the-motor-drivers-command-the-motors">Can the motor drivers command the motors?</h4>
 <p>If they are not already connected, motors should be connected to the screw terminals of the pi's stepper hat like this:</p>
@@ -549,7 +597,7 @@ The motor controllers on each hat are designed to run with 5-12V, with a maximum
 <p>At this point, it is important to consider the mapping of motor driver terminal -&gt; stepper motor -&gt; motor mount -&gt; corner of beam mapper frame. The <code>Executive.__init__()</code> function specifies this mapping, so the motor installation location and stepper instance in <code>__init__()</code> should match, to ensure the correct motor commands are sent to the correct stepper. Steppers and wire harnesses are labeled to assist with this.</p>
 <p>In general, the driver board closest to the Pi (0n bottom) will be <code>kit0</code> (although this can be double-checked by looking at the address - <code>0x60</code> is the default I2C address for the hat, which can be changed by bridging the HAT pads A0-A4, so the board addressed by <code>0x60</code> will have no pads bridged). The terminal blocks M1-M2 are used for <code>stepper1</code> on each HAT, and M3-M4 are used for <code>stepper2</code>.</p>
 <p>It doesn't really matter which terminal maps to which corner, but it really does matter that the code and physical arrangement agree.</p>
-<h2 id="spools">Spools</h2>
+<h3 id="spools">Spools</h3>
 <h4 id="can-the-motors-make-the-lines-longer-and-shorter">Can the motors make the lines longer and shorter?</h4>
 <p>If they are not already attached, the spools should be fixed to the 5 mm stepper motor shaft via one M3 setscrew. </p>
 <p>The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.</p>
@@ -562,8 +610,8 @@ The motor controllers on each hat are designed to run with 5-12V, with a maximum
 <p><strong>NOTE:</strong> All cables should be long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be (~25.5").</p>
 </blockquote>
 <p>Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process should be done by hand.</p>
-<h2 id="raft">Raft</h2>
-<h4 id="will-moving-the-lines-move-the-hawkeyes">Will moving the lines move the Hawkeyes?</h4>
+<h3 id="raft">Raft</h3>
+<h4 id="will-moving-the-cables-move-the-hawkeyes">Will moving the cables move the Hawkeyes?</h4>
 <p>The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies <a href="http://www.hawkeyetechnologies.com/source-selection/pulsable/">IR-50</a> emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.</p>
 <p>If the raft is not already attached to the cables, the raft cap with the Hawkeye emitters must be removed to access the screws to fix the affix the lines.</p>
 <p>Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down. </p>
@@ -579,20 +627,21 @@ The motor controllers on each hat are designed to run with 5-12V, with a maximum
 <p><strong>NOTE:</strong> These tabs register the frame to a third edge of the mirror, so <strong>it is important that they not be bent</strong>.</p>
 </blockquote>
 <p>Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. </p>
-<h1 id="input-file-creation">Input File Creation</h1>
-<h2 id="coordinate-system">Coordinate System</h2>
+<h1 id="coordinate-system">Coordinate System</h1>
 <p>In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another.</p>
 <ul>
 <li><strong>x-axis</strong>: plane of contact between the "south" frame and an edge of the mirror</li>
 <li><strong>y-axis</strong>: plane of contact between the "west" side aluminum registration tab and a perpendicular mirror edge.</li>
 </ul>
 <p>The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.</p>
-<h2 id="input-files">Input Files</h2>
-<p>There are two types of input files: <code>geometry</code> and <code>profile</code>
-<code>.ipynb</code> files are provided in the input directories to assist with making these input files.</p>
-<p>The Raspberry Pi does not have Jupyter installed, so you may want to run these notebooks on your own machine.</p>
+<h1 id="input-files">Input Files</h1>
+<p>There are two types of input files: <code>geometry</code> and <code>profile</code>.
+Read on to learn what they are for and what is inside each.</p>
+<h4 id="ok-but-is-there-an-easy-way-to-make-a-new-one">Ok, but is there an easy way to make a new one?</h4>
+<p><code>.ipynb</code> files are provided in the <code>data/input/*</code> directories to assist with making these input files. Most likely, you will only need <code>data/input/create_profile.ipynb</code>.</p>
+<p>The Raspberry Pi does not have Jupyter installed, so you would need a local checkout of <code>hotspot</code> or a copy of these notebooks to run on your own machine. Then simply copy the new files to the Raspberry Pi's <code>/data/input/*</code> directory with <code>scp</code>.</p>
 <h3 id="geometry">Geometry</h3>
-<p>Geometry files are one-line .csv files in <code>hotspot/data/input/geometry</code>. </p>
+<p>Geometry files are one-line .csv files in <code>data/input/geometry</code>. </p>
 <p><code>create_geometry.ipynb</code> is provided to script the creation of geometry files.</p>
 <p>Each one defines the physical setup of the robot when it is in a certain configuration, for instance, when it is installed on a mirror of a certain dimension. Each column entry describes an aspect of the physical setup of the system. A simplistic example:</p>
 <table>
@@ -626,14 +675,14 @@ The motor controllers on each hat are designed to run with 5-12V, with a maximum
 </tbody>
 </table>
 <p><img alt="geometry" src="../docs/img/geometry.png" /></p>
-<p>Each corner point is the location of an eyelet through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.</p>
+<p>Each corner point is the location of an <strong>eyelet</strong> through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.</p>
 <blockquote>
-<p><strong>NOTE:</strong> Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.</p>
+<p><strong>NOTE:</strong> Since the dimensions of the motor mounts have been measured relative to each edge, the y-positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.</p>
 <p>The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.</p>
-<p>The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.</p>
+<p>The eyelet positions should not ever change in the x-direction, unless the motor mounts are removed from the aluminum frames.</p>
 </blockquote>
 <h3 id="profile">Profile</h3>
-<p>Profile files are multi-line .csv files in <code>hotspot/data/input/profiles</code>. Each one defines a new position to which the robot should move, in the coordinate system defined above.</p>
+<p>Profile files are multi-line .csv files in <code>data/input/profiles</code>. Each one defines a new position to which the robot should move, in the coordinate system defined above.</p>
 <p><code>geometry/create_profile.ipynb</code> is provided to script the creation of profiles.</p>
 <p><img alt="profile" src="../docs/img/profile.png" /></p>
 <p>Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 5 Hz). Which group of sources is enabled is configurable with the <code>flasher_cmds</code> column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index-to-address mapping is defined in the dictionary at the top of <code>hardware.py</code>. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.</p>

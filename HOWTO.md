@@ -2,9 +2,42 @@
 
 This doc contains instructions for various tasks related to setting up and running the `hotspot` mirror mapper.
 
+#### What is `hotspot`?
+
 ![hotspot packed for Kitt Peak](docs/img/allup.jpeg)
 
-# Setting Up the Environment
+`hotspot` is a cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources, mounted on an adjustable frame. It clamps to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response. 
+
+# `timepi`, the Raspberry Pi control computer
+
+The stepper motors and IR sources are controlled by logging into the Raspberry Pi and running the `main.py` application. You do not need to check out this repo onto a personal computer unless you wish to [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
+
+#### Can you talk to the Raspberry Pi?
+
+You can log in to the Raspberry Pi via `ssh`. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
+
+1. By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
+1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
+1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.
+
+The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy.
+
+ The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:
+ 
+```bash
+ ping timepi.local
+```
+ 
+ The ssh command goes like this:
+
+```bash
+ ssh -X pi@timepi.local
+```
+
+ `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.
+
+
+# Setting Up the Environment (Raspberry Pi)
 
 #### Is the environment set up?
 
@@ -13,7 +46,7 @@ First, check that the environment setup has not been done before. If
 ```bash
 conda activate hotspot
 ```
-succeeds, skip these steps.
+succeeds, skip [these steps](#setting-up-the-environment-raspberry-pi).
 
 ## Python Dependencies
 ### Anaconda
@@ -96,7 +129,7 @@ Ensure the current limit knobs for each channel are sufficient to keep the power
 
 ### Motors
 
-#### Do the motor drivers have power?
+#### Do the motor driver boards have power?
 
 The Raspberry Pi cannot provide the requisite voltage or current to the motors on its own, so external power must be supplied. 
 The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.
@@ -127,33 +160,7 @@ Connect the power supply and Hawkeye source wires to the LabJack as shown:
 
 It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use the power supply CH3 set to 5V, and attach to +5V and GND to the terminal labeled S4.
 
-## Communication
-
-### Raspberry Pi
-
-#### Can you talk to the Raspberry Pi?
-
-You can log in to the Raspberry Pi via `ssh`. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
-
-1. By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
-1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
-1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.
-
-The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy.
-
- The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:
- 
-```bash
- ping timepi.local
-```
- 
- The ssh command goes like this:
-
-```bash
- ssh -X pi@timepi.local
-```
-
- `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.
+## Motion Outputs
 
 ### Motors
 
@@ -173,7 +180,7 @@ In general, the driver board closest to the Pi (0n bottom) will be `kit0` (altho
 
 It doesn't really matter which terminal maps to which corner, but it really does matter that the code and physical arrangement agree.
 
-## Spools
+### Spools
 
 #### Can the motors make the lines longer and shorter?
 
@@ -191,9 +198,9 @@ After attaching the cables to the spools, the other end should be threaded throu
 
 Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process should be done by hand.
 
-## Raft
+### Raft
 
-#### Will moving the lines move the Hawkeyes?
+#### Will moving the cables move the Hawkeyes?
 
 The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.
 
@@ -221,9 +228,7 @@ Two aluminum registration tabs are screwed into the end of each frame piece oppo
 
 Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. 
 
-# Input File Creation
-
-## Coordinate System
+# Coordinate System
 
  In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another.
 
@@ -232,15 +237,19 @@ Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end
  
  The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.
  
-## Input Files
+# Input Files
 
-There are two types of input files: `geometry` and `profile`
-`.ipynb` files are provided in the input directories to assist with making these input files.
+There are two types of input files: `geometry` and `profile`.
+Read on to learn what they are for and what is inside each.
 
-The Raspberry Pi does not have Jupyter installed, so you may want to run these notebooks on your own machine.
+#### Ok, but is there an easy way to make a new one?
+
+`.ipynb` files are provided in the `data/input/*` directories to assist with making these input files. Most likely, you will only need `data/input/create_profile.ipynb`.
+
+The Raspberry Pi does not have Jupyter installed, so you would need a local checkout of `hotspot` or a copy of these notebooks to run on your own machine. Then simply copy the new files to the Raspberry Pi's `/data/input/*` directory with `scp`.
 
 ### Geometry
-Geometry files are one-line .csv files in `hotspot/data/input/geometry`. 
+Geometry files are one-line .csv files in `data/input/geometry`. 
 
 `create_geometry.ipynb` is provided to script the creation of geometry files.
 
@@ -252,17 +261,17 @@ Each one defines the physical setup of the robot when it is in a certain configu
 
 ![geometry](docs/img/geometry.png)
 
-Each corner point is the location of an eyelet through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.
+Each corner point is the location of an **eyelet** through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.
 
-> **NOTE:** Since the dimensions of the motor mounts have been measured relative to each edge, the positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
+> **NOTE:** Since the dimensions of the motor mounts have been measured relative to each edge, the y-positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
 
 > The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
 
-> The eyelet positions should not change in the x-direction, unless the motor mounts are removed from the aluminum frames.
+> The eyelet positions should not ever change in the x-direction, unless the motor mounts are removed from the aluminum frames.
 
 ### Profile
 
-Profile files are multi-line .csv files in `hotspot/data/input/profiles`. Each one defines a new position to which the robot should move, in the coordinate system defined above.
+Profile files are multi-line .csv files in `data/input/profiles`. Each one defines a new position to which the robot should move, in the coordinate system defined above.
 
 `geometry/create_profile.ipynb` is provided to script the creation of profiles.
 
