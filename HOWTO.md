@@ -1,5 +1,3 @@
-# How To
-
 This doc contains instructions for various tasks related to setting up and running the `hotspot` mirror mapper.
 
 #### What is `hotspot`?
