@@ -264,6 +264,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#what-is-this-document" class="md-nav__link">
+    What is this document?
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -469,6 +476,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#what-is-this-document" class="md-nav__link">
+    What is this document?
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -491,8 +505,11 @@
 <h4 id="what-is-hotspot">What is <code>hotspot</code>?</h4>
 <p><img alt="hotspot packed for Kitt Peak" src="../docs/img/allup.jpeg" /></p>
 <p><code>hotspot</code> is a cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources, mounted on an adjustable frame. It clamps to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response. </p>
-<h1 id="timepi-the-raspberry-pi-control-computer"><code>timepi</code>, the Raspberry Pi control computer</h1>
-<p>The stepper motors and IR sources are controlled by logging into the Raspberry Pi and running the <code>main.py</code> application. You do not need to check out this repo onto a personal computer unless you wish to <a href="#ok-but-is-there-an-easy-way-to-make-a-new-one">generate new input files</a>.</p>
+<h4 id="what-is-this-document">What is this document?</h4>
+<p>This document is a comprehensive how-to on setting up, maintaining, and running the mirror mapper. It contains all the information that would be needed to replace and reconfigure major components of the system, however unlikely that may be.</p>
+<p>It is organized in order of information flow: from the operator (you!) logging into the control computer, to setting up the software environment, connecting the power and signal cables, assembling the mapper frame, creating input files, mounting it on various mirrors, and operating the mapper. </p>
+<h1 id="using-timepi-the-raspberry-pi-control-computer">Using <code>timepi</code>, the Raspberry Pi control computer</h1>
+<p>The mapper is controlled by logging into the Raspberry Pi and running the <code>main.py</code> application. This repo should already be checked out on it, and you do not need to check out this repo onto a personal computer unless you wish to <a href="#ok-but-is-there-an-easy-way-to-make-a-new-one">generate new input files</a>.</p>
 <h4 id="can-you-talk-to-the-raspberry-pi">Can you talk to the Raspberry Pi?</h4>
 <p>You can log in to the Raspberry Pi via <code>ssh</code>. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):</p>
 <ol>
@@ -510,14 +527,13 @@
 </code></pre></div>
 
 <p><code>-X</code> allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.</p>
-<h1 id="setting-up-the-environment-raspberry-pi">Setting Up the Environment (Raspberry Pi)</h1>
+<h2 id="setting-up-the-environment-raspberry-pi">Setting Up the Environment (Raspberry Pi)</h2>
 <h4 id="is-the-environment-set-up">Is the environment set up?</h4>
 <p>First, check that the environment setup has not been done before. If </p>
 <div class="codehilite"><pre><span></span><code>conda activate hotspot
 </code></pre></div>
 
 <p>succeeds, skip <a href="#setting-up-the-environment-raspberry-pi">these steps</a>.</p>
-<h2 id="python-dependencies">Python Dependencies</h2>
 <h3 id="anaconda">Anaconda</h3>
 <h4 id="is-anaconda-set-up">Is Anaconda set up?</h4>
 <p>If the Python environment/package manager <a href="https://www.anaconda.com/">Anaconda</a> does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda like this:</p>
@@ -540,7 +556,7 @@ chmod +x Miniconda.sh
 <div class="codehilite"><pre><span></span><code>conda activate hotspot
 </code></pre></div>
 
-<h2 id="keeping-things-up-to-date">Keeping things up to date</h2>
+<h3 id="keeping-things-up-to-date">Keeping things up to date</h3>
 <p>If you need to install something new later on, remember to update <code>hotspot.yml</code> by doing </p>
 <div class="codehilite"><pre><span></span><code>conda env <span class="nb">export</span> --from-history <span class="p">|</span> tee hotspot.yml
 </code></pre></div>
@@ -585,6 +601,7 @@ The motor controllers on each hat are designed to run with 5-12V, with a maximum
 <p>The Hawkeye IR-50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in <code>pdf</code> dir). The design target temperature is 750 C, requiring a voltage of 6.7V and a current of ~134mA per source, for a total current draw of ~1.74A when all sources are turned on. In practice, Hawkeye sources have not drawn quite this much current.</p>
 <p>Connect the power supply and Hawkeye source wires to the LabJack as shown:</p>
 <p><img alt="LabJack Wiring" src="../docs/img/labjack_wiring.jpeg" /></p>
+<p>Finally, ensure the LabJack T7 is plugged into the Raspberry Pi's USB port.</p>
 <h5 id="optional-mce-clk-sync">Optional: MCE CLK Sync</h5>
 <p>It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use the power supply CH3 set to 5V, and attach to +5V and GND to the terminal labeled S4.</p>
 <h2 id="motion-outputs">Motion Outputs</h2>
