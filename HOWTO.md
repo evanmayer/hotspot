@@ -1,3 +1,5 @@
+# How To
+
 This doc contains instructions for various tasks related to setting up and running the `hotspot` mirror mapper.
 
 #### What is `hotspot`?
@@ -12,7 +14,7 @@ This document is a comprehensive how-to on setting up, maintaining, and running 
 
 It is organized in order of information flow: from the operator (you!) logging into the control computer, to setting up the software environment, connecting the power and signal cables, assembling the mapper frame, creating input files, mounting it on various mirrors, and operating the mapper. 
 
-# Using `timepi`, the Raspberry Pi control computer
+## Using `timepi`, the Raspberry Pi control computer
 
 The mapper is controlled by logging into the Raspberry Pi and running the `main.py` application. This repo should already be checked out on it, and you do not need to check out this repo onto a personal computer unless you wish to [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
 
@@ -98,11 +100,9 @@ If your `hotspot.yml` has been updated, and you need to update your env with the
 conda env update --file hotspot.yml --prune
 ```
 
-# Software Testing with `pytest`
+## Software Testing with `pytest`
 
 In order to verify that basic low-level functionality is unbroken, run `pytest` from the toplevel directory of the repo.
-
-# Setting Up the Hardware
 
 ## Enable Raspberry Pi Hardware
 
@@ -203,7 +203,7 @@ After attaching the cables to the spools, the other end should be threaded throu
 
 Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process should be done by hand.
 
-### Raft
+## Raft
 
 #### Will moving the cables move the Hawkeyes?
 
@@ -233,7 +233,7 @@ Two aluminum registration tabs are screwed into the end of each frame piece oppo
 
 Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. 
 
-# Coordinate System
+## Coordinate System
 
  In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another.
 
@@ -242,7 +242,7 @@ Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end
  
  The coordinate system of the robot therefore has its origin at the SW corner, where the aluminum alignment tab on the fixed frame meets the aluminum extrusion face.
  
-# Input Files
+## Input Files
 
 There are two types of input files: `geometry` and `profile`.
 Read on to learn what they are for and what is inside each.
@@ -314,8 +314,6 @@ Building up a sequence of moves allows a shape to be scanned.
 
 Output files store telemetry for each run in `data/output`. They are timestamped `.hdf5` files.
 
-# Physical Installation and Operation
-
 ## Physical Installation
 
 ### General tips
@@ -384,7 +382,7 @@ You will hear and see vibration while this happens.
 
 It is a simple, hands-free homing solution, but there is plenty of room for improvement here. Sensors would not be hard to add, would speed up homing, and would reduce the wear on cables (and probably motors) due to the current solution.
 
-## Pre-mapping checks
+### Pre-mapping checks
 
 1. Make sure that 12V is being supplied to both motor driver boards in the stack, that the polarity is correct.
 2. Make sure that 6.7V or less is being supplied to the LabJack switching board.
@@ -394,7 +392,7 @@ It is a simple, hands-free homing solution, but there is plenty of room for impr
 6. Ensure the Hawkeye source signal lines won't interfere with mapper operation.
 7. Ensure the `hotspot` `conda` env is active: `conda activate hotspot`.
 
-## Mapping
+### Mapping
 
 1. Start the program with `python main.py ./data/input/geometry/<geometry.csv> ./data/input/profiles/<profile.csv>`
 2. Perform a homing calibration: `c`, `RETURN` key. 
@@ -406,9 +404,9 @@ It is a simple, hands-free homing solution, but there is plenty of room for impr
     2. You may abort the program with `Ctrl+C`.
 7. Upon completing a sequence, it may be repeated by requesting the sequence mode again.
 
-# Other Documentation
+## Other Documentation
 
-## Example Call Graph
+### Example Call Graph
 
 Generated without motors or LabJack attached, so this does not include overhead of those libraries, but the control flow is the same.
 
