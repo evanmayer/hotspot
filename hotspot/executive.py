@@ -460,6 +460,11 @@ class Executive:
                         self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
                         time.sleep(const.STEP_WAIT)
 
+            # HACK FIXME truly despicable: force all motors to skip after each move to equalize tension.
+            n_tens = 10
+            for _ in range(n_tens):
+                self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper.BACKWARD)
+            
         logger.debug(f'Move cmd: {cmd}')
         pos_after = cmd['pos_cmd']
         send_pos_cmd(pos_after)
