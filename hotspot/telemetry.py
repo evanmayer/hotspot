@@ -23,10 +23,9 @@ class Visualizer:
         self.file_handle = file_handle
         self.source = source
 
-        keys = [key for key in file_handle[source].keys() if 'utc' not in key.lower()]
+        keys = [key for key in file_handle[source].keys() if 'local time' not in key.lower()]
         fig, axes = plt.subplots(nrows=len(keys), squeeze=False)
         fig.suptitle(f'Packet: {source}')
-        fig.tight_layout()
         self.fig = fig
 
         self.var_axes = {key: axes.flatten()[i] for i, key in enumerate(keys)}
@@ -71,6 +70,7 @@ class Visualizer:
             logger.warn(f'[{varname}] Plotting data of shape {data.shape} not implemented.')
         ax.relim()
         ax.autoscale()
+        fig.tight_layout()
         fig.canvas.draw()
         plt.pause(1e-9)
         return
@@ -151,7 +151,7 @@ class DataRouter:
                     self.visualizers[source] = Visualizer(f, source)
                     first_time = True
                 for var in f[source].keys():
-                    if 'utc' in var.lower():
+                    if 'local time' in var.lower():
                         continue
                     self.visualizers[source].update_subplot(f, var, first_time)
         return
