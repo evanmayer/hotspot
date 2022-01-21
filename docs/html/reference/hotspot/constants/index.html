@@ -537,9 +537,21 @@
 
 <span class="n">DEG_PER_RAD</span> <span class="o">=</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 
-<span class="c1"># Used for converting linear distances into rotational ones</span>
+<span class="c1"># Used for converting linear distances into rotational ones.</span>
 
-<span class="n">PULLEY_RADIUS</span> <span class="o">=</span> <span class="mf">0.0302</span> <span class="o">/</span> <span class="mf">2.</span>
+<span class="c1"># This is the measured value of the spool radius with no cable on it.</span>
+
+<span class="n">PULLEY_RADIUS</span> <span class="o">=</span> <span class="mf">0.030</span> <span class="o">/</span> <span class="mf">2.</span>
+
+<span class="c1"># How much does the radius change per radian due to cable stackup on a spool?</span>
+
+<span class="c1"># This is determined experimentally by wrapping the cable many times around</span>
+
+<span class="c1"># a mandrel and measuring the average diameter change per revolution.</span>
+
+<span class="c1"># Recall that positive rotation removes cable from the spool.</span>
+
+<span class="n">RADIUS_M_PER_RAD</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.e-6</span>
 
 <span class="c1"># Limits the total number of commands that may be in the command queue at once.</span>
 
@@ -598,6 +610,9 @@
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">PWM_FREQ</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">RADIUS_M_PER_RAD</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">STEPPER_STYLE</span>
