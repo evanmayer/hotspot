@@ -221,6 +221,8 @@ The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each 
 
 ![mid-cable-replacement](docs/img/cable_replacement.jpeg)
 
+Cable length should be carefully sized to allow the raft to reach all corners of the workspace, but with as little extra as possible at the maximum allowed separation of 25.5".
+
 ## Frame
 
 #### Is the frame fully assembled?

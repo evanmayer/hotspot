@@ -29,8 +29,15 @@ DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
 
 DEG_PER_RAD = 180. / np.pi
 
-# Used for converting linear distances into rotational ones
-PULLEY_RADIUS = 0.0302 / 2.
+# Used for converting linear distances into rotational ones.
+# This is the measured value of the spool radius with no cable on it.
+PULLEY_RADIUS = 0.030 / 2.
+
+# How much does the radius change per radian due to cable stackup on a spool?
+# This is determined experimentally by wrapping the cable many times around
+# a mandrel and measuring the average diameter change per revolution.
+# Recall that positive rotation removes cable from the spool.
+RADIUS_M_PER_RAD = -2.e-6
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.

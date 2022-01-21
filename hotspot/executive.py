@@ -281,13 +281,20 @@ class Executive:
         # inhibit motion
         [self.steppers[key].release() for key in self.steppers.keys()]
 
+        # The total available cable length should be sized so that the raft
+        # can just reach all corners of the workspace at the maximum eyelet
+        # separation of 0.6177 m (accommodates ~25.5" mirror K2).
+        max_length = np.linalg.norm(
+            [
+                self.robot.surf.sw + np.array([0., 0.6197]),
+                self.robot.surf.se
+            ]
+        )
         # Worst case, about how far would we have to move before hitting NW?
-        max_distance = np.linalg.norm(self.robot.surf.nw - self.robot.surf.se)
-        max_radians = max_distance / const.PULLEY_RADIUS
+        max_radians = max_length / const.PULLEY_RADIUS
         # valid for single or double steps
         max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / (360. / 200. / 1)).astype(int)
-
-        num_steps = max(1, max_steps // 1) 
+        num_steps = max(1, max_steps // 1)
         logger.info('Homing to NW')
         report_interval = 100
         i = num_steps
@@ -313,9 +320,24 @@ class Executive:
                 progress = 100. * (num_steps - i) / num_steps
                 logger.info(f'Progress: {progress:.2f} %')
 
+        # Adjust home position
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
+        # Calculate the amount of cable wound onto each spool when at home.
+        lengths_home = np.linalg.norm(self.robot.raft.corners - self.robot.surf.corners, axis=-1)
+        lengths_on_spool = (max_length * np.ones_like(lengths_home)) - lengths_home
+        print(lengths_on_spool)
+        # Calculate the initial angular positions for use in compensating for
+        # the effects of spooling on cable
+        if abs(const.RADIUS_M_PER_RAD) > np.finfo(float).eps:
+            self.robot.spool_angles = (
+                -const.PULLEY_RADIUS + np.sqrt(
+                    2. * const.RADIUS_M_PER_RAD * lengths_on_spool + const.PULLEY_RADIUS ** 2.
+                )
+            ) / const.RADIUS_M_PER_RAD
+        logger.debug(f'Starting spool angles: {self.robot.spool_angles}')
+
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
         logger.warning('Verify that the raft has been driven to one of its limits and all cables are taut. If not, request CAL_HOME again.')
 
@@ -324,6 +346,7 @@ class Executive:
                 'Local Time (s)': time.time(),
                 'Position Command (m)' : pos,
                 'Motor Delta Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
+                'Angle Correction Due to Spool Radius (rad)' : np.array([0.] * len(self.steppers.keys()))
             }
         }
         self.tm_queue.put(packet)
@@ -448,7 +471,7 @@ class Executive:
         packet = {'LabJack Cmd':
             {
                 'Local Time (s)': time.time(),
-                'Addresses Turned On' : 1 + np.where(np.array(cmd['flasher_cmds']) > 0)[0],
+                'Addresses Turned On' : np.where(np.array(cmd['flasher_cmds']) > 0)[0],
             }
         }
         self.tm_queue.put(packet)
