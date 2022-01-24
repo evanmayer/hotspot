@@ -476,7 +476,7 @@ class Executive:
         }
         self.tm_queue.put(packet)
         
-        freq = 5. # Hz
+        freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
         num_blinks = 10
         flipflop = 0
         while num_blinks > 0:

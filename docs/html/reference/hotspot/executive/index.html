@@ -1217,11 +1217,27 @@
 
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
 
+        <span class="c1"># The total available cable length should be sized so that the raft</span>
+
+        <span class="c1"># can just reach all corners of the workspace at the maximum eyelet</span>
+
+        <span class="c1"># separation of 0.6177 m (accommodates ~25.5&quot; mirror K2).</span>
+
+        <span class="n">max_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
+
+            <span class="p">[</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.6197</span><span class="p">]),</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span>
+
+            <span class="p">]</span>
+
+        <span class="p">)</span>
+
         <span class="c1"># Worst case, about how far would we have to move before hitting NW?</span>
 
-        <span class="n">max_distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span><span class="p">)</span>
-
-        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_length</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
 
         <span class="c1"># valid for single or double steps</span>
 
@@ -1275,11 +1291,39 @@
 
                 <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Progress: </span><span class="si">{</span><span class="n">progress</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> %&#39;</span><span class="p">)</span>
 
+        <span class="c1"># Adjust home position</span>
+
         <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">((</span><span class="n">const</span><span class="o">.</span><span class="n">HOMING_OFFSET_X</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">HOMING_OFFSET_Y</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">pos</span>
+
+        <span class="c1"># Calculate the amount of cable wound onto each spool when at home.</span>
+
+        <span class="n">lengths_home</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">lengths_on_spool</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_length</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="kp">ones_like</span><span class="p">(</span><span class="n">lengths_home</span><span class="p">))</span> <span class="o">-</span> <span class="n">lengths_home</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">lengths_on_spool</span><span class="p">)</span>
+
+        <span class="c1"># Calculate the initial angular positions for use in compensating for</span>
+
+        <span class="c1"># the effects of spooling on cable</span>
+
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="kp">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">=</span> <span class="p">(</span>
+
+                <span class="o">-</span><span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">sqrt</span><span class="p">(</span>
+
+                    <span class="mf">2.</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="n">lengths_on_spool</span> <span class="o">+</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span>
+
+                <span class="p">)</span>
+
+            <span class="p">)</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Starting spool angles: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">spool_angles</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Raft is homed with centroid position </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
@@ -1289,11 +1333,13 @@
 
             <span class="p">{</span>
 
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Local Time (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
 
                 <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos</span><span class="p">,</span>
 
                 <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
+
+                <span class="s1">&#39;Angle Correction Due to Spool Radius (rad)&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 
             <span class="p">}</span>
 
@@ -1505,9 +1551,9 @@
 
             <span class="p">{</span>
 
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Local Time (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
 
-                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="kp">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
 
             <span class="p">}</span>
 
@@ -1515,7 +1561,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
 
-        <span class="n">freq</span> <span class="o">=</span> <span class="mf">5.</span> <span class="c1"># Hz</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># switching freq, Hz, i.e. flashing freq is 1/2 this</span>
 
         <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -2069,11 +2115,27 @@
 
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
 
+        <span class="c1"># The total available cable length should be sized so that the raft</span>
+
+        <span class="c1"># can just reach all corners of the workspace at the maximum eyelet</span>
+
+        <span class="c1"># separation of 0.6177 m (accommodates ~25.5&quot; mirror K2).</span>
+
+        <span class="n">max_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
+
+            <span class="p">[</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.6197</span><span class="p">]),</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span>
+
+            <span class="p">]</span>
+
+        <span class="p">)</span>
+
         <span class="c1"># Worst case, about how far would we have to move before hitting NW?</span>
 
-        <span class="n">max_distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span><span class="p">)</span>
-
-        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_length</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
 
         <span class="c1"># valid for single or double steps</span>
 
@@ -2127,11 +2189,39 @@
 
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Progress: {progress:.2f} %&#39;</span><span class="p">)</span>
 
+        <span class="c1"># Adjust home position</span>
+
         <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">nw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="k">const</span><span class="o">.</span><span class="n">HOMING_OFFSET_X</span><span class="p">,</span> <span class="k">const</span><span class="o">.</span><span class="n">HOMING_OFFSET_Y</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">pos</span>
+
+        <span class="c1"># Calculate the amount of cable wound onto each spool when at home.</span>
+
+        <span class="n">lengths_home</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">lengths_on_spool</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_length</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">lengths_home</span><span class="p">))</span> <span class="o">-</span> <span class="n">lengths_home</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">lengths_on_spool</span><span class="p">)</span>
+
+        <span class="c1"># Calculate the initial angular positions for use in compensating for</span>
+
+        <span class="c1"># the effects of spooling on cable</span>
+
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb nb-Type">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">=</span> <span class="p">(</span>
+
+                <span class="o">-</span><span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+
+                    <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="n">lengths_on_spool</span> <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span>
+
+                <span class="p">)</span>
+
+            <span class="p">)</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Starting spool angles: {self.robot.spool_angles}&#39;</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft is homed with centroid position {self.robot.raft.position}&#39;</span><span class="p">)</span>
 
@@ -2141,11 +2231,13 @@
 
             <span class="p">{</span>
 
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Local Time (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
 
                 <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos</span><span class="p">,</span>
 
                 <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="n">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
+
+                <span class="s1">&#39;Angle Correction Due to Spool Radius (rad)&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="n">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 
             <span class="p">}</span>
 
@@ -2357,9 +2449,9 @@
 
             <span class="p">{</span>
 
-                <span class="s1">&#39;Time UTC (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s1">&#39;Local Time (s)&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
 
-                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">&#39;Addresses Turned On&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;flasher_cmds&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
 
             <span class="p">}</span>
 
@@ -2367,7 +2459,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
 
-        <span class="n">freq</span> <span class="o">=</span> <span class="mf">5.</span> <span class="c1"># Hz</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># switching freq, Hz, i.e. flashing freq is 1/2 this</span>
 
         <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -2600,11 +2692,27 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">        [self.steppers[key].release() for key in self.steppers.keys()]</span>
 
+<span class="s1">        # The total available cable length should be sized so that the raft</span>
+
+<span class="s1">        # can just reach all corners of the workspace at the maximum eyelet</span>
+
+<span class="s1">        # separation of 0.6177 m (accommodates ~25.5&quot; mirror K2).</span>
+
+<span class="s1">        max_length = np.linalg.norm(</span>
+
+<span class="s1">            [</span>
+
+<span class="s1">                self.robot.surf.sw + np.array([0., 0.6197]),</span>
+
+<span class="s1">                self.robot.surf.se</span>
+
+<span class="s1">            ]</span>
+
+<span class="s1">        )</span>
+
 <span class="s1">        # Worst case, about how far would we have to move before hitting NW?</span>
 
-<span class="s1">        max_distance = np.linalg.norm(self.robot.surf.nw - self.robot.surf.se)</span>
-
-<span class="s1">        max_radians = max_distance / const.PULLEY_RADIUS</span>
+<span class="s1">        max_radians = max_length / const.PULLEY_RADIUS</span>
 
 <span class="s1">        # valid for single or double steps</span>
 
@@ -2658,11 +2766,39 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">                logger.info(f&#39;</span><span class="nl">Progress</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">progress</span><span class="p">:</span><span class="mf">.2</span><span class="n">f</span><span class="err">}</span><span class="w"> </span><span class="o">%</span><span class="s1">&#39;)</span>
 
+<span class="s1">        # Adjust home position</span>
+
 <span class="s1">        pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))</span>
 
 <span class="s1">        self.robot.raft.position = pos</span>
 
 <span class="s1">        self.robot.home = pos</span>
+
+<span class="s1">        # Calculate the amount of cable wound onto each spool when at home.</span>
+
+<span class="s1">        lengths_home = np.linalg.norm(self.robot.raft.corners - self.robot.surf.corners, axis=-1)</span>
+
+<span class="s1">        lengths_on_spool = (max_length * np.ones_like(lengths_home)) - lengths_home</span>
+
+<span class="s1">        print(lengths_on_spool)</span>
+
+<span class="s1">        # Calculate the initial angular positions for use in compensating for</span>
+
+<span class="s1">        # the effects of spooling on cable</span>
+
+<span class="s1">        if abs(const.RADIUS_M_PER_RAD) &gt; np.finfo(float).eps:</span>
+
+<span class="s1">            self.robot.spool_angles = (</span>
+
+<span class="s1">                -const.PULLEY_RADIUS + np.sqrt(</span>
+
+<span class="s1">                    2. * const.RADIUS_M_PER_RAD * lengths_on_spool + const.PULLEY_RADIUS ** 2.</span>
+
+<span class="s1">                )</span>
+
+<span class="s1">            ) / const.RADIUS_M_PER_RAD</span>
+
+<span class="s1">        logger.debug(f&#39;</span><span class="n">Starting</span><span class="w"> </span><span class="n">spool</span><span class="w"> </span><span class="nl">angles</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">spool_angles</span><span class="err">}</span><span class="s1">&#39;)</span>
 
 <span class="s1">        logger.info(f&#39;</span><span class="n">Raft</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">homed</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">centroid</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="err">{</span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="err">}</span><span class="s1">&#39;)</span>
 
@@ -2672,11 +2808,13 @@ position according to offsets in constants.py which depend on the
 
 <span class="s1">            {</span>
 
-<span class="s1">                &#39;</span><span class="nc">Time</span><span class="w"> </span><span class="n">UTC</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="s1">&#39;: time.time(),</span>
+<span class="s1">                &#39;</span><span class="k">Local</span><span class="w"> </span><span class="nc">Time</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="s1">&#39;: time.time(),</span>
 
 <span class="s1">                &#39;</span><span class="k">Position</span><span class="w"> </span><span class="n">Command</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="s1">&#39; : pos,</span>
 
-<span class="s1">                &#39;</span><span class="n">Motor</span><span class="w"> </span><span class="n">Delta</span><span class="w"> </span><span class="n">Angle</span><span class="w"> </span><span class="n">Command</span><span class="w"> </span><span class="p">(</span><span class="n">rad</span><span class="p">)</span><span class="err">&#39;</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="o">[</span><span class="n">0.</span><span class="o">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">())),</span><span class="w"></span>
+<span class="s1">                &#39;</span><span class="n">Motor</span><span class="w"> </span><span class="n">Delta</span><span class="w"> </span><span class="n">Angle</span><span class="w"> </span><span class="n">Command</span><span class="w"> </span><span class="p">(</span><span class="n">rad</span><span class="p">)</span><span class="s1">&#39; : np.array([0.] * len(self.steppers.keys())),</span>
+
+<span class="s1">                &#39;</span><span class="n">Angle</span><span class="w"> </span><span class="n">Correction</span><span class="w"> </span><span class="n">Due</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">Spool</span><span class="w"> </span><span class="n">Radius</span><span class="w"> </span><span class="p">(</span><span class="n">rad</span><span class="p">)</span><span class="err">&#39;</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="o">[</span><span class="n">0.</span><span class="o">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()))</span><span class="w"></span>
 
 <span class="w">            </span><span class="err">}</span><span class="w"></span>
 
@@ -2721,9 +2859,9 @@ position according to offsets in constants.py which depend on the
 
             {
 
-                <span class="s1">&#39;</span><span class="s">Time UTC (s)</span><span class="s1">&#39;</span>: <span class="nv">time</span>.<span class="nv">time</span><span class="ss">()</span>,
+                <span class="s1">&#39;</span><span class="s">Local Time (s)</span><span class="s1">&#39;</span>: <span class="nv">time</span>.<span class="nv">time</span><span class="ss">()</span>,
 
-                <span class="s1">&#39;</span><span class="s">Addresses Turned On</span><span class="s1">&#39;</span> : <span class="mi">1</span> <span class="o">+</span> <span class="nv">np</span>.<span class="nv">where</span><span class="ss">(</span><span class="nv">np</span>.<span class="nv">array</span><span class="ss">(</span><span class="nv">cmd</span>[<span class="s1">&#39;</span><span class="s">flasher_cmds</span><span class="s1">&#39;</span>]<span class="ss">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="ss">)</span>[<span class="mi">0</span>],
+                <span class="s1">&#39;</span><span class="s">Addresses Turned On</span><span class="s1">&#39;</span> : <span class="nv">np</span>.<span class="nv">where</span><span class="ss">(</span><span class="nv">np</span>.<span class="nv">array</span><span class="ss">(</span><span class="nv">cmd</span>[<span class="s1">&#39;</span><span class="s">flasher_cmds</span><span class="s1">&#39;</span>]<span class="ss">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="ss">)</span>[<span class="mi">0</span>],
 
             }
 
@@ -2731,7 +2869,7 @@ position according to offsets in constants.py which depend on the
 
         <span class="nv">self</span>.<span class="nv">tm_queue</span>.<span class="nv">put</span><span class="ss">(</span><span class="nv">packet</span><span class="ss">)</span>
 
-        <span class="nv">freq</span> <span class="o">=</span> <span class="mi">5</span>. # <span class="nv">Hz</span>
+        <span class="nv">freq</span> <span class="o">=</span> <span class="mi">10</span>. # <span class="nv">switching</span> <span class="nv">freq</span>, <span class="nv">Hz</span>, <span class="nv">i</span>.<span class="nv">e</span>. <span class="nv">flashing</span> <span class="nv">freq</span> <span class="nv">is</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="nv">this</span>
 
         <span class="nv">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -2889,7 +3027,7 @@ position according to offsets in constants.py which depend on the
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f90af87f080</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f9f547be978</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 

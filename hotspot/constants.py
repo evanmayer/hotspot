@@ -37,7 +37,9 @@ PULLEY_RADIUS = 0.030 / 2.
 # This is determined experimentally by wrapping the cable many times around
 # a mandrel and measuring the average diameter change per revolution.
 # Recall that positive rotation removes cable from the spool.
-RADIUS_M_PER_RAD = -2.e-6
+# RADIUS_M_PER_RAD = -2.e-6
+# RADIUS_M_PER_RAD = -0.000009947
+RADIUS_M_PER_RAD = -0.000015916
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
