@@ -22,7 +22,7 @@ STEPPER_STYLE = stepper.INTERLEAVE
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.
 # Even numbers from 2-8.
-MICROSTEP_NUM = 2
+MICROSTEP_NUM = 8
 
 # Used for converting rotational changes into stepper commands
 DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
@@ -37,9 +37,7 @@ PULLEY_RADIUS = 0.030 / 2.
 # This is determined experimentally by wrapping the cable many times around
 # a mandrel and measuring the average diameter change per revolution.
 # Recall that positive rotation removes cable from the spool.
-# RADIUS_M_PER_RAD = -2.e-6
-# RADIUS_M_PER_RAD = -0.000009947
-RADIUS_M_PER_RAD = -0.000015916
+RADIUS_M_PER_RAD = -7.821e-5 # determined experimentally
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
@@ -53,7 +51,7 @@ HOMING_OFFSET_Y = -0.0252
 
 # Not sure how issuing step commands to multiple motors too fast will mess
 # with the motor hat timing, so wait a bit just to be safe
-STEP_WAIT = 1e-7
+STEP_WAIT = 1e-4
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
