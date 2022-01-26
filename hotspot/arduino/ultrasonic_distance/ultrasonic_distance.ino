@@ -26,7 +26,7 @@ void backwardStep()
 AccelStepper rot(forwardStep, backwardStep); // use functions to step
 
 // steps between measurements
-unsigned long steps = 800U;
+unsigned long steps = 200U;
 long steps_taken = 0;
 
 // ------------------------------------------------------------------------------
@@ -115,8 +115,8 @@ void loop() {
     duration = pulseIn(echoPin, HIGH);
    
     m = microsec_to_m(duration);
-    Serial.print(m * 100., 6);
-    Serial.print("\n");
+//    Serial.print(m * 100., 6);
+//    Serial.print("\n");
     buf[i] = m;
     ++i;
     i %= BUFSIZE;
@@ -139,13 +139,13 @@ void loop() {
         stddev = sqrt(sqerrs / BUFSIZE);
 
 //        Serial.print("steps taken:");
-//        Serial.print(steps_taken);
-//        Serial.print(",");
+        Serial.print(steps_taken);
+        Serial.print(",");
 //        Serial.print("distance:");
         Serial.print(avg, 6);
         Serial.print(",");
 //        Serial.print("std:");
-//        Serial.print(stddev, 6);
+        Serial.print(stddev, 6);
         Serial.println();
 
         newData = false;
