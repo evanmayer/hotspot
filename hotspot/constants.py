@@ -17,7 +17,7 @@ PWM_FREQ = 1600
 # ECM: Mess with this at your peril. Microstepping has less torque,
 # and is more prone to skipping steps in the high-tension situations
 # these motors are subject to.
-STEPPER_STYLE = stepper.INTERLEAVE
+STEPPER_STYLE = stepper.MICROSTEP
 
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.
