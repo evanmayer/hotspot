@@ -294,7 +294,7 @@ class Executive:
         max_radians = max_length / const.PULLEY_RADIUS
         # valid for single or double steps
         max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / (360. / 200. / 1)).astype(int)
-        num_steps = max(1, max_steps // 1)
+        num_steps = max(1, max_steps // 2)
         logger.info('Homing to NW')
         report_interval = 100
         i = num_steps

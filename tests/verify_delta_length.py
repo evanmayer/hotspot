@@ -13,20 +13,9 @@ steppers = {
     # 'se': kit1.stepper1
 }
 
-max_length = .6096 * 1.41
-lengths_home = np.array([0.])
-lengths_on_spool = (max_length * np.ones_like(lengths_home)) - lengths_home
-spool_angles = np.array([0.])
-if abs(const.RADIUS_M_PER_RAD) > np.finfo(float).eps:
-    spool_angles = (
-        -const.PULLEY_RADIUS + np.sqrt(
-            2. * const.RADIUS_M_PER_RAD * lengths_on_spool + const.PULLEY_RADIUS ** 2.
-        )
-    ) / const.RADIUS_M_PER_RAD
-print('spool angles:', spool_angles)
-
+spool_angles = np.array([7.5]) * 2. * np.pi # revolutions to rads
 # deploy some string
-delta_lengths = np.array([-.6096 * 1.41])
+delta_lengths = np.array([.5])
 if abs(const.RADIUS_M_PER_RAD) < 1e-9:
     delta_angles = delta_lengths / const.PULLEY_RADIUS
 else:
@@ -49,3 +38,5 @@ else:
 
 order, steps_taken, err = hw.all_steppers(list(steppers.values()), delta_angles)
 print(np.array(steps_taken)[order])
+
+[steppers[key].release() for key in steppers.keys()]
