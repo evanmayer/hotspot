@@ -28,7 +28,7 @@ print('spool angles:', spool_angles)
 # deploy some string
 delta_lengths = np.array([-.6096 * 1.41])
 if abs(const.RADIUS_M_PER_RAD) < 1e-9:
-    delta_angle = delta_lengths / const.PULLEY_RADIUS
+    delta_angles = delta_lengths / const.PULLEY_RADIUS
 else:
     # requires solution of quadratic eqn., so some combos are disallowed
     for s in delta_lengths.flatten():
