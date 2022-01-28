@@ -13,9 +13,9 @@ steppers = {
     # 'se': kit1.stepper1
 }
 
-spool_angles = np.array([7.5]) * 2. * np.pi # revolutions to rads
+spool_angles = np.array([6]) * 2. * np.pi # revolutions to rads
 # deploy some string
-delta_lengths = np.array([.5])
+delta_lengths = np.array([.05])
 if abs(const.RADIUS_M_PER_RAD) < 1e-9:
     delta_angles = delta_lengths / const.PULLEY_RADIUS
 else:
