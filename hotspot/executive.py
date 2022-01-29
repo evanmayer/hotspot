@@ -307,7 +307,7 @@ class Executive:
                 logger.info(f'Progress: {progress:.2f} %')
 
         logger.info('Retracting cables to tension NE, SE, SW')
-        i = num_steps
+        i = num_steps // 4
         while i > 0:
             self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
             time.sleep(const.STEP_WAIT)
@@ -456,9 +456,34 @@ class Executive:
                         self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
                         time.sleep(const.STEP_WAIT)
 
-        logger.debug(f'Move cmd: {cmd}')
+        # HACK: Linear approximation only holds for small distances, so
+        # chunk up big moves into tiny bits. ECM: This should really probably
+        # happen inside the control algorithm itself, or even better, ditch
+        # the linear approximation and do the math to find out how each motor
+        # should move at each point in the move.
+        MAX_DIST = .015
+        pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
+        dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        while dist_to_go > MAX_DIST:
+            logger.debug(f'Dist. to go in this move: {dist_to_go}')
+            # determine a position MAX_DIST away from the starting pos along
+            # the line of travel
+            v = np.array(pos_after) - np.array(pos_before)
+            u = v / np.linalg.norm(v) # the unit vector pointing along the line
+            logger.debug(f'Direction vector: {v}, Unit vector: {u}')
+            pos_cmd = pos_before + MAX_DIST * u
+            logger.debug(f'Intermediate move: {pos_cmd}')
+            send_pos_cmd(pos_cmd) # alg updates raft position
+            # calculate new dist to go
+            pos_before = self.robot.raft.position
+            dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after)
+
+        # logger.debug(f'Move cmd: {cmd}')
+        # pos_after = cmd['pos_cmd']
+        # send_pos_cmd(pos_after)
 
         return
 
