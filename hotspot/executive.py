@@ -281,12 +281,12 @@ class Executive:
         # inhibit motion
         [self.steppers[key].release() for key in self.steppers.keys()]
 
-        # The total available cable length should be sized so that the raft
+        # The total available cable length should is sized so that the raft
         # can just reach all corners of the workspace at the maximum eyelet
         # separation of 0.6177 m (accommodates ~25.5" mirror K2).
         max_length = np.linalg.norm(
             [
-                self.robot.surf.sw + np.array([0., 0.6197]),
+                self.robot.surf.sw + np.array([0., 0.715]), # meas. fully extended cable
                 self.robot.surf.se
             ]
         )
@@ -324,18 +324,14 @@ class Executive:
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
-        # Calculate the amount of cable wound onto each spool when at home.
-        lengths_home = np.linalg.norm(self.robot.raft.corners - self.robot.surf.corners, axis=-1)
-        lengths_on_spool = (max_length * np.ones_like(lengths_home)) - lengths_home
-        print(lengths_on_spool)
-        # Calculate the initial angular positions for use in compensating for
-        # the effects of spooling on cable
-        if abs(const.RADIUS_M_PER_RAD) > np.finfo(float).eps:
-            self.robot.spool_angles = (
-                -const.PULLEY_RADIUS + np.sqrt(
-                    2. * const.RADIUS_M_PER_RAD * lengths_on_spool + const.PULLEY_RADIUS ** 2.
-                )
-            ) / const.RADIUS_M_PER_RAD
+
+        # Magic numbers: the initial angular positions of each spool, for use 
+        # in compensating for the effects of spooling on cable. Measured while
+        # at home on 24" breadboard
+        self.robot.spool_angles =  np.array(
+            [[2.75 * 2. * np.pi, 7.1 * 2. * np.pi],
+             [1. * 2. * np.pi, 3.]]
+        )# same shape/order as in algorithm.py
         logger.debug(f'Starting spool angles: {self.robot.spool_angles}')
 
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
