@@ -19,7 +19,7 @@ import hotspot.telemetry as tm
 
 logger = logging.getLogger(__name__)
 
-MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT'}
+MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT', 'b': 'BLINK'}
 HR = '-' * 80
 MENU_STR = HR + f'\nListening for user input for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
 
@@ -213,6 +213,9 @@ class Executive:
                     elif 'w' == kbd_in:
                         logger.info('Wait mode requested.')
                         self.mode = 'WAIT'
+                    elif 'b' == kbd_in:
+                        logger.info('Manual blink mode requested.')
+                        self.mode = 'BLINK'
                     else:
                         continue
 
@@ -232,6 +235,8 @@ class Executive:
                     self.sequence(fname)
                 elif self.mode == 'WAIT':
                     self.wait()
+                elif self.mode == 'BLINK':
+                    self.blink()
                 else:
                     pass
                 self.last_mode = self.mode
@@ -415,6 +420,13 @@ class Executive:
     def wait(self):
         if self.plot_enable:
             self.router.run_gui_event_loop()
+        return
+
+
+    def blink(self):
+        cmd = {}
+        cmd['flasher_cmd'] = 4 * [1] + 8 * [0]
+        self.do_labjack_tasks(cmd)
         return
 
 
