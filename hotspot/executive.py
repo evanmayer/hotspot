@@ -286,12 +286,12 @@ class Executive:
         # inhibit motion
         [self.steppers[key].release() for key in self.steppers.keys()]
 
-        # The total available cable length should be sized so that the raft
+        # The total available cable length should is sized so that the raft
         # can just reach all corners of the workspace at the maximum eyelet
         # separation of 0.6177 m (accommodates ~25.5" mirror K2).
         max_length = np.linalg.norm(
             [
-                self.robot.surf.sw + np.array([0., 0.6197]),
+                self.robot.surf.sw + np.array([0., 0.715]), # meas. fully extended cable
                 self.robot.surf.se
             ]
         )
@@ -312,7 +312,7 @@ class Executive:
                 logger.info(f'Progress: {progress:.2f} %')
 
         logger.info('Retracting cables to tension NE, SE, SW')
-        i = num_steps
+        i = num_steps // 4
         while i > 0:
             self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
             time.sleep(const.STEP_WAIT)
@@ -329,18 +329,14 @@ class Executive:
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
-        # Calculate the amount of cable wound onto each spool when at home.
-        lengths_home = np.linalg.norm(self.robot.raft.corners - self.robot.surf.corners, axis=-1)
-        lengths_on_spool = (max_length * np.ones_like(lengths_home)) - lengths_home
-        print(lengths_on_spool)
-        # Calculate the initial angular positions for use in compensating for
-        # the effects of spooling on cable
-        if abs(const.RADIUS_M_PER_RAD) > np.finfo(float).eps:
-            self.robot.spool_angles = (
-                -const.PULLEY_RADIUS + np.sqrt(
-                    2. * const.RADIUS_M_PER_RAD * lengths_on_spool + const.PULLEY_RADIUS ** 2.
-                )
-            ) / const.RADIUS_M_PER_RAD
+
+        # Magic numbers: the initial angular positions of each spool, for use 
+        # in compensating for the effects of spooling on cable. Measured while
+        # at home on 24" breadboard
+        self.robot.spool_angles =  np.array(
+            [[2.75 * 2. * np.pi, 7.1 * 2. * np.pi],
+             [1. * 2. * np.pi, 3.]]
+        )# same shape/order as in algorithm.py
         logger.debug(f'Starting spool angles: {self.robot.spool_angles}')
 
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
@@ -472,9 +468,34 @@ class Executive:
                         self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
                         time.sleep(const.STEP_WAIT)
 
-        logger.debug(f'Move cmd: {cmd}')
+        # HACK: Linear approximation only holds for small distances, so
+        # chunk up big moves into tiny bits. ECM: This should really probably
+        # happen inside the control algorithm itself, or even better, ditch
+        # the linear approximation and do the math to find out how each motor
+        # should move at each point in the move.
+        MAX_DIST = .015
+        pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
+        dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        while dist_to_go > MAX_DIST:
+            logger.debug(f'Dist. to go in this move: {dist_to_go}')
+            # determine a position MAX_DIST away from the starting pos along
+            # the line of travel
+            v = np.array(pos_after) - np.array(pos_before)
+            u = v / np.linalg.norm(v) # the unit vector pointing along the line
+            logger.debug(f'Direction vector: {v}, Unit vector: {u}')
+            pos_cmd = pos_before + MAX_DIST * u
+            logger.debug(f'Intermediate move: {pos_cmd}')
+            send_pos_cmd(pos_cmd) # alg updates raft position
+            # calculate new dist to go
+            pos_before = self.robot.raft.position
+            dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after)
+
+        # logger.debug(f'Move cmd: {cmd}')
+        # pos_after = cmd['pos_cmd']
+        # send_pos_cmd(pos_after)
 
         return
 
