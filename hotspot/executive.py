@@ -237,6 +237,8 @@ class Executive:
                     self.wait()
                 elif self.mode == 'BLINK':
                     self.blink()
+                    self.mode = 'WAIT'
+                    print(MENU_STR)
                 else:
                     pass
                 self.last_mode = self.mode
@@ -421,8 +423,9 @@ class Executive:
 
     def blink(self):
         cmd = {}
-        cmd['flasher_cmd'] = 4 * [1] + 8 * [0]
+        cmd['flasher_cmds'] = 4 * [1] + 8 * [0]
         self.do_labjack_tasks(cmd)
+        logger.info('Blink complete.')
         return
 
 
