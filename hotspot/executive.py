@@ -425,6 +425,7 @@ class Executive:
         cmd = {}
         cmd['flasher_cmds'] = 4 * [1] + 8 * [0]
         self.do_labjack_tasks(cmd)
+        self.router.process_tm(plot_enable=self.plot_enable)
         logger.info('Blink complete.')
         return
 
