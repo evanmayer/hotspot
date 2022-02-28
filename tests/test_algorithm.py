@@ -91,10 +91,13 @@ def multiple_robot_process_input(this_robot: alg.Robot, pos_delta: tuple):
     delta_ne = ne_d_after - ne_d_before
     delta_se = se_d_after - se_d_before
 
-    rad_sw = delta_sw / const.PULLEY_RADIUS
-    rad_nw = delta_nw / const.PULLEY_RADIUS
-    rad_ne = delta_ne / const.PULLEY_RADIUS
-    rad_se = delta_se / const.PULLEY_RADIUS
+    length_per_rev = np.sqrt(const.DRUM_PITCH ** 2. + (np.pi * 2. * const.PULLEY_RADIUS) ** 2.)
+    length_per_rad = length_per_rev / 2. / np.pi
+
+    rad_sw = delta_sw / length_per_rad
+    rad_nw = delta_nw / length_per_rad
+    rad_ne = delta_ne / length_per_rad
+    rad_se = delta_se / length_per_rad
 
     cmds = this_robot.process_input(pos_cmd)
 
