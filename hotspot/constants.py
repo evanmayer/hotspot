@@ -17,12 +17,12 @@ PWM_FREQ = 1600
 # ECM: Mess with this at your peril. Microstepping has less torque,
 # and is more prone to skipping steps in the high-tension situations
 # these motors are subject to.
-STEPPER_STYLE = stepper.DOUBLE
+STEPPER_STYLE = stepper.INTERLEAVE
 
 # Adafruit microstepping modifier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.
 # Even numbers from 2-8.
-MICROSTEP_NUM = 1
+MICROSTEP_NUM = 2
 
 # Used for converting rotational changes into stepper commands
 DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
@@ -30,13 +30,9 @@ DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
 DEG_PER_RAD = 180. / np.pi
 
 # Used for converting linear distances into rotational ones.
-# This is the measured value of the spool radius with no cable on it.
-PULLEY_RADIUS = 0.032 / 2. #0.033 / 2.
-
-# How much does the radius change per radian due to cable stackup on a spool?
-# This is determined experimentally.
-# Recall that positive rotation removes cable from the spool.
-RADIUS_M_PER_RAD = -7e-6 # determined experimentally
+# This is the measured value of the helical drum minor diameter.
+PULLEY_RADIUS = .030132 / 2.
+DRUM_PITCH = 1.5 / 1000.
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.

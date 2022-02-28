@@ -288,7 +288,7 @@ class Executive:
         # inhibit motion
         [self.steppers[key].release() for key in self.steppers.keys()]
 
-        # The total available cable length should is sized so that the raft
+        # The total available cable length should be sized so that the raft
         # can just reach all corners of the workspace at the maximum eyelet
         # separation of 0.6177 m (accommodates ~25.5" mirror K2).
         max_length = np.linalg.norm(
@@ -331,15 +331,6 @@ class Executive:
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
-
-        # Magic numbers: the initial angular positions of each spool, for use 
-        # in compensating for the effects of spooling on cable. Measured while
-        # at home on 24" breadboard
-        self.robot.spool_angles =  np.array(
-            [[2.75 * 2. * np.pi, 7.1 * 2. * np.pi],
-             [1. * 2. * np.pi, 3.]]
-        )# same shape/order as in algorithm.py
-        logger.debug(f'Starting spool angles: {self.robot.spool_angles}')
 
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
         logger.warning('Verify that the raft has been driven to one of its limits and all cables are taut. If not, request CAL_HOME again.')

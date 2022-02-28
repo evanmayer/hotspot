@@ -228,32 +228,19 @@ class Robot:
 
         delta_lengths = lengths_after - lengths_before
 
-        # compensate total angular travel by considering the effect of cable
-        # wound onto the spool increasing the radius.
-        # assume a constant radius change k per radian, then
-        # dl = k / 2 (theta1^2 - theta0^2) + r (theta1 - theta0), and solve for
-        # theta1.
-        if abs(const.RADIUS_M_PER_RAD) < eps: # support "ideal spool" case
-            delta_angles = delta_lengths / const.PULLEY_RADIUS
-        else:
-            # requires solution of quadratic eqn., so some combos are disallowed
-            for s in delta_lengths.flatten():
-                radicand = 2. * const.RADIUS_M_PER_RAD * s + const.PULLEY_RADIUS ** 2.
-                assert (radicand > 0.), f"Angle calculation will fail, disallowed radicand {radicand}"
-            logger.debug(f'Uncorrected motor commands: {delta_lengths / const.PULLEY_RADIUS}')
-            # Constraint that dtheta and dl have the same sign imposes choice of
-            # the positive quadratic solution
-            final_angles = (
-                - const.PULLEY_RADIUS
-                + np.sqrt(
-                    2. * const.RADIUS_M_PER_RAD * const.PULLEY_RADIUS * self.spool_angles
-                    + const.RADIUS_M_PER_RAD * (const.RADIUS_M_PER_RAD * self.spool_angles ** 2. + 2. * delta_lengths)
-                    + const.PULLEY_RADIUS ** 2.)
-            ) / const.RADIUS_M_PER_RAD
-            delta_angles = final_angles - self.spool_angles
-            logger.debug(f'Corrected motor commands: {delta_angles}')
-            # keep track of the net angular offset
-            self.spool_angles = final_angles
+        # cable is wound onto a helical drum, so the length change goes like:
+        # sqrt(helix channel gullet diameter^2 + helix channel pitch^2), or in thread-speak
+        # sqrt(minor diameter^2 + thread pitch^2)
+        # for a single rotation.
+        
+        # the implicit assumption here is that the other end not attached to the drum and
+        # going through the eyelet is far enough away that the small-angle
+        # assumption is valid, such that the induced cable length as a function of position
+        # on the drum is negligible.
+
+        length_per_rev = np.sqrt(const.DRUM_PITCH ** 2. + (np.pi * 2. * const.PULLEY_RADIUS) ** 2.)
+        length_per_rad = length_per_rev / 2. / np.pi
+        delta_angles = delta_lengths / length_per_rad
 
         motor_cmds['sw'] = delta_angles[0, 0]
         motor_cmds['se'] = delta_angles[1, 0]
@@ -267,7 +254,6 @@ class Robot:
                 'Local Time (s)': time.time(),
                 'Position Command (m)' : pos_cmd,
                 'Motor Delta Angle Command (rad)' : delta_angles.flatten(),
-                'Angle Correction Due to Spool Radius (rad)' : (delta_angles - delta_lengths / const.PULLEY_RADIUS).flatten(),
             }
         }
         self.tm_queue.put(packet)
