@@ -40,3 +40,12 @@ class TestDefault(object):
         finally:
             stepper.release()
 
+if __name__ == '__main__':
+    # wiggle steppers to ID them
+    kit0 = hw_context.MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+    kit1 = hw_context.MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM)
+    steppers = [kit0.stepper1, kit0.stepper2, kit1.stepper1, kit1.stepper2]
+    [stepper.release() for stepper in steppers]
+    [hw.all_steppers([stepper], np.pi / 2.) for stepper in steppers]
+    [hw.all_steppers([stepper], -np.pi / 2.) for stepper in steppers]
+    [stepper.release() for stepper in steppers]
