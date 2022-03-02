@@ -87,10 +87,10 @@ class Executive:
         # parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2
         # is terminals M3+M4
         self.steppers = {
-            'sw': kit1.stepper2,
-            'ne': kit0.stepper1,
-            'nw': kit0.stepper2,
-            'se': kit1.stepper1
+            'sw': kit1.stepper1,
+            'ne': kit0.stepper2,
+            'nw': kit0.stepper1,
+            'se': kit1.stepper2
         }
 
         # Keep track of total steps taken post-homing. Closed loop paths
