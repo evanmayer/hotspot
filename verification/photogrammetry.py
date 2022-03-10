@@ -25,16 +25,16 @@ METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
 BOARD_VERT_SHAPE = (5,8)
-BOARD_SQUARE_SIZE = 0.02545 # m
+BOARD_SQUARE_SIZE = 0.02545375 # m
 CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
 BOARD_CORNER_LOCS[0,:,:2] = np.mgrid[0:BOARD_VERT_SHAPE[0], 0:BOARD_VERT_SHAPE[1]].T.reshape(-1, 2) * BOARD_SQUARE_SIZE
 # This may change if your printed targets area different size
-TARGET_W_AS_PRINTED = 0.03 # m
+TARGET_W_AS_PRINTED = 0.03987 # m
 # Number of 90deg rotations to apply to images before corner finding. Use 0 if
 # your images show chessboards of 6 cols by 9 rows, otherwise -1 or 1.
-IMG_ROT_NUM = -1
+IMG_ROT_NUM = 0
 
 
 def gen_target(w: float, h: float, dpi: int, loc: str, plot=False):
@@ -143,6 +143,7 @@ def calibrate_camera(image_dir: str, plot=False):
     files = []
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
+    assert files, 'No image files found when searching for images for camera calibration.'
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
     # do camera calibration from chessboard images
@@ -162,6 +163,7 @@ def calibrate_camera(image_dir: str, plot=False):
                     im = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
                 if plot:
                     plt.figure()
+                    plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
                     plt.imshow(im)
                     ax = plt.gca()
                     ax.set_aspect('equal')
@@ -231,7 +233,6 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     # number of pixels in a shape with some real size in meters:
     target_px = TARGET_W_AS_PRINTED * avg_px_per_m
     tmp_px = im_tmp.shape[0]
-    stride = 2
     # zoom the template to the right size in pixels
     tmp = ndimage.zoom(im_tmp, target_px / tmp_px)
     a = xcorr_prep(im_warped[::stride,::stride])
@@ -282,18 +283,10 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         Dictionary full of key, value pairs describing the results of target
         finding and px-to-meter calculation.
     '''
-    extensions = ['.jpeg', '.jpg', '.JPG']
-    files = []
-    for ext in extensions:
-        files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
-
-    image_data = {}
-    px_per_ms = []
-    num_steps = len(files)
-    for k, file in enumerate(files):
-        progress = 100. * (k) / num_steps
-        logger.info(f'Progress: {progress:.2f} %')
-
+    def find_target(file, mtx, dist, optimal_camera_matrix, plot=False):
+        '''
+        See docstring of `find_targets`.
+        '''
         # use camera cal matrix to de-distort all images
         im = cv2.imread(file)
         im = np.rot90(im, k=IMG_ROT_NUM)
@@ -330,7 +323,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
                 ret
             )
         else:
-            continue
+            return
 
         # find the homographic transform that undistorts the found chessboard
         # corners into the rectified, "bird's eye" view of the chessboard.
@@ -340,7 +333,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         # back up, we'd have only a few pixels across each chessboard
         # intersection, degrading the quality of the subpixel refinement and 
         # eventually the template location xcorr too.
-        sf = 3000.
+        sf = 2300.
         h, status = cv2.findHomography(
             this_img[:,0,:],
             BOARD_CORNER_LOCS[0,:,:2] * sf + corners2[0][0]
@@ -372,34 +365,53 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         dists = np.concatenate([dists0, dists1])
         avg_spacing = np.mean(np.abs(dists))
         px_per_m = avg_spacing / BOARD_SQUARE_SIZE
-        px_per_ms.append(px_per_m)
-
-        # find pixel locs of all targets
-        target_locs = {}
-        target_locs['chessboard_origin'] = tuple(corners2[0][0].astype(float))
 
         if plot:
             plt.figure()
+            plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
             ax = plt.axes()
         else:
             ax = None
 
+        target_locs = {}
         targets = ['raft_target', 'SW_target', 'SE_target', 'NW_target', 'NE_target']
         for target in targets:
-            x,y = find_template(os.path.join(target_dir, target + '.png'), im_warped, px_per_m, ax=ax)
+            x,y = find_template(os.path.join(target_dir, target + '.png'), im_warped, px_per_m, stride=2, ax=ax)
             target_locs[target] = (x,y)
         if plot:
             ax.legend(loc='best')
+            # plt.savefig(f'found_{os.path.basename(file)}.png')
+        return target_locs, px_per_m
 
-        for target in [item for item in targets if 'SW' not in item]:
-            dist_from_SW_in = np.linalg.norm(np.array(target_locs[target]) - np.array(target_locs['SW_target'])) / px_per_m / METERS_PER_INCH
-            logger.info(f'distance of {target} from SW: {dist_from_SW_in} in')
 
-        # save off some data
-        image_data[file] = {}
-        image_data[file]['px_per_m'] = px_per_m
-        image_data[file]['target_locs'] = target_locs
-
+    extensions = ['.jpeg', '.jpg', '.JPG']
+    files = []
+    for ext in extensions:
+        files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
+    assert files, 'No image files found when searching for images for target measurement.'
+    # files = files[:11]
+    image_data = {}
+    px_per_ms = []
+    # dicts are kinda thread-safe
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix)) : file for file in files}
+        for future in concurrent.futures.as_completed(future_to_file):
+            file = future_to_file[future]
+            try:
+                target_locs, px_per_m = future.result()
+            except Exception as e:
+                logger.warning(f'file {file} generated an exception: {e}')
+            else:
+                px_per_ms.append(px_per_m)
+                image_data[file] = {}
+                image_data[file]['px_per_m'] = px_per_m
+                image_data[file]['target_locs'] = target_locs
+    # for file in files:
+    #     target_locs, px_per_m = find_target(file, mtx, dist, optimal_camera_matrix)
+    #     px_per_ms.append(px_per_m)
+    #     image_data[file] = {}
+    #     image_data[file]['px_per_m'] = px_per_m
+    #     image_data[file]['target_locs'] = target_locs
     avg_px_per_m = np.mean(px_per_ms)
     image_data['source dir'] = os.path.abspath(image_dir)
     image_data['avg_px_per_m'] = avg_px_per_m
@@ -407,8 +419,11 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
     return image_data
 
 
-def post_process(image_data: dict):
+def post_process_many_to_one(image_data: dict):
     '''
+    Assume the target images are all of the raft in the same location.
+    Average the results to get some decent precision on the
+    localization of that raft.
     '''
     # Ignore target loc solutions with distances from SW target significantly 
     # different from the median
@@ -427,7 +442,7 @@ def post_process(image_data: dict):
             query_raft = np.linalg.norm(
                 np.array(image_data[img]['target_locs'][target]) - 
                 np.array(image_data[img]['target_locs']['SW_target'])
-            ) / image_data[img]['px_per_m']
+            ) / image_data['avg_px_per_m']
             query_meas.append(query_raft)
 
         # clean data
@@ -462,10 +477,99 @@ def post_process(image_data: dict):
         ax.legend(loc='best')
         ax.set_xlabel('Distance (m)')
         ax.set_ylabel('Probability Density')
+
+        plt.show(block=True)
+    return
+
+
+def post_process_many_to_many(image_data: dict, command_file: str):
+    '''
+    Assume the target images are each of a different point in a raster scan.
+    Compare to the commanded profile.
+    '''
+    commanded_pts = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
+    plt.figure()
+    plt.suptitle('Commanded vs. Measured Positions')
+    ax = plt.axes()
+    colors = ['k', 'g', 'b', 'm', 'r']
+    targets = ['raft_target']#, 'SW_target', 'SE_target', 'NW_target', 'NE_target']
+    residuals = []
+    for i, target in enumerate(targets):
+        order = 0
+        for img in sorted(list(image_data.keys())):
+            if not isinstance(image_data[img], dict):
+                continue
+            # image space to mapper space transform
+            query = (
+                np.array(image_data[img]['target_locs'][target]) -
+                np.array(image_data[img]['target_locs']['SW_target'])
+            )
+            query[1] *= -1
+            query /= image_data['avg_px_per_m']
+
+            if order > 0:
+                label = '_'
+            else:
+                label = target
+            ax.scatter(query[0], query[1], facecolor=colors[i], label=label)
+            ax.annotate(f'{order}', (query[0], query[1]), fontsize=10, alpha=0.5)
+            if target == 'raft_target':
+                if order > 0:
+                    label = '_'
+                else:
+                    label = 'Commanded'
+                ax.scatter(
+                    commanded_pts[order][0],
+                    commanded_pts[order][1],
+                    facecolor='none',
+                    color='k',
+                    label=label
+                )
+                xerr = (query[0] - commanded_pts[order][0])
+                yerr = (query[1] - commanded_pts[order][1])
+                residuals.append((xerr, yerr))
+                ax.quiver(
+                    query[0],
+                    query[1],
+                    xerr,
+                    yerr,
+                    np.linalg.norm(query - commanded_pts[order]),
+                    pivot='tip',
+                    angles='xy',
+                    scale_units='xy',
+                    scale=1,
+                    headwidth=2.5,
+                    headlength=4,
+                    edgecolors='k',
+                    linewidth=.5,
+                    width=4e-3
+                )
+            order += 1
+        ax.set_xticks(np.unique([pt[0] for pt in commanded_pts]))
+        plt.xticks(rotation=45)
+        ax.set_yticks(np.unique([pt[1] for pt in commanded_pts]))
+        ax.set_title(command_file + '\n' + image_data['source dir'], fontsize=8)
+        ax.set_xlabel('x-distance from SW corner (m)')
+        ax.set_ylabel('y-distance from SW corner (m)')
+        ax.grid(True)
+        ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+        ax.set_aspect('equal')
+        ax.set_facecolor('gainsboro')
+        plt.tight_layout()
+
+        plt.figure()
+        ax = plt.axes()
+        ax.set_title('Residuals: Commanded - Measured')
+        residuals_mm = np.array(residuals) * 1000.
+        ax.scatter(residuals_mm[:,0], residuals_mm[:,1])
+        ax.set_xlabel('X-dir Residuals (mm)')
+        ax.set_ylabel('Y-dir Residuals (mm)')
+        sns.kdeplot(x=residuals_mm[:,0], y=residuals_mm[:,1], shade=True, ax=ax)
     return
 
 
 if __name__ == '__main__':
+    plt.ion()
     # check for pickled camera matrices to avoid expensive recalibration
     if not (
         os.path.exists('camera_cal_mtx.pickle') and
@@ -475,7 +579,7 @@ if __name__ == '__main__':
         logger.info('No pickled camera calibration found. Recalibrating...')
         # calibrate the camera for distortion
         mtx, dist, optimal_camera_matrix, roi = calibrate_camera(
-            os.path.join('verification', 'input', 'camera_cal'),
+            os.path.join('input', 'camera_cal'),
             plot=False
         )
         with open('camera_cal_mtx.pickle', 'wb') as f:
@@ -492,14 +596,16 @@ if __name__ == '__main__':
             dist = pickle.load(f)
         with open('camera_cal_optimal_camera_matrix.pickle', 'rb') as f:
             optimal_camera_matrix = pickle.load(f)
-
+    logger.info('Finding photogrammetry targets in images.')
     image_data = find_targets(
-        os.path.join('verification', 'input', 'meas'),
-        os.path.join('verification', 'input', 'targets'),
+        os.path.join('input', 'meas', 'try1'),
+        os.path.join('input', 'targets'),
         mtx,
         dist,
         optimal_camera_matrix,
-        plot=True
+        plot=False
     )
-
-    post_process(image_data)
+    logger.info('Post-processing found targets.')
+    command_file = os.path.join('..', 'data', 'input', 'profiles', '24in_breadboard_raster_9x9_.2x.2.csv')
+    post_process_many_to_many(image_data, command_file)
+    plt.show(block=True)
