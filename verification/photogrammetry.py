@@ -489,7 +489,7 @@ def post_process_many_to_many(image_data: dict, command_file: str):
     '''
     commanded_pts = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
     plt.figure()
-    plt.suptitle('Commanded vs. Measured Positions')
+    plt.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax = plt.axes()
     colors = ['k', 'g', 'b', 'm', 'r']
     targets = ['raft_target']#, 'SW_target', 'SE_target', 'NW_target', 'NE_target']
@@ -548,7 +548,7 @@ def post_process_many_to_many(image_data: dict, command_file: str):
         ax.set_xticks(np.unique([pt[0] for pt in commanded_pts]))
         plt.xticks(rotation=45)
         ax.set_yticks(np.unique([pt[1] for pt in commanded_pts]))
-        ax.set_title(command_file + '\n' + image_data['source dir'], fontsize=8)
+        ax.set_title(command_file + '\n' + image_data['source dir'])
         ax.set_xlabel('x-distance from SW corner (m)')
         ax.set_ylabel('y-distance from SW corner (m)')
         ax.grid(True)
@@ -561,10 +561,11 @@ def post_process_many_to_many(image_data: dict, command_file: str):
         ax = plt.axes()
         ax.set_title('Residuals: Commanded - Measured')
         residuals_mm = np.array(residuals) * 1000.
-        ax.scatter(residuals_mm[:,0], residuals_mm[:,1])
+        sns.kdeplot(x=residuals_mm[:,0], y=residuals_mm[:,1], shade=True, ax=ax)
+        ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.5)
         ax.set_xlabel('X-dir Residuals (mm)')
         ax.set_ylabel('Y-dir Residuals (mm)')
-        sns.kdeplot(x=residuals_mm[:,0], y=residuals_mm[:,1], shade=True, ax=ax)
+        ax.grid(True)
     return
 
 
