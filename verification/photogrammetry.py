@@ -147,7 +147,7 @@ def calibrate_camera(image_dir: str, plot=False):
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
     # do camera calibration from chessboard images
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+    with concurrent.futures.ThreadPoolExecutor() as pool:
         future_to_file = {pool.submit(find_corners, file) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
@@ -229,7 +229,7 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     xfound, yfound
         Pixel coordinates of the center of the template, as found in `im_warped`
     '''
-    im_tmp = cv2.imread(template_filename)
+    im_tmp = np.rot90(cv2.imread(template_filename), k=IMG_ROT_NUM)
     # number of pixels in a shape with some real size in meters:
     target_px = TARGET_W_AS_PRINTED * avg_px_per_m
     tmp_px = im_tmp.shape[0]
@@ -307,7 +307,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
             cv2.CALIB_CB_FAST_CHECK + \
             cv2.CALIB_CB_NORMALIZE_IMAGE
         )
-        logger.info(f'Corner detection after de-distortion in {file}: {ret}')
+        # logger.info(f'Corner detection after de-distortion in {file}: {ret}')
         if ret == True:
             corners2 = cv2.cornerSubPix(
                 gray,
@@ -333,7 +333,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         # back up, we'd have only a few pixels across each chessboard
         # intersection, degrading the quality of the subpixel refinement and 
         # eventually the template location xcorr too.
-        sf = 2300.
+        sf = 2100.
         h, status = cv2.findHomography(
             this_img[:,0,:],
             BOARD_CORNER_LOCS[0,:,:2] * sf + corners2[0][0]
@@ -363,12 +363,13 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
             d = np.diff(found_corners[:,j,:], axis=0)
             dists1 = np.concatenate([dists1, np.sqrt((d ** 2).sum(axis=1))])
         dists = np.concatenate([dists0, dists1])
+        # print('dists0', dists0.mean(), 'dists1', dists1.mean(), 'discrepancy', dists0.mean() - dists1.mean())
         avg_spacing = np.mean(np.abs(dists))
         px_per_m = avg_spacing / BOARD_SQUARE_SIZE
 
         if plot:
             plt.figure()
-            plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
+            # plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
             ax = plt.axes()
         else:
             ax = None
@@ -376,7 +377,12 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         target_locs = {}
         targets = ['raft_target', 'SW_target', 'SE_target', 'NW_target', 'NE_target']
         for target in targets:
-            x,y = find_template(os.path.join(target_dir, target + '.png'), im_warped, px_per_m, stride=2, ax=ax)
+            x,y = find_template(
+                os.path.join(target_dir, target + '.png'),
+                im_warped,
+                px_per_m,
+                stride=1,
+                ax=ax)
             target_locs[target] = (x,y)
         if plot:
             ax.legend(loc='best')
@@ -389,12 +395,12 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
     assert files, 'No image files found when searching for images for target measurement.'
-    # files = files[:11]
+    # files = files[:3]
     image_data = {}
     px_per_ms = []
     # dicts are kinda thread-safe
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix)) : file for file in files}
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix), **{'plot' : plot}) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
             try:
@@ -487,85 +493,111 @@ def post_process_many_to_many(image_data: dict, command_file: str):
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
     '''
-    commanded_pts = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
+    # Reshape command profile assuming a square box is scanned.
+    commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
+    assert np.round(np.sqrt(commanded_pts_flat.shape[0])) == np.sqrt(commanded_pts_flat.shape[0]), 'Command profile shape not square. Rewrite alg to handle non-square shapes.'
+    commanded_pts = commanded_pts_flat.reshape(
+        (
+            int(np.sqrt(len(commanded_pts_flat))),
+            int(np.sqrt(len(commanded_pts_flat))),
+            2
+        )
+    )
+    xs = np.unique([pt[0] for pt in commanded_pts_flat])
+    ys = np.unique([pt[1] for pt in commanded_pts_flat])
+    
     plt.figure()
     plt.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax = plt.axes()
+    ax.set_xticks(xs)
+    plt.xticks(rotation=45)
+    ax.set_yticks(ys)
+    ax.set_title(command_file + '\n' + image_data['source dir'])
+    ax.set_xlabel('x-distance from SW corner (m)')
+    ax.set_ylabel('y-distance from SW corner (m)')
+    ax.grid(True)
+    ax.set_aspect('equal')
+    ax.set_facecolor('gainsboro')
+
     colors = ['k', 'g', 'b', 'm', 'r']
     targets = ['raft_target']#, 'SW_target', 'SE_target', 'NW_target', 'NE_target']
-    residuals = []
+    queries = np.zeros_like(commanded_pts)
+    residuals = np.zeros_like(commanded_pts)
     for i, target in enumerate(targets):
-        order = 0
-        for img in sorted(list(image_data.keys())):
-            if not isinstance(image_data[img], dict):
-                continue
-            # image space to mapper space transform
-            query = (
-                np.array(image_data[img]['target_locs'][target]) -
-                np.array(image_data[img]['target_locs']['SW_target'])
-            )
-            query[1] *= -1
-            query /= image_data['avg_px_per_m']
+        # Get the per-image data out of the image_data dict
+        img_keys = [img for img in sorted(list(image_data.keys())) if os.path.exists(img)]
+        imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
+        for j in range(imgs.shape[0]):
+            for k in range(imgs.shape[1]):
+                if not isinstance(image_data[imgs[j][k]], dict):
+                    continue
+                # image space to mapper space transform
+                query = (
+                    np.array(image_data[imgs[j][k]]['target_locs'][target]) -
+                    np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
+                )
+                query[1] *= -1
+                # query[1] = (24. * METERS_PER_INCH) - query[1]
+                query /= image_data['avg_px_per_m']
 
-            if order > 0:
-                label = '_'
-            else:
-                label = target
-            ax.scatter(query[0], query[1], facecolor=colors[i], label=label)
-            ax.annotate(f'{order}', (query[0], query[1]), fontsize=10, alpha=0.5)
-            if target == 'raft_target':
-                if order > 0:
-                    label = '_'
-                else:
-                    label = 'Commanded'
-                ax.scatter(
-                    commanded_pts[order][0],
-                    commanded_pts[order][1],
-                    facecolor='none',
-                    color='k',
-                    label=label
-                )
-                xerr = (query[0] - commanded_pts[order][0])
-                yerr = (query[1] - commanded_pts[order][1])
-                residuals.append((xerr, yerr))
-                ax.quiver(
-                    query[0],
-                    query[1],
-                    xerr,
-                    yerr,
-                    np.linalg.norm(query - commanded_pts[order]),
-                    pivot='tip',
-                    angles='xy',
-                    scale_units='xy',
-                    scale=1,
-                    headwidth=2.5,
-                    headlength=4,
-                    edgecolors='k',
-                    linewidth=.5,
-                    width=4e-3
-                )
-            order += 1
-        ax.set_xticks(np.unique([pt[0] for pt in commanded_pts]))
-        plt.xticks(rotation=45)
-        ax.set_yticks(np.unique([pt[1] for pt in commanded_pts]))
-        ax.set_title(command_file + '\n' + image_data['source dir'])
-        ax.set_xlabel('x-distance from SW corner (m)')
-        ax.set_ylabel('y-distance from SW corner (m)')
-        ax.grid(True)
+                queries[j][k][0] = query[0]
+                queries[j][k][1] = query[1]
+
+        ax.scatter(queries[:,:,0], queries[:,:,1], facecolor=colors[i], label=f'{target} Measured Pos.')
+        if target == 'raft_target':
+            ax.scatter(
+                commanded_pts[:,:,0],
+                commanded_pts[:,:,1],
+                facecolor='none',
+                color='k',
+                label=f'{target} Commanded Pos.'
+            )
+            residuals = queries - commanded_pts
+            ax.quiver(
+                queries[:,:,0],
+                queries[:,:,1],
+                residuals[:,:,0],
+                residuals[:,:,1],
+                np.linalg.norm(residuals, axis=-1),
+                pivot='tip',
+                angles='xy',
+                scale_units='xy',
+                scale=1,
+                headwidth=2.5,
+                headlength=4,
+                edgecolors='k',
+                linewidth=.5,
+                width=4e-3
+            )
+        
         ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-        ax.set_aspect('equal')
-        ax.set_facecolor('gainsboro')
         plt.tight_layout()
 
         plt.figure()
         ax = plt.axes()
         ax.set_title('Residuals: Commanded - Measured')
         residuals_mm = np.array(residuals) * 1000.
-        sns.kdeplot(x=residuals_mm[:,0], y=residuals_mm[:,1], shade=True, ax=ax)
-        ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.5)
+        sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), shade=True, ax=ax)
+        ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.5)
         ax.set_xlabel('X-dir Residuals (mm)')
         ax.set_ylabel('Y-dir Residuals (mm)')
         ax.grid(True)
+
+        plt.figure()
+        ax = plt.axes()
+        ax.set_title('Residual Magnitude: Commanded - Measured')
+        residuals_mag_mm = np.linalg.norm(residuals, axis=-1) * 1000.
+        levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()), .5)
+        X,Y = np.meshgrid(xs, ys)
+        im = ax.contourf(X, Y, residuals_mag_mm, levels=levels)
+        cbar = plt.colorbar(im, label='Magnitude (mm)')
+        ax.set_xticks(xs)
+        plt.xticks(rotation=45)
+        ax.set_yticks(ys)
+        ax.set_xlabel('X-dir Position (m)')
+        ax.set_ylabel('Y-dir Position (m)')
+        ax.grid(True)
+        plt.tight_layout()
     return
 
 
