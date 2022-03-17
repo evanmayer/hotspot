@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
-BOARD_VERT_SHAPE = (5,8)
-BOARD_SQUARE_SIZE = 0.02545375 # m
+BOARD_VERT_SHAPE = (3,6)
+BOARD_SQUARE_SIZE = 0.027890 # m
 CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
@@ -254,7 +254,7 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     return xfound * stride, yfound * stride
 
 
-def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=False):
+def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
     '''
     Uses an OpenCV camera matrix to undo distortion in all test images, then
     finds a homographic transform of the undistorted chessboard corners to the
@@ -274,6 +274,8 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         patterns of photogrammetry targets to search for.
     mtx, dist, optimal_camera_matrix
         See `calibrate_camera` docstring.
+    stride: optional
+        Downsample images before finding targets in them, to do it faster but with less fidelity.
     plot : optional
         If True, make plots of the found locations of all targets in the image
 
@@ -283,7 +285,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         Dictionary full of key, value pairs describing the results of target
         finding and px-to-meter calculation.
     '''
-    def find_target(file, mtx, dist, optimal_camera_matrix, plot=False):
+    def find_target(file, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
         '''
         See docstring of `find_targets`.
         '''
@@ -307,7 +309,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
             cv2.CALIB_CB_FAST_CHECK + \
             cv2.CALIB_CB_NORMALIZE_IMAGE
         )
-        # logger.info(f'Corner detection after de-distortion in {file}: {ret}')
+        logger.info(f'Corner detection after de-distortion in {file}: {ret}')
         if ret == True:
             corners2 = cv2.cornerSubPix(
                 gray,
@@ -333,7 +335,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
         # back up, we'd have only a few pixels across each chessboard
         # intersection, degrading the quality of the subpixel refinement and 
         # eventually the template location xcorr too.
-        sf = 2100.
+        sf = 2700.
         h, status = cv2.findHomography(
             this_img[:,0,:],
             BOARD_CORNER_LOCS[0,:,:2] * sf + corners2[0][0]
@@ -381,7 +383,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
                 os.path.join(target_dir, target + '.png'),
                 im_warped,
                 px_per_m,
-                stride=1,
+                stride=stride,
                 ax=ax)
             target_locs[target] = (x,y)
         if plot:
@@ -395,12 +397,12 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, plot=F
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
     assert files, 'No image files found when searching for images for target measurement.'
-    # files = files[:3]
+    # files = files[:10]
     image_data = {}
     px_per_ms = []
     # dicts are kinda thread-safe
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix), **{'plot' : plot}) : file for file in files}
+        future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix), **{'stride' : stride, 'plot' : plot}) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
             try:
@@ -483,12 +485,10 @@ def post_process_many_to_one(image_data: dict):
         ax.legend(loc='best')
         ax.set_xlabel('Distance (m)')
         ax.set_ylabel('Probability Density')
-
-        plt.show(block=True)
     return
 
 
-def post_process_many_to_many(image_data: dict, command_file: str):
+def post_process_many_to_many(image_data: dict, command_file: str, ref=None):
     '''
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
@@ -532,14 +532,20 @@ def post_process_many_to_many(image_data: dict, command_file: str):
                 if not isinstance(image_data[imgs[j][k]], dict):
                     continue
                 # image space to mapper space transform
-                query = (
-                    np.array(image_data[imgs[j][k]]['target_locs'][target]) -
-                    np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
-                )
+                if ref == 'SW':
+                    query = (
+                        np.array(image_data[imgs[j][k]]['target_locs'][target]) -
+                        np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
+                    )
+                else: # reference measurements to first point
+                    query = (
+                        np.array(image_data[imgs[j][k]]['target_locs'][target]) -
+                        np.array(image_data[imgs[0][0]]['target_locs'][target])
+                    )
                 query[1] *= -1
-                # query[1] = (24. * METERS_PER_INCH) - query[1]
                 query /= image_data['avg_px_per_m']
-
+                if ref != 'SW': # assume first position is perfect and calc errors relative to that
+                    query += commanded_pts[0,0,:]
                 queries[j][k][0] = query[0]
                 queries[j][k][1] = query[1]
 
@@ -582,12 +588,14 @@ def post_process_many_to_many(image_data: dict, command_file: str):
         ax.set_xlabel('X-dir Residuals (mm)')
         ax.set_ylabel('Y-dir Residuals (mm)')
         ax.grid(True)
+        ax.set_xlim(-8,8)
+        ax.set_ylim(-8,8)
 
         plt.figure()
         ax = plt.axes()
         ax.set_title('Residual Magnitude: Commanded - Measured')
         residuals_mag_mm = np.linalg.norm(residuals, axis=-1) * 1000.
-        levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()), .5)
+        levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .5, .5)
         X,Y = np.meshgrid(xs, ys)
         im = ax.contourf(X, Y, residuals_mag_mm, levels=levels)
         cbar = plt.colorbar(im, label='Magnitude (mm)')
