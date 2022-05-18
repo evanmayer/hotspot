@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
-BOARD_VERT_SHAPE = (3,6)
-BOARD_SQUARE_SIZE = 0.027890 # m
+BOARD_VERT_SHAPE = (11,17)
+BOARD_SQUARE_SIZE = 0.013991 # m
 CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
 BOARD_CORNER_LOCS[0,:,:2] = np.mgrid[0:BOARD_VERT_SHAPE[0], 0:BOARD_VERT_SHAPE[1]].T.reshape(-1, 2) * BOARD_SQUARE_SIZE
-# This may change if your printed targets area different size
+# This may change if your printed targets are a different size
 TARGET_W_AS_PRINTED = 0.03987 # m
 # Number of 90deg rotations to apply to images before corner finding. Use 0 if
 # your images show chessboards of 6 cols by 9 rows, otherwise -1 or 1.
@@ -106,7 +106,21 @@ def find_corners(file: str):
     return ret, corners, im, gray
 
 
-def calibrate_camera(image_dir: str, plot=False):
+
+def find_corners_charuco(file: str, dictionary: dict):
+    '''
+    Thin wrapper for OpenCV detectMarkers
+    '''
+    im = cv2.imread(file)
+    im = np.rot90(im, k=IMG_ROT_NUM) # may not need this, depending on source of images.
+    gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    corners = cv2.aruco.detectMarkers(gray, dictionary)
+    ret = True
+    logger.info(f'Camera calibration charuco finding in {file}: {ret}')
+    return ret, corners, im, gray
+
+
+def calibrate_camera(image_dir: str, method='chessboard', plot=False):
     '''
     The general idea is to take a set of test images with a chessboard pattern
     (6x9, i.e. 5x8 intersections) to calculate the distortion parameters of the
@@ -125,6 +139,11 @@ def calibrate_camera(image_dir: str, plot=False):
     ----------
     image_dir
         path to directory containing ~30-60 images of a 6x9 square chessboard
+    method (optional)
+        'chessboard' works with plain chessboard patterns. 'charuco' works
+        with ChArUco patterns.
+    plot (optional)
+        Draw a figure for each image analyzed.
     
     Returns
     -------
@@ -146,9 +165,23 @@ def calibrate_camera(image_dir: str, plot=False):
     assert files, 'No image files found when searching for images for camera calibration.'
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
+    if method == 'charuco':
+        ids_q = mp.Queue()
+        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        board = cv2.aruco.CharucoBoard_create(
+                            BOARD_VERT_SHAPE[0]+1,
+                            BOARD_VERT_SHAPE[1]+1,
+                            .010,
+                            .008,
+                            dictionary
+                )
+
     # do camera calibration from chessboard images
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        future_to_file = {pool.submit(find_corners, file) : file for file in files}
+        if method == 'charuco':
+            future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
+        else:
+            future_to_file = {pool.submit(find_corners, file) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
             try:
@@ -158,9 +191,26 @@ def calibrate_camera(image_dir: str, plot=False):
             else:
                 if ret:
                     objpoints_q.put(BOARD_CORNER_LOCS)
-                    corners2 = cv2.cornerSubPix(gray, corners, (5,5),(-1,-1), CORNER_TERM_CRIT)
+                    if method == 'charuco':
+                        corners = cv2.aruco.detectMarkers(gray, dictionary)
+                        res2 = cv2.aruco.interpolateCornersCharuco(
+                            corners[0],
+                            corners[1],
+                            gray,
+                            board
+                        )
+                        corners2 = res2[1]
+                        ids_q.put(res2[2])
+                        im = cv2.aruco.drawDetectedMarkers(
+                            gray,
+                            corners[0],
+                            corners[1]
+                        )
+                    else:
+                        corners2 = cv2.cornerSubPix(gray, corners, (5,5),(-1,-1), CORNER_TERM_CRIT)
+                        im = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
+
                     imgpoints_q.put(corners2)
-                    im = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
                 if plot:
                     plt.figure()
                     plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
@@ -178,7 +228,16 @@ def calibrate_camera(image_dir: str, plot=False):
         imgpoints.append(imgpoints_q.get(timeout=0.1))
 
     h,w = cv2.imread(files[0]).shape[:2]
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
+    if method == 'charuco':
+        ids = []
+        while not ids_q.empty():
+            ids.append(ids_q.get(timeout=0.1))
+
+        ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(imgpoints, ids, board, gray.shape[::-1], None, None)
+    else:
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
     optimal_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(
         mtx,
         dist, 
@@ -186,7 +245,6 @@ def calibrate_camera(image_dir: str, plot=False):
         1, 
         (w,h)
     )
-
     return mtx, dist, optimal_camera_matrix, roi
 
 
