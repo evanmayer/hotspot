@@ -84,15 +84,15 @@ class Executive:
         }
         for address in self.steppers.keys():
             # set stepping and hold current limits: 50% = 1 A
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}m50R')
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}h50R')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}m50R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}h50R\n')
             # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
-            # = 1000 * 256 / 40000
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}aE1280R')
+            # 1280 = 1000 * (256 * 200) / 40000
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}aE1280R\n')
             # zero out positions
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}z0R')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}z0R\n')
             # enable encoder feedback mode
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}n8R')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}n8R\n')
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
@@ -244,6 +244,26 @@ class Executive:
         return
 
 
+    def go_home(self):
+        '''
+        Clear all commands in the queue and drive to the home position.
+        '''
+        # If not already home, go there.
+        eps = np.finfo(float).eps
+        if not all(abs(a - b) < eps for a,b in zip(self.robot.raft.position, self.robot.home)):
+            logger.info(f'Clearing command queue and commanding home: {self.robot.home}')
+            self.empty_queue(self.cmd_queue)
+            cmd = {}
+            cmd['flasher_cmd'] = []
+            cmd['pos_cmd']     = self.robot.home
+            self.do_motor_tasks(cmd)
+            self.router.process_tm(plot_enable=self.plot_enable)
+            logger.info(f'Home.')
+        else:
+            logger.info('Already home, nothing to do.')
+        return
+
+
     def cal_home_manual(self):
         '''
         Ask the user to input the current position of the center of the raft to
@@ -280,6 +300,9 @@ class Executive:
         # The total available cable length should be sized so that the raft
         # can just reach all corners of the workspace at the maximum eyelet
         # separation of 0.6177 m (accommodates ~25.5" mirror K2).
+        # In position correction mode, the EZStepper will attempt this move a 
+        # set number of times before giving up, which is what we want upon
+        # hitting a hard stop.
         max_length = np.linalg.norm(
             [
                 self.robot.surf.sw + np.array([0., 0.715]), # meas. fully extended cable
@@ -296,25 +319,26 @@ class Executive:
         for current_axis in axes:
             logger.info(f'Homing to {current_axis}')
             # turn off hold current to axes not being homed
-            resp = hw.ezstepper_write(self.ser, f'/_h0R')
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}h50R')
+            resp = hw.ezstepper_write(self.ser, f'/_h0R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}h50R\n')
             # set speed for moving axis
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}V{const.MAX_SPEED_TICKS}R')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}V{const.MAX_SPEED_TICKS}R\n')
             # home axis, negative direction (D) retracts
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}D{num_ticks}R')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}D{num_ticks}R\n')
             logger.debug(f'Sleeping {t_move:.2f} sec for move')
             time.sleep(t_move + 1e-1)
             # zero out encoder position
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}z0R')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}z0R\n')
         # Restore proper current limits to all drivers
-        resp = hw.ezstepper_write(self.ser, f"/_h50R")
-
-        # 
+        resp = hw.ezstepper_write(self.ser, f'/_h50R\n')
 
         # Adjust home position
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
         self.robot.raft.position = pos
         self.robot.home = pos
+
+        # Drive steppers to absolute home to ensure slack is taken up
+        self.go_home()
 
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
         logger.warning('Verify that the raft has been driven to one of its limits and all cables are taut. If not, request CAL_HOME again.')
@@ -323,31 +347,11 @@ class Executive:
             {
                 'Local Time (s)': time.time(),
                 'Position Command (m)' : pos,
-                'Motor Delta Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
+                'Motor Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
             }
         }
         self.tm_queue.put(packet)
         self.router.process_tm(plot_enable=self.plot_enable)
-        return
-
-
-    def go_home(self):
-        '''
-        Clear all commands in the queue and drive to the home position.
-        '''
-        # If not already home, go there.
-        eps = np.finfo(float).eps
-        if not all(abs(a - b) < eps for a,b in zip(self.robot.raft.position, self.robot.home)):
-            logger.info(f'Clearing command queue and commanding home: {self.robot.home}')
-            self.empty_queue(self.cmd_queue)
-            cmd = {}
-            cmd['flasher_cmd'] = []
-            cmd['pos_cmd']     = self.robot.home
-            self.do_motor_tasks(cmd)
-            self.router.process_tm(plot_enable=self.plot_enable)
-            logger.info(f'Home.')
-        else:
-            logger.info('Already home, nothing to do.')
         return
 
 
@@ -380,7 +384,7 @@ class Executive:
             cmd = self.cmd_queue.get()
 
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
-        # Do motor tasks, then LJ tasks in serial, so IR source tasks happen at the end of each move.
+        # Do motor tasks, then LJ tasks, so IR source tasks happen at the end of each move.
         self.do_motor_tasks(cmd)
         self.do_labjack_tasks(cmd)
         logger.info(f'Raft centroid: {self.robot.raft.position}')
@@ -404,7 +408,7 @@ class Executive:
         return
 
 
-    def do_motor_tasks(self, cmd: dict) -> list:
+    def do_motor_tasks(self, cmd: dict):
         '''
         Transform the move command into motor commands
 
@@ -481,5 +485,5 @@ class Executive:
 
 
     def close(self):
-        [self.steppers[key].release() for key in self.steppers.keys()]
+        hw.ezstepper_write(self.ser, f'/_h0R\n')
         return

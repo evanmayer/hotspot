@@ -8,14 +8,14 @@ import time
 from labjack import ljm
 
 import hotspot.constants as const
-from hotspot.hw_context import stepper, openS, eWriteAddress
+from hotspot.hw_context import Serial, openS, eWriteAddress
 
 
 # Conventions:
-# - positive steps/angular rates (stepper.FORWARD) spin the motor shaft 
-#     clockwise (CW) when viewed from the rear.
-# - negative steps/angular rates (stepper.BACKWARD) spin the motor shaft 
-#     counterclockwise (CCW) when viewed from the rear.
+# - positive steps/angular rates spin the motor shaft clockwise (CW) when
+#   viewed from the rear.
+# - negative steps/angular rates spin the motor shaft counterclockwise (CCW)
+#   when viewed from the rear.
 
 logger = logging.getLogger(__name__)
 
@@ -31,24 +31,25 @@ MODE = 'USB'
 # -----------------------------------------------------------------------------
 # Stepper functions
 # -----------------------------------------------------------------------------
-def ezstepper_write(ser, command_str: str):
+def ezstepper_write(ser: Serial, command_str: str):
     '''
     ser
         pyserial instance, the port to send bytes over from
     '''
     ser.write(command_str.encode())
     logging.debug(f'EZStepper cmd: {command_str}')
+    time.sleep(0.1)
     resp = ser.readline().decode('latin-1')
     logging.debug(f'EZStepper response: {resp}')
     return resp
 
 
-def all_steppers_ez(ser, addresses, radians: list):
+def all_steppers_ez(ser: Serial, addresses, radians: list):
     '''
     Send serial commands to AllMotion EZHR17EN driver boards.
     Driver boards should already be in position-correction mode, so will take
     encoder ticks as commands. The driver boards handle achieving the requested
-    position.
+    absolute position.
     Commands in radians are converted to encoder ticks and sent to driver
     boards in order, based on their addresses [1,2,3,4].
 
@@ -59,7 +60,7 @@ def all_steppers_ez(ser, addresses, radians: list):
     addresses
         iterable of addresses e.g. [1,2,3,4] to route commands to
     radians
-        iterable of signed angle to move each stepper (radians)
+        iterable of signed angle to move each stepper to (radians)
 
     Returns
     -------
@@ -70,10 +71,20 @@ def all_steppers_ez(ser, addresses, radians: list):
         iterable of rounding errors incurred by converting radians to encoder
         ticks
     '''
+    # Get the current absolute encoder position
+    current_ticks_raw = [ezstepper_write(ser, f'/{address}?8\n') for address in addresses]
+    current_ticks = current_ticks_raw
+    logger.debug(f'Current encoder positions before move: {current_ticks}')
+
+    # Get the final absolute position
     radians = np.array(radians)
     ticks_float = radians * const.DEG_PER_RAD / const.DEG_PER_STEP / const.STEP_PER_TICK
-    ticks_to_go = np.round(ticks_float).astype(int)
-    err = ticks_float - ticks_to_go
+    ticks_int = np.round(ticks_float).astype(int)
+    ticks_to_go = np.round(ticks_float - current_ticks).astype(int)
+    err = (ticks_float - current_ticks) - ticks_to_go
+
+    if any([tick_int < 0 for tick_int in ticks_int]):
+        logger.warning(f'Move command past hard stop detected: {addresses} : {ticks_int}')
 
     # Set the velocity of each motor such that they arrive at the final
     # position at the same time.
@@ -85,81 +96,15 @@ def all_steppers_ez(ser, addresses, radians: list):
 
     for i in range(len(ticks_to_go)):
         if (ticks_to_go[i] and vels[i]):
-            vel_cmd = f'/{addresses[i]}V{vels[i]}'
-            resp = ezstepper_write(ser, vel_cmd)
-            # Command pos/neg encoder ticks relative to pos direction
-            pos_cmd = f'/{addresses[i]}P{ticks_to_go[i]}'
-            resp = ezstepper_write(ser, pos_cmd)
+            # Set velocity
+            resp = ezstepper_write(ser, f'/{addresses[i]}V{vels[i]}\n')
+            # Command absolute encoder ticks
+            resp = ezstepper_write(ser, f'/{addresses[i]}A{ticks_int[i]}\n')
     # Execute buffered move commands for all addresses
     ser.write('/_R\n'.encode())
     time.sleep(t_move + 1e-1)
 
     return ticks_to_go, err
-
-
-def all_steppers(steppers: list, radians: list):
-    '''
-    The number of steps any motor must take on each loop execution can be cast
-    as a special case of Bresenham's Line Algorithm, in the pos quadrant only,
-    with all lines starting at (0, 0).
-    All motors will either step or not according to the algorithm.
-    (We are kind of forgoing linear travel speed control here, but we never
-    had reliable speed control anyway, because RPI Debian is not a RT OS.)
-
-    Parameters
-    ----------
-    steppers
-        iterable of 4x Adafruit MotorKit stepper instances 
-        (not adafruit_motor.stepper module)
-    radians
-        iterable of signed angle to move each stepper (radians)
-    
-    Returns
-    -------
-    steps_taken
-        iterable of integers reporting the number of steps taken by each
-        stepper
-    '''
-    style = const.STEPPER_STYLE
-
-    directions = np.sign(radians)
-
-    # Perform steps in an order that avoids over-tension to mitigate skipping
-    # steps: positive steps first to unwind cable, then negative
-    order = np.argsort(directions)[::-1].astype(int)
-    directions = np.array(directions)[order]
-    radians = np.array(radians)[order]
-    steppers = np.array(steppers)[order]
-
-    steps_float = radians * const.DEG_PER_RAD / const.DEG_PER_STEP
-    # We can detect and correct at the end of each move, using the accumulated
-    # rounding errors.
-    steps_to_go = np.round(steps_float).astype(int)
-    err = steps_float - steps_to_go
-    steps_to_go = np.abs(steps_to_go)
-
-    stepper_dirs = [stepper.FORWARD] * 4
-    for i, direction in enumerate(directions):
-        if direction == -1:
-            stepper_dirs[i] = stepper.BACKWARD
-
-    # Normalize the slopes of the lines by making the motor that must take
-    # the most total steps have a slope = 1, or 1 step per loop cycle.
-    dx = np.max(steps_to_go)
-    dy = steps_to_go
-    steps_taken = [0] * 4
-    deltas = 2 * dy - dx # 2x to allow integer arithmetic
-    for _ in range(dx):
-        for i, stepper_n in enumerate(steppers):
-            # decide whether to step or not
-            if deltas[i] > 0:
-                stepper_n.onestep(style=style, direction=stepper_dirs[i])
-                time.sleep(const.STEP_WAIT)
-                steps_taken[order[i]] += directions[i].astype(int)
-                deltas[i] -= 2 * dx
-            deltas[i] += 2 * dy[i]
-
-    return order, steps_taken, err[order]
 
 
 # -----------------------------------------------------------------------------
