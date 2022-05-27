@@ -43,7 +43,7 @@ def ezstepper_write(ser, command_str: str):
     return resp
 
 
-def all_steppers_ez(ser, radians: list):
+def all_steppers_ez(ser, addresses, radians: list):
     '''
     Send serial commands to AllMotion EZHR17EN driver boards.
     Driver boards should already be in position-correction mode, so will take
@@ -56,6 +56,8 @@ def all_steppers_ez(ser, radians: list):
     ----------
     ser
         pyserial instance, the port to send bytes over from
+    addresses
+        iterable of addresses e.g. [1,2,3,4] to route commands to
     radians
         iterable of signed angle to move each stepper (radians)
 
@@ -83,13 +85,14 @@ def all_steppers_ez(ser, radians: list):
 
     for i in range(len(ticks_to_go)):
         if (ticks_to_go[i] and vels[i]):
-            vel_cmd = f'/{i + 1}V{vels[i]}'
+            vel_cmd = f'/{addresses[i]}V{vels[i]}'
             resp = ezstepper_write(ser, vel_cmd)
             # Command pos/neg encoder ticks relative to pos direction
-            pos_cmd = f'/{i + 1}P{ticks_to_go[i]}'
+            pos_cmd = f'/{addresses[i]}P{ticks_to_go[i]}'
             resp = ezstepper_write(ser, pos_cmd)
     # Execute buffered move commands for all addresses
     ser.write('/_R\n'.encode())
+    time.sleep(t_move + 1e-1)
 
     return ticks_to_go, err
 

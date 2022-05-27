@@ -41,7 +41,7 @@ class TestDefault(object):
             stepper.release()
 
 
-    @pytest.mark.parametrize('radians', 
+    @pytest.mark.parametrize('radians',
         [( np.pi / 32.,),
          (-np.pi / 32.,),
          ( 1e-9,      ),
@@ -50,9 +50,10 @@ class TestDefault(object):
          (-np.pi / 64,     ),
         ]
     )
-    def test_move_motor_ez(self, radians): 
+    def test_move_motor_ez(self, radians):
         ser = hw_context.ser
-        hw.all_steppers_ez(ser, radians)
+        addresses = [1]
+        hw.all_steppers_ez(ser, addresses, radians)
 
 
 if __name__ == '__main__':
