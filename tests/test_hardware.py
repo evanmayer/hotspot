@@ -26,12 +26,12 @@ def stepper():
 class TestDefault(object):
     # Cases that are expected to pass
     @pytest.mark.parametrize('radians', 
-        [( np.pi / 4.,),
-         (-np.pi / 4.,),
+        [( np.pi / 32.,),
+         (-np.pi / 32.,),
          ( 1e-9,      ),
          ( 0.,        ),
-         ( np.pi,     ),
-         (-np.pi,     ),
+         ( np.pi / 64,     ),
+         (-np.pi / 64,     ),
         ]
     )
     def test_move_motor_good(self, stepper, radians): 
@@ -39,6 +39,21 @@ class TestDefault(object):
             hw.all_steppers([stepper], radians)
         finally:
             stepper.release()
+
+
+    @pytest.mark.parametrize('radians', 
+        [( np.pi / 32.,),
+         (-np.pi / 32.,),
+         ( 1e-9,      ),
+         ( 0.,        ),
+         ( np.pi / 64,     ),
+         (-np.pi / 64,     ),
+        ]
+    )
+    def test_move_motor_ez(self, radians): 
+        ser = hw_context.ser
+        hw.all_steppers_ez(ser, radians)
+
 
 if __name__ == '__main__':
     # wiggle steppers to ID them

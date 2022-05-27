@@ -17,22 +17,24 @@ PWM_FREQ = 1600
 # ECM: Mess with this at your peril. Microstepping has less torque,
 # and is more prone to skipping steps in the high-tension situations
 # these motors are subject to.
-STEPPER_STYLE = stepper.INTERLEAVE
+STEPPER_STYLE = stepper.MICROSTEP
 
-# Adafruit microstepping modifier. Divides each single step by the modifier:
+# EZStepper microstepping multiplier. Divides each single step by the modifier:
 # E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.
-# Even numbers from 2-8.
-MICROSTEP_NUM = 2
+MICROSTEP_NUM = 256
 
 # Used for converting rotational changes into stepper commands
 DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
-
 DEG_PER_RAD = 180. / np.pi
+STEP_PER_TICK = 200. * MICROSTEP_NUM / 40000.
+
+MAX_SPEED_TICKS = 6666 # ticks / sec
 
 # Used for converting linear distances into rotational ones.
 # This is the measured value of the helical drum minor diameter.
 PULLEY_RADIUS = .030132 / 2.
-DRUM_PITCH = 1.5 / 1000.
+# The helical drum means the length unspooled per radian is longer.
+DRUM_PITCH = 1.5 / 1000. # 1.5 mm pitch
 
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
@@ -46,7 +48,7 @@ HOMING_OFFSET_Y = -0.0252
 
 # Not sure how issuing step commands to multiple motors too fast will mess
 # with the motor hat timing, so wait a bit just to be safe
-STEP_WAIT = 1e-3
+STEP_WAIT = 1e-5
 
 # Helps with I/O
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
