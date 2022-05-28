@@ -19,7 +19,7 @@ DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
 DEG_PER_RAD = 180. / np.pi
 STEP_PER_TICK = 200. * MICROSTEP_NUM / ENCODER_TICKS_PER_REV
 
-MAX_SPEED_TICKS = 6666 # ticks / sec
+MAX_SPEED_TICKS = 55000 # ticks / sec, experimentally determined
 
 # Used for converting linear distances into rotational ones.
 # This is the measured value of the helical drum minor diameter.

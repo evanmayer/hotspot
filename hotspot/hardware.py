@@ -37,11 +37,23 @@ def ezstepper_write(ser: Serial, command_str: str):
         pyserial instance, the port to send bytes over from
     '''
     ser.write(command_str.encode())
-    logging.debug(f'EZStepper cmd: {command_str}')
-    time.sleep(0.1)
-    resp = ser.readline().decode('latin-1')
-    logging.debug(f'EZStepper response: {resp}')
+    logging.debug('EZStepper cmd: {}'.format(command_str.rstrip('\r\n')))
+    resp = ser.readline()
+    logging.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
     return resp
+
+
+def get_encoder_pos(ser: Serial, address):
+    resp = ezstepper_write(ser, f'/{address}?8\r\n')
+    if resp:
+        status = resp[3]
+        payload = resp[4:-3]
+        ticks = int(payload.decode('utf-8'))
+        logger.debug(f'Encoder status: {bin(status)}, encoder counts: {ticks}')
+        return ticks
+    else:
+        logger.warning(f'Encoder {address} didn\'t respond. Assuming 0 pos.')
+        return 0
 
 
 def all_steppers_ez(ser: Serial, addresses, radians: list):
@@ -72,7 +84,7 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
         ticks
     '''
     # Get the current absolute encoder position
-    current_ticks_raw = [ezstepper_write(ser, f'/{address}?8\n') for address in addresses]
+    current_ticks_raw = [get_encoder_pos(ser, address) for address in addresses]
     current_ticks = current_ticks_raw
     logger.debug(f'Current encoder positions before move: {current_ticks}')
 
@@ -83,6 +95,9 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
     ticks_to_go = np.round(ticks_float - current_ticks).astype(int)
     err = (ticks_float - current_ticks) - ticks_to_go
 
+    logger.debug(f'Commanded encoder positions: {ticks_int}')
+    logger.debug(f'Delta encoder positions: {ticks_to_go}')
+
     if any([tick_int < 0 for tick_int in ticks_int]):
         logger.warning(f'Move command past hard stop detected: {addresses} : {ticks_int}')
 
@@ -91,17 +106,18 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
     # The motor with the longest move moves at the maximum velocity.
     max_ticks = np.max(np.abs(ticks_to_go))
     t_move = max(max_ticks / const.MAX_SPEED_TICKS, 1e-9)
-    vels = np.round(ticks_to_go / t_move).astype(int)
+    vels = np.round(np.abs(ticks_to_go) / t_move).astype(int)
     logger.debug(f'Motor velocities: {vels} ticks / sec')
 
     for i in range(len(ticks_to_go)):
         if (ticks_to_go[i] and vels[i]):
             # Set velocity
-            resp = ezstepper_write(ser, f'/{addresses[i]}V{vels[i]}\n')
+            resp = ezstepper_write(ser, f'/{addresses[i]}V{vels[i]}R\r\n')
             # Command absolute encoder ticks
-            resp = ezstepper_write(ser, f'/{addresses[i]}A{ticks_int[i]}\n')
+            resp = ezstepper_write(ser, f'/{addresses[i]}A{ticks_int[i]}\r\n')
     # Execute buffered move commands for all addresses
-    ser.write('/_R\n'.encode())
+    ezstepper_write(ser, '/_R\r\n')
+    logger.debug(f'Sleeping {t_move:.2f} sec for move')
     time.sleep(t_move + 1e-1)
 
     return ticks_to_go, err

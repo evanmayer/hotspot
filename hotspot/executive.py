@@ -84,15 +84,16 @@ class Executive:
         }
         for address in self.steppers.keys():
             # set stepping and hold current limits: 50% = 1 A
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}m50R\n')
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}h50R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}m50R\r\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}h50R\r\n')
             # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
             # 1280 = 1000 * (256 * 200) / 40000
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}aE1280R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}aE1280R\r\n')
             # zero out positions
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}z0R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}A0R\r\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}z0R\r\n')
             # enable encoder feedback mode
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}n8R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}n8R\r\n')
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
@@ -318,26 +319,30 @@ class Executive:
         axes = ['ne', 'se', 'sw', 'nw']
         for current_axis in axes:
             logger.info(f'Homing to {current_axis}')
-            # turn off hold current to axes not being homed
-            resp = hw.ezstepper_write(self.ser, f'/_h0R\n')
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}h50R\n')
+            # turn off current to axes not being homed
+            resp = hw.ezstepper_write(self.ser, f'/_m1R\r\n')
+            resp = hw.ezstepper_write(self.ser, f'/_h1R\r\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}m50R\r\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}h50R\r\n')
             # set speed for moving axis
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}V{const.MAX_SPEED_TICKS}R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}V{const.MAX_SPEED_TICKS}R\r\n')
             # home axis, negative direction (D) retracts
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}D{num_ticks}R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}D{num_ticks}R\r\n')
             logger.debug(f'Sleeping {t_move:.2f} sec for move')
             time.sleep(t_move + 1e-1)
+            logger.debug(f'Post-homing move: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
             # zero out encoder position
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}z0R\n')
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}z0R\r\n')
         # Restore proper current limits to all drivers
-        resp = hw.ezstepper_write(self.ser, f'/_h50R\n')
+        resp = hw.ezstepper_write(self.ser, f'/_m50R\r\n')
+        resp = hw.ezstepper_write(self.ser, f'/_h50R\r\n')
 
         # Adjust home position
         pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
-        self.robot.raft.position = pos
+        # Lie. Take up slack by spoofing a slight offset to force 
+        # recalculation/commanding of positions.
+        self.robot.raft.position = pos + np.array((0.001, -0.001))
         self.robot.home = pos
-
-        # Drive steppers to absolute home to ensure slack is taken up
         self.go_home()
 
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
@@ -485,5 +490,13 @@ class Executive:
 
 
     def close(self):
-        hw.ezstepper_write(self.ser, f'/_h0R\n')
+        # Terminate all running commands
+        hw.ezstepper_write(self.ser, f'/_T\r\n')
+        # Release torque
+        hw.ezstepper_write(self.ser, f'/_m0R\r\n')
+        hw.ezstepper_write(self.ser, f'/_h0R\r\n')
+        # Zero out position
+        resp = hw.ezstepper_write(self.ser, f'/_z0R\r\n')
+
+        self.ser.close()
         return

@@ -246,7 +246,7 @@ class Robot:
         motor_cmds['nw'] = angles[0, 1]
         motor_cmds['ne'] = angles[1, 1]
 
-        logger.debug(f'Motor commands: {motor_cmds}\nAbsolute lengths:{lengths_after}')
+        logger.debug(f'Motor commands: {motor_cmds}')
         
         packet = {'algorithm':
             {
