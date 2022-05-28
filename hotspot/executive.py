@@ -90,6 +90,7 @@ class Executive:
             # 1280 = 1000 * (256 * 200) / 40000
             resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}aE1280R\r\n')
             # zero out positions
+            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}z0R\r\n')
             resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}A0R\r\n')
             resp = hw.ezstepper_write(self.ser, f'/{self.steppers[address]}z0R\r\n')
             # enable encoder feedback mode

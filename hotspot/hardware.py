@@ -107,7 +107,7 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
     max_ticks = np.max(np.abs(ticks_to_go))
     t_move = max(max_ticks / const.MAX_SPEED_TICKS, 1e-9)
     vels = np.round(np.abs(ticks_to_go) / t_move).astype(int)
-    logger.debug(f'Motor velocities: {vels} ticks / sec')
+    logger.debug(f'Motor speeds: {vels} ticks / sec')
 
     for i in range(len(ticks_to_go)):
         if (ticks_to_go[i] and vels[i]):

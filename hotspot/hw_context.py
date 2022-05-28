@@ -5,7 +5,8 @@
 from adafruit_motor import stepper
 from labjack import ljm
 import serial
-import sys
+
+import hotspot.constants as const
 
 
 try:
@@ -24,17 +25,13 @@ except ljm.LJMError as err:
     openS = dummyOpenS
 
 
-if sys.platform.startswith('win'):
-    SERIAL_PORT = 'COM8'
-else:
-    SERIAL_PORT = '/dev/ttyUSB0'
-SERIAL_BAUD = 9600
+
 try:
-    ser = serial.Serial(SERIAL_PORT, SERIAL_BAUD, timeout=.1)
+    ser = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD, timeout=const.SERIAL_TIMEOUT)
     Serial = serial.Serial
 except serial.serialutil.SerialException as err:
     print(err)
-    print(f'Open {__file__} and try another SERIAL_PORT, or connect a device'
+    print(f'Open constants.py and try another SERIAL_PORT, or connect a device'
         + ' to the serial port.')
     print('Continuing with dummy serial port.')
     class DummySerial:
