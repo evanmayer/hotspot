@@ -74,7 +74,7 @@ class Executive:
 
         # Talk to EZSteppers over RS485.
         self.ser = ser
-        # This mapping should match the physical setup. Match the motor
+        # This mapping should match the physical setup. Match the corner eyelet
         # location to the address selector pot on the EZStepper driver board.
         self.steppers = {
             'sw': 1,
