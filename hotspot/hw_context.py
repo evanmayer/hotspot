@@ -2,7 +2,6 @@
 # modules so dev and testing can be done on a machine without hardware
 # attached.
 
-from adafruit_motor import stepper
 from labjack import ljm
 import serial
 
@@ -24,10 +23,8 @@ except ljm.LJMError as err:
     eWriteAddress = dummyEwriteAddress
     openS = dummyOpenS
 
-
-
 try:
-    ser = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD, timeout=const.SERIAL_TIMEOUT)
+    serial_instance = serial.Serial(const.SERIAL_PORT, const.SERIAL_BAUD, timeout=const.SERIAL_TIMEOUT)
     Serial = serial.Serial
 except serial.serialutil.SerialException as err:
     print(err)
@@ -43,5 +40,5 @@ except serial.serialutil.SerialException as err:
             return b''
         def close(self):
             pass
-    ser = DummySerial()
+    serial_instance = DummySerial()
     Serial = DummySerial

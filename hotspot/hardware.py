@@ -39,7 +39,11 @@ def ezstepper_write(ser: Serial, command_str: str):
     ser.write(command_str.encode())
     logging.debug('EZStepper cmd: {}'.format(command_str.rstrip('\r\n')))
     resp = ser.readline()
-    logging.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
+    if resp:
+        status = bin(resp[3])
+    else:
+        status = b''
+    logging.debug('EZStepper status: {}, response: {}'.format(status, resp.rstrip(b'\r\n')))
     return resp
 
 
@@ -111,14 +115,19 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
 
     for i in range(len(ticks_to_go)):
         if (ticks_to_go[i] and vels[i]):
-            # Set velocity
-            resp = ezstepper_write(ser, f'/{addresses[i]}V{vels[i]}R\r\n')
-            # Command absolute encoder ticks
-            resp = ezstepper_write(ser, f'/{addresses[i]}A{ticks_int[i]}\r\n')
+            # Set velocity and command absolute encoder ticks
+            resp = ezstepper_write(
+                ser,
+                (
+                    f'/{addresses[i]}V{vels[i]}'
+                  + f'A{ticks_int[i]}'
+                  + '\r\n'
+                )
+            )
     # Execute buffered move commands for all addresses
     ezstepper_write(ser, '/_R\r\n')
     logger.debug(f'Sleeping {t_move:.2f} sec for move')
-    time.sleep(t_move + 1e-1)
+    time.sleep(t_move)
 
     return ticks_to_go, err
 

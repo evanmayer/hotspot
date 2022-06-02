@@ -238,8 +238,8 @@ class Robot:
         # the drum is negligible.
 
         length_per_rev = np.sqrt(const.DRUM_PITCH ** 2. + (np.pi * 2. * const.PULLEY_RADIUS) ** 2.)
-        length_per_rad = length_per_rev / 2. / np.pi
-        angles = lengths_after / length_per_rad
+        num_revs = lengths_after / length_per_rev
+        angles = 2. * np.pi * num_revs
 
         motor_cmds['sw'] = angles[0, 0]
         motor_cmds['se'] = angles[1, 0]
