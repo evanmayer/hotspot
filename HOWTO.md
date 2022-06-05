@@ -83,6 +83,8 @@ In order to verify that basic low-level functionality is unbroken, run `pytest` 
 
 Each motor is controlled by an [AllMotion EZStepper EZHR17EN](https://www.americancontrolelectronics.com/ezhr17en). These are [chopper driver](https://homepage.divms.uiowa.edu/~jones/step/current.html#pwm) boards that accept 10-40 V input.
 
+[photo of EZStepper board]
+
 Configure a constant-voltage DC power supply to provide:
 * 24 V
 * 4 A
@@ -111,78 +113,6 @@ Finally, ensure the LabJack T7 is plugged into the Raspberry Pi's USB port.
 
 It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use another power supply channel set to 5V, and attach to +5V and GND to the terminal labeled S4.
 
-## Motion Outputs
-
-### Motors
-
-#### Can the computer talk to the motor drivers?
-
-The EZHR17EN stepper drivers receive commands from a control computer running the `hotspot` software over the [RS485](https://hackaday.com/2022/04/05/hacker-dictionary-rs-485-will-go-the-distance/#more-528633) physical layer.
-
-> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the RS485 communications connection is correct.
-
-The control computer needs either a 9-pin serial output port, or a USB-to-RS485 adapter to send bytes out over the RS485 bus. The inverting/non-inverting outputs are blue and yellow wires. If you are connecting your adapter to the bus for the first time, you may have to guess incorrectly and swap the wires before it will work.
-
-The motor drivers must have power and ground (via the 24 VDC power supply) to receive commands.
-
-#### Can the motor drivers command the motors?
-
-> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the motor winding connections are correct.
-
-The stepper motors themselves have NEMA-17 spec hole patterns, which mate to the 3D printed motor mount brackets which we will attach to the beam mapper frame. Each stepper motor should be attached to its motor mount using M3 x 0.5 x 10 mm screws. Use lubricant, because metal on plastic will be squeaky.
-
-At this point, it is important to consider the mapping of motor driver terminal -> stepper motor -> motor mount -> corner of beam mapper frame -> corner of raft. The `Executive.__init__()` function specifies this mapping, so the motor installation location and stepper instance in `__init__()` should match, to ensure the correct motor commands are sent to the correct stepper. The stepper driver boards are addressable with a selector switch on top. Match the address selector to the correct corner of the raft in the `__init__()` function.
-
-#### Can the encoders provide position feedback?
-
-The EZHR17EN boards are capable of reading out [quadrature encoders](https://cdn.sparkfun.com/datasheets/Robotics/How%20to%20use%20a%20quadrature%20encoder.pdf) affixed to the stepper shafts. Encoder feedback is critical for accurate position of the raft.
-
-> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the encoder connections are correct.
-
-### Spools
-
-#### Can the motors make the lines longer and shorter?
-
-If they are not already attached, the spools should be fixed to the 5 mm stepper motor shaft via one M3 setscrew. 
-
-The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.
-
-![View of spool and M3 setscrew](docs/img/spool_side_view.jpg)
-
-> **NOTE:** Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
-
-After attaching the cables to the spools, the other end should be threaded through the ~.9mm hole in the motor mount bracket on the opposite E-W side of the frame. This additional distance allows us to neglect the changing cable length due to the exit position of the cable on the spiral drum.
-
-> **NOTE:** All cables should be long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be (~25.5").
-
-Finally, excess cable should be wound onto the spool, under tension, to avoid trapping excess cable underneath as the cable is wound on. This process should be done by hand.
-
-## Raft
-
-#### Will moving the cables move the Hawkeyes?
-
-The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the TIME receiver output data.
-
-If the raft is not already attached to the cables, the raft cap with the Hawkeye emitters must be removed to access the screws to fix the affix the lines.
-
-Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down.
-
-#### Will the detectors see the Hawkeyes?
-
-After configuring the Hawkeye power supply, verify with a multimeter that the Hawkeyes are receiving 6.7 V by probing the Hawkeye pins or the screw terminal on the Hawkeye raft. Some voltage drop may occur from the power supply to the raft, so the power supply should be set such that the Hawkeyes receive no more or less than 6.7 V.
-
-This procedure ensures that the Hawkeyes are operating at the correct voltage, so they are bright enough in the relevant wavelengths.
-
-### Cable Maintenance
-
-#### What if a cable breaks?
-
-The lid of the raft is secured by clips and a dab of cyanoacrylate glue in each corner. If the cables need to be changed (e.g., they are worn), an exacto blade can be used to break the CA glue in the corners and remove the lid. The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart, but a spool of extra cable should already be stored with the beam mapper.
-
-![mid-cable-replacement](docs/img/cable_replacement.jpeg)
-
-Cable length should be carefully sized to allow the raft to reach all corners of the workspace, but with as little extra as possible at the maximum allowed separation of 25.5".
-
 ## Frame
 
 #### Is the frame fully assembled?
@@ -193,7 +123,99 @@ Two aluminum registration tabs are screwed into the end of each frame piece oppo
 
 > **NOTE:** These tabs register the frame to a third edge of the mirror, so **it is important that they not be bent**.
 
-Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. Care should be exercised with this slide-adjust nut, as pressing the button will release any tension on the threaded rod.
+Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, threads in the aluminum extrusion provide clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. Care should be exercised with this slide-adjust nut, as pressing the button will release any tension on the threaded rod.
+
+## Motion Outputs
+
+### Motors
+
+#### Can the computer talk to the motor drivers?
+
+The EZHR17EN stepper drivers receive commands from a control computer running the `hotspot` software as bytes over the [RS485](https://hackaday.com/2022/04/05/hacker-dictionary-rs-485-will-go-the-distance/#more-528633) physical layer.
+
+> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the RS485 communications connection is correct.
+
+The control computer needs either a 9-pin serial output port, or a USB-to-RS485 adapter to send bytes out over the RS485 bus. The inverting/non-inverting outputs are blue and yellow wires. If you are connecting your adapter to the bus for the first time, you may have to guess incorrectly and swap the wires before it will work.
+
+[photo of USB-RS485 adapter]
+
+The motor drivers must have power and ground (via the 24 VDC power supply) to receive commands.
+
+#### Can the motor drivers command the motors?
+
+> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the motor winding connections are correct.
+
+The stepper motors themselves have NEMA-17 spec hole patterns, which mate to the 3D printed motor mount brackets which are attached to the beam mapper frame. Each stepper motor should be attached to its motor mount using M3 x 0.5 x 10 mm screws. If attaching motors for the first time, use lubricant, because metal on plastic will be squeaky.
+
+[photo of stepper mounted on motor mount]
+
+At this point, it is important to consider the mapping of motor driver board address -> stepper motor -> motor mount -> corner of beam mapper frame -> corner of raft. The `Executive.__init__()` function in `executive.py` specifies this mapping, so the motor installation location and stepper instance in `__init__()` should match, to ensure the correct motor commands are sent to the correct stepper. The stepper driver boards are addressable with a selector switch on top. Match the address selector to the correct corner of the raft in the `__init__()` function.
+
+[photo of address selector switch]
+
+#### Can the encoders provide position feedback?
+
+The EZHR17EN boards are capable of reading out [quadrature encoders](https://cdn.sparkfun.com/datasheets/Robotics/How%20to%20use%20a%20quadrature%20encoder.pdf) affixed to the stepper shafts. Encoder feedback is critical for accurate positioning of the raft.
+
+[photo of stepper encoder]
+
+> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the encoder connections are correct.
+
+### Spools
+
+#### Can the motors make the lines longer and shorter?
+
+The stepper motors drive winch-like drums directly, to change the length of the cables predictably. They are cylindrical drums with helical threads to accept the cables.
+
+[photo of drum with cable extended, at each rotational limit]
+
+> **NOTE:** Since helical threads change the position along the drum that the cable exits as a function of motor position, this imparts a difference in cable length change as a function of motor position if not mitigated. To mitigate this, we route the cable from each drum to a distant eyelet, a distance much greater than the height of the drum helix, on the opposite E-W side of the frame. Then we can leverage a small angle approximation to assert that the error is negligible (<< 1 mm).
+
+If they are not already attached, the cable drums should be fixed to the 5 mm stepper motor shaft via one M3 setscrew.
+
+The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.
+
+[photo of cable in screw]
+
+> **NOTE:** Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
+
+After attaching the cables to the spools, the other end should be threaded through the ~.9mm hole in the motor mount bracket on the opposite E-W side of the frame.
+
+> **NOTE:** All cables should be cut long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be (~25.5").
+
+Finally, excess cable should be wound onto the drum by hand, under tension, to avoid trapping excess cable underneath as the cable is wound on.
+
+## Raft
+
+#### Will moving the cables move the Hawkeyes?
+
+The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the IR receiver output data.
+
+[photo of raft]
+
+If the raft is not already attached to the cables, the raft cap with the Hawkeye emitters must be removed to access the screws to fix the affix the lines.
+
+Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down.
+
+#### Will the detectors see the Hawkeyes?
+
+After configuring the Hawkeye power supply, verify with a multimeter that the Hawkeyes are receiving 6.7 V by probing the screw terminal on the Hawkeye raft. Some voltage drop may occur from the power supply to the raft, so the power supply should be set such that the Hawkeyes receive no more or less than 6.7 V.
+
+[photo of screw terminal]
+
+This procedure ensures that the Hawkeyes are operating at the correct voltage, so they are bright enough in the relevant wavelengths.
+
+Less than 6.7 V drops the temperature of the Hawkeyes. Greater than 6.7 V shortens their lifespan by excess heating.
+
+### Cable Maintenance
+
+#### What if a cable breaks?
+
+The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart, but a spool of extra cable should already be stored with the beam mapper.
+
+[photo of line replacement]
+
+Cable length should be carefully sized to allow the raft to reach all corners of the workspace, but with as little extra length as possible at the maximum allowed separation of 25.5".
 
 ## Coordinate System
 
@@ -230,7 +252,7 @@ Each one defines the physical setup of the robot when it is in a certain configu
 
 Each corner point is the location of an **eyelet** through which the cable passes, expressed relative to the SW origin, described above. The width and height of the raft are defined by the separations between eyelets on the raft through which the cable passes.
 
-> **NOTE:** Since the dimensions of the motor mounts have been measured relative to each edge, the y-positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
+> **NOTE:** If the dimensions of the frame eyelets have been measured relative to each edge, the y-positions of the corner eyelets can be calculated as a function of the separation between the aluminum extrusions that make up the support structure and clamping surfaces.
 
 > The eyelets of the motor mounts measured 6.19 +/- 0.5 mm from the frame to the face of the motor mount bracket on the interior of the mapping region, and 7.96 +/- 0.02 mm from the face of the motor mount to the eyelet, for a total eyelet offset from the contact patch of 0.014 +/- 0.001 m. This value will be used to calculate eyelet y-positions as a function of frame separation.
 
@@ -238,9 +260,9 @@ Each corner point is the location of an **eyelet** through which the cable passe
 
 ### Profile
 
-Profile files are multi-line .csv files in `data/input/profiles`. Each one defines a new position to which the robot should move, in the coordinate system defined above.
+Profile files are multi-line .csv files in `data/input/profiles`. Each line defines a new position to which the robot should move, in the coordinate system defined above.
 
-`geometry/create_profile.ipynb` is provided to script the creation of profiles.
+`profiles/create_profile.ipynb` is provided to script the creation of profiles.
 
 ![profile](docs/img/profile.png)
 
@@ -270,7 +292,7 @@ to move to a single coordinate and flash all Hawkeyes (center, inner ring, outer
 |:-----------------------:|:----------:|:----------:|
 | 1 1 1 0 0 0 0 0 0 0 0 0 | .5         | .5         |
 
-Building up a sequence of moves allows a shape to be scanned.
+Building up a sequence of these moves allows a shape to be scanned.
 
 ## Output Files
 
@@ -286,11 +308,11 @@ Output files store telemetry for each run in `data/output`. They are timestamped
     * If you are adjusting the mapper spacing and you let them off of the threaded rod, they will disassemble themselves rapidly. You don't want to lose any parts.
     * If you are loosening or tightening the mapper down to anything, when the mapper is under tension, touching the button could release tension rapidly, potentially causing a fall, which you do not want.
 
-* Bring a power strip to make moving the PSU and Raspberry Pi to various mirrors easier. Bring a long ethernet cable to plug the Raspberry Pi into the rack's network switch.
+* Bring a USB extension cable to make moving the frame to various mirrors easier. That will extend RS485 connection, allowing you to stand or sit in a more comfortable spot.
 
-* Don't bother trying to tape Eccosorb to anything. Just pinch it in between the mirror and threaded rod. This also helps keep the threaded rod from marring the mirror surface.
+* Bring a lot of flat Eccosorb panels. Don't bother trying to tape Eccosorb to anything. It won't stick. Just pinch it in between the mirror and threaded rod. This also helps keep the threaded rod or raft from marring the mirror surface, which is very important.
 
-* Keep as much stuff as possible out of the path of the beam.
+* Keep as much stuff (power/data cables, hands, heads, ladders) as possible out of the path of the beam.
 
 ### K1
 
@@ -302,7 +324,7 @@ Underneath shutter, highest up. Put a step ladder inside the K-mirror frame to m
 
 ### K2
 
-Should be easy. Remove the anti-head-smasher foam first.
+Should be easy. Remove the anti-head-smasher foam first to get to the bottom clamping surface.
 
 `python main.py ./data/input/geometry/K2.csv ./data/input/profiles/K2_<profile>.csv`
 
@@ -310,7 +332,7 @@ Should be easy. Remove the anti-head-smasher foam first.
 
 ### K3
 
-Pucker factor 11. Gravity is working against you, and you're right on top of F1, but snug things down good and tight when mounting the mapper and you will be fine. I used a crescent wrench on the black slide-adjust nuts for this one. Be careful not to release the slide-adjust nuts when using the wrench.
+Pucker factor 11. Gravity is working against you, and you're right above F1, but snug things down good and tight when mounting the mapper and you will be fine. I used a crescent wrench on the black slide-adjust nuts for this one, to get a lot of clamping force. _<span style="color:red">**Be careful not to release the slide-adjust nuts when using the wrench.**</span>_
 
 `python main.py ./data/input/geometry/K3.csv ./data/input/profiles/K3_<profile>.csv`
 
@@ -326,31 +348,23 @@ Another easy one.
 
 ### P2
 
-Not currently reachable (clearance issues).
+Easy. It's down on the floor near the wall.
+
+[photo of mapper mounted on P2]
 
 ## Operation
 
-When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program. There should already be geometry and profile files in the `data/input` directories.
+When a surface geometry file has been created and the profile for the given shape to be mapped is generated, we are ready to run the program. There should already be geometry and profile files for each mirror in the `data/input` directories.
 
-### A Note on Homing
-
-Homing a system with no stall sensing in the motor driver solution and no limit switches is possible, but crude. 
-
-To get around the fact that there is no feedback, the current homing solution is to release all but one axis, then issue enough retracting steps to the remaining motor to ensure the raft has reached the limit of its travel toward that axis (NW at the time of writing). This axis is then held while the other steppers issue enough retracting steps to ensure all cables are taut. The raft is then in a known position and orientation relative to the frame, so the mapper is homed.
-
-You will hear and see vibration while this happens.
-
-![example homed position, lid off](docs/img/home_pos.jpeg)
-
-It is a simple, hands-free homing solution, but there is plenty of room for improvement here. Sensors would not be hard to add, would speed up homing, and would reduce the wear on cables (and probably motors) due to the current solution.
+## Homing
 
 ### Pre-mapping checks
 
-1. Make sure that 12V is being supplied to both motor driver boards in the stack, that the polarity is correct.
-2. Make sure that 6.7V or less is being supplied to the LabJack switching board.
+1. Make sure that 24 V is being supplied to all driver boards and that the polarity is correct.
+2. Make sure that 6.7V is being supplied to the Hawkeyes.
 3. Make sure the power supply output is on.
 4. Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.
-5. Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion. If the cable is taut before homing, this is also fine, but the homing routine may need to be run a few times before the raft reaches the home position.
+5. Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion.
 6. Ensure the Hawkeye source signal lines won't interfere with mapper operation.
 7. Ensure the `hotspot` `conda` env is active: `conda activate hotspot`.
 
@@ -378,8 +392,7 @@ Generated without motors or LabJack attached, so this does not include overhead 
 
 ### Executive
 
-![executive](docs/img/executive.drawio.png)
-
+[updated flow charts here]
 
 ## Reference HTML
 The html documentation of the source code and Markdown materials is generated by [portray](https://timothycrosley.github.io/portray/).
@@ -392,8 +405,8 @@ portray as_html -m hotspot -o docs/html/ --overwrite
 
 ## `pycallgraph`
 
-To re-generate the call graph image, directory, run
+To re-generate the call graph image, run
 ```bash
-pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=../doc/img/pycallgraph.png -- main.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
+pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=docs/img/pycallgraph.png -- main.py data/input/geometry/test_surface.csv data/input/profiles/box_frame.csv
 ```
 You must have `graphviz` installed using your operating system's package manager. For most accurate graph and timing information, do this with all peripheral hardware attached, so the call graphs include interfacing with the motor drivers and LabJack.

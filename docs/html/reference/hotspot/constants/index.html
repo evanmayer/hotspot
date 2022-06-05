@@ -503,33 +503,25 @@
 
 <span class="kn">import</span> <span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">hotspot.hw_context</span> <span class="kn">import</span> <span class="n">stepper</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="c1"># Adafruit stacking motor driver hats are addressable.</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
 
-<span class="n">HAT_0_ADDR</span> <span class="o">=</span> <span class="mh">0x60</span>
+<span class="c1"># Stepper drivers</span>
 
-<span class="n">HAT_1_ADDR</span> <span class="o">=</span> <span class="mh">0x61</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
 
-<span class="n">PWM_FREQ</span> <span class="o">=</span> <span class="mi">1600</span>
-
-<span class="c1"># Adafruit stepper style. Used to enable/disable microstepping.</span>
-
-<span class="c1"># ECM: Mess with this at your peril. Microstepping has less torque,</span>
-
-<span class="c1"># and is more prone to skipping steps in the high-tension situations</span>
-
-<span class="c1"># these motors are subject to.</span>
-
-<span class="n">STEPPER_STYLE</span> <span class="o">=</span> <span class="n">stepper</span><span class="o">.</span><span class="n">INTERLEAVE</span>
-
-<span class="c1"># Adafruit microstepping modifier. Divides each single step by the modifier:</span>
+<span class="c1"># EZStepper microstepping multiplier. Divides each single step by the modifier:</span>
 
 <span class="c1"># E.g. a value of 8 splits one 1.8 deg step into eight .225 deg steps.</span>
 
-<span class="c1"># Even numbers from 2-8.</span>
+<span class="c1"># Default value is 256, and it is discouraged to change it. If you do, you must</span>
 
-<span class="n">MICROSTEP_NUM</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="c1"># send a command to each EZStepper to match your decision here.</span>
+
+<span class="n">MICROSTEP_NUM</span> <span class="o">=</span> <span class="mi">256</span>
+
+<span class="n">ENCODER_TICKS_PER_REV</span> <span class="o">=</span> <span class="mi">40000</span>
 
 <span class="c1"># Used for converting rotational changes into stepper commands</span>
 
@@ -537,27 +529,39 @@
 
 <span class="n">DEG_PER_RAD</span> <span class="o">=</span> <span class="mf">180.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 
+<span class="n">STEP_PER_TICK</span> <span class="o">=</span> <span class="mf">200.</span> <span class="o">*</span> <span class="n">MICROSTEP_NUM</span> <span class="o">/</span> <span class="n">ENCODER_TICKS_PER_REV</span>
+
+<span class="c1"># ticks / sec, experimentally determined. EZStepper driver takes 10-40V</span>
+
+<span class="c1"># more PSU volts = faster current rise time = faster max speed.</span>
+
+<span class="n">MAX_SPEED_TICKS</span> <span class="o">=</span> <span class="mi">30000</span><span class="c1">#300000</span>
+
+<span class="c1"># Default for EZSteppers</span>
+
+<span class="n">SERIAL_BAUD</span> <span class="o">=</span> <span class="mi">9600</span>
+
+<span class="c1"># if you get garbage replies from stepper drivers, increase this timeout.</span>
+
+<span class="n">SERIAL_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.05</span>
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
+<span class="c1"># Physical constants</span>
+
+<span class="c1"># -----------------------------------------------------------------------------</span>
+
 <span class="c1"># Used for converting linear distances into rotational ones.</span>
 
-<span class="c1"># This is the measured value of the spool radius with no cable on it.</span>
+<span class="c1"># This is the measured value of the helical drum minor diameter.</span>
 
-<span class="n">PULLEY_RADIUS</span> <span class="o">=</span> <span class="mf">0.030</span> <span class="o">/</span> <span class="mf">2.</span>
+<span class="n">PULLEY_RADIUS</span> <span class="o">=</span> <span class="mf">.030132</span> <span class="o">/</span> <span class="mf">2.</span>
 
-<span class="c1"># How much does the radius change per radian due to cable stackup on a spool?</span>
+<span class="c1"># The helical drum means the length unspooled per radian is longer.</span>
 
-<span class="c1"># This is determined experimentally by wrapping the cable many times around</span>
+<span class="c1"># 1.5 mm pitch</span>
 
-<span class="c1"># a mandrel and measuring the average diameter change per revolution.</span>
-
-<span class="c1"># Recall that positive rotation removes cable from the spool.</span>
-
-<span class="n">RADIUS_M_PER_RAD</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.e-6</span>
-
-<span class="c1"># Limits the total number of commands that may be in the command queue at once.</span>
-
-<span class="c1"># Pretty much only limited by memory.</span>
-
-<span class="n">MAX_QLEN</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span>
+<span class="n">DRUM_PITCH</span> <span class="o">=</span> <span class="mf">1.5</span> <span class="o">/</span> <span class="mf">1000.</span>
 
 <span class="c1"># delta x distance from the NW eyelet to the raft centroid, when it is driven</span>
 
@@ -569,13 +573,29 @@
 
 <span class="n">HOMING_OFFSET_Y</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.0252</span>
 
-<span class="c1"># Not sure how issuing step commands to multiple motors too fast will mess</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
 
-<span class="c1"># with the motor hat timing, so wait a bit just to be safe</span>
+<span class="c1"># Software constants</span>
 
-<span class="n">STEP_WAIT</span> <span class="o">=</span> <span class="mf">1e-7</span>
+<span class="c1"># -----------------------------------------------------------------------------</span>
 
-<span class="c1"># Helps with I/O</span>
+<span class="c1"># Limits the total number of commands that may be in the command queue at once.</span>
+
+<span class="c1"># Pretty much only limited by memory.</span>
+
+<span class="n">MAX_QLEN</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span>
+
+<span class="c1"># If the serial-RS485 converter is not found, change this accordingly</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
+
+    <span class="n">SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;COM8&#39;</span>
+
+<span class="k">else</span><span class="p">:</span>
+
+    <span class="n">SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;/dev/ttyUSB0&#39;</span>
+
+<span class="c1"># Helps with file input/outputs</span>
 
 <span class="n">TOPLEVEL_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="vm">__file__</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">))</span>
 </code></pre></div>
@@ -588,10 +608,10 @@
 <div class="codehilite"><pre><span></span><code><span class="n">DEG_PER_STEP</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">HAT_0_ADDR</span>
+<div class="codehilite"><pre><span></span><code><span class="n">DRUM_PITCH</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">HAT_1_ADDR</span>
+<div class="codehilite"><pre><span></span><code><span class="n">ENCODER_TICKS_PER_REV</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">HOMING_OFFSET_X</span>
@@ -603,22 +623,25 @@
 <div class="codehilite"><pre><span></span><code><span class="n">MAX_QLEN</span>
 </code></pre></div>
 
+<div class="codehilite"><pre><span></span><code><span class="n">MAX_SPEED_TICKS</span>
+</code></pre></div>
+
 <div class="codehilite"><pre><span></span><code><span class="n">MICROSTEP_NUM</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">PULLEY_RADIUS</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">PWM_FREQ</span>
+<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_BAUD</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">RADIUS_M_PER_RAD</span>
+<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_PORT</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">STEPPER_STYLE</span>
+<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_TIMEOUT</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">STEP_WAIT</span>
+<div class="codehilite"><pre><span></span><code><span class="n">STEP_PER_TICK</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">TOPLEVEL_DIR</span>
