@@ -136,3 +136,10 @@ dmypy.json
 
 # image files from photogrammetry
 verification/img/
+.pickle
+
+# kicad files
+.zip
+.drl
+.gbr
+.gbrjob

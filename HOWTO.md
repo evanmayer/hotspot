@@ -6,7 +6,7 @@ This doc contains instructions for various tasks related to setting up and runni
 
 ![hotspot packed for Kitt Peak](docs/img/allup.jpeg)
 
-`hotspot` is a cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources, mounted on an adjustable frame. It clamps to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response. 
+`hotspot` is a planar cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources by changing the length of cables attached to it. The cables are fixed to an adjustable frame. The frame can clamp to any rectangular surface, but it was designed to clamp to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response.
 
 #### What is this document?
 
@@ -14,36 +14,13 @@ This document is a comprehensive how-to on setting up, maintaining, and running 
 
 It is organized in order of information flow: from the operator (you!) logging into the control computer, to setting up the software environment, connecting the power and signal cables, assembling the mapper frame, creating input files, mounting it on various mirrors, and operating the mapper. 
 
-## Using `timepi`, the Raspberry Pi control computer
+## Using the control computer
 
-The mapper is controlled by logging into the Raspberry Pi and running the `main.py` application. This repo should already be checked out on it, and you do not need to check out this repo onto a personal computer unless you wish to [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
+The mapper is controlled by running the `main.py` application on a computer with a [USB-to-RS485 adapter](https://www.uotek.com/pro_view-122.html). You should check out the `hotspot` repo if you wish to run the mapper or [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
 
-#### Can you talk to the Raspberry Pi?
+## Setting Up the Environment
 
-You can log in to the Raspberry Pi via `ssh`. In order for your computer to "see" it, though, they must be on the same network. This can be accomplished a few ways (or order of ease of use):
-
-1. By connecting both computers to a router or network switch that can assign each connected device an IP address automatically. Wired is easier than [wireless](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi).
-1. By connecting directly to the pi via an Ethernet patch cable and setting up a [link-local](https://en.wikipedia.org/wiki/Link-local_address) connection
-1. By connecting directly to the pi via an Ethernet patch cable and assigning static IP addresses to each host.
-
-The first option is the easiest, but depends on having access to an exisiting network, so limits your connectivity options. If you have access to a Linux machine, the second option is about as easy.
-
- The hostname and password are printed on the bottom of the white plastic case. Once you think the connection is sorted out, ping the pi to check:
- 
-```bash
- ping timepi.local
-```
- 
- The ssh command goes like this:
-
-```bash
- ssh -X pi@timepi.local
-```
-
- `-X` allows X-forwarding, in case a graphical application (like plotting) is invoked. You will be prompted for a password, which you can find printed on the bottom of the white plastic Raspberry Pi case.
-
-
-## Setting Up the Environment (Raspberry Pi)
+To run `hotspot`, you must satisfy the dependencies. They are enumerated in `hotspot.yml`, a human-readable file that can be ingested by the `conda` Python package manager.
 
 #### Is the environment set up?
 
@@ -52,19 +29,13 @@ First, check that the environment setup has not been done before. If
 ```bash
 conda activate hotspot
 ```
-succeeds, skip [these steps](#setting-up-the-environment-raspberry-pi).
+succeeds, skip to [software testing with pytest](#software-testing-with-pytest).
 
 ### Anaconda
 
 #### Is Anaconda set up?
 
-If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the Raspberry Pi you're running this on, I recommend installing Miniconda like this:
-
-```bash
-curl "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-armv7l.sh" -o "Miniconda.sh"
-chmod +x Miniconda.sh
-./Miniconda.sh
-```
+If the Python environment/package manager [Anaconda](https://www.anaconda.com/) does not exist on the computer you're running this on, I recommend installing Miniconda according to [the instructions](https://docs.conda.io/en/latest/miniconda.html#installing).
 
 Once that is done, we are ready to set up the `hotspot` environment. `conda` environments keep a project's dependencies from polluting your computer's environment and make sure they all play nicely together. `conda` allows specifying the dependencies needed in a file with a `.yml` extension. This is done for you. Create the `hotspot` conda env with
 
@@ -72,7 +43,7 @@ Once that is done, we are ready to set up the `hotspot` environment. `conda` env
 conda env create -f hotspot.yml
 ```
 
-It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as Adafruit's `adafruit-circuitpython-motorkit` library for driving the steppers, and the `labjack-ljm` library for controlling the Hawkeye IR sources via the LabJack. There are also packages for documentation.
+It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as the `pyserial` library for driving the steppers, and the `labjack-ljm` library for controlling the Hawkeye IR sources via the LabJack. There are also packages for documentation.
 
 #### Is the LabJack library installed?
 
@@ -104,46 +75,21 @@ conda env update --file hotspot.yml --prune
 
 In order to verify that basic low-level functionality is unbroken, run `pytest` from the toplevel directory of the repo.
 
-## Enable Raspberry Pi Hardware
-
-#### Can the Raspberry Pi talk to the motor drivers?
-
-The Raspberry Pi should have at least two [motor driver hat boards](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi). These are blue PCBs with onboard chips that talk to the Raspberry Pi on an I2C bus via the 2x20 header pins. They issue commands to the motor driver chips, which handle the delivery and timing of greater voltage and current than the Raspberry Pi is capable of on its own.
-
-If you are using a factory fresh Raspberry Pi, follow the steps for [Enabling I2C communication](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi/installing-software#enable-i2c-1106864-2) from Adafruit. 
-
-> **NOTE:** A backup pdf of instructions for this is saved in the `pdf` dir.
-
 ## Power
-
-#### Are the power supply settings correct?
-
-To power both the motors and Hawkeyes simultaneously, use a **GW Instek GPS-4303** power supply or equivalent; channels must supply:
-
-* 12V constant voltage, 4A peak instantaneous current
-* 6.7V constant voltage, 2A peak instantaneous current
-* 5V constant voltage, 1A peak instantaneous current (optional, for chopped signal to TIME MCE CLK card)
-
-Set the GW Instek GPS-4303 CH1, CH2, and optionally CH3 supply as shown:
-
-![PSU Settings](docs/img/psu_settings.jpeg)
-
-Ensure the current limit knobs for each channel are sufficient to keep the power supply in constant voltage mode, even when the motors and Hawkeyes are drawing current. The C.V. indicator light should stay green.
 
 ### Motors
 
 #### Do the motor driver boards have power?
 
-The Raspberry Pi cannot provide the requisite voltage or current to the motors on its own, so external power must be supplied. 
-The motor controllers on each hat are designed to run with 5-12V, with a maximum instantaneous current of ~1.2A per channel.
+Each motor is controlled by an [AllMotion EZStepper EZHR17EN](https://www.americancontrolelectronics.com/ezhr17en). These are [chopper driver](https://homepage.divms.uiowa.edu/~jones/step/current.html#pwm) boards that accept 10-40 V input.
 
-For stacking multiple hats, jumpers are attached to the screw terminals to route +/- voltage to the additional hats. 
+Configure a constant-voltage DC power supply to provide:
+* 24 V
+* 4 A
 
-A lab power supply with 12V output is attached to the +/- screw terminal block on the motor driver hat.
+The EZStepper drivers are configured in software to draw 50% of the rated 2 A current, 1 A each, for a total of 4 A.
 
-![12 V to driver boards](docs/img/motor_power.jpeg)
-
-As you can see, it's easiest to use leads with grabber probes to grab onto the +/- jumpers. 
+> **Note:** See the AllMotion/American Control Electronics wiring diagram to identify the Vin and GND inputs.
 
 ### LabJack
 
@@ -163,27 +109,35 @@ Finally, ensure the LabJack T7 is plugged into the Raspberry Pi's USB port.
 
 ##### Optional: MCE CLK Sync
 
-It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use the power supply CH3 set to 5V, and attach to +5V and GND to the terminal labeled S4.
+It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use another power supply channel set to 5V, and attach to +5V and GND to the terminal labeled S4.
 
 ## Motion Outputs
 
 ### Motors
 
+#### Can the computer talk to the motor drivers?
+
+The EZHR17EN stepper drivers receive commands from a control computer running the `hotspot` software over the [RS485](https://hackaday.com/2022/04/05/hacker-dictionary-rs-485-will-go-the-distance/#more-528633) physical layer.
+
+> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the RS485 communications connection is correct.
+
+The control computer needs either a 9-pin serial output port, or a USB-to-RS485 adapter to send bytes out over the RS485 bus. The inverting/non-inverting outputs are blue and yellow wires. If you are connecting your adapter to the bus for the first time, you may have to guess incorrectly and swap the wires before it will work.
+
+The motor drivers must have power and ground (via the 24 VDC power supply) to receive commands.
+
 #### Can the motor drivers command the motors?
 
-If they are not already connected, motors should be connected to the screw terminals of the pi's stepper hat like this:
-
-![Stepper Wiring Example](docs/img/stepper_wiring.jpg)
-
-Getting the order right ensures the stepper's coils are energized in the correct sequence to get it to rotate.
+> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the motor winding connections are correct.
 
 The stepper motors themselves have NEMA-17 spec hole patterns, which mate to the 3D printed motor mount brackets which we will attach to the beam mapper frame. Each stepper motor should be attached to its motor mount using M3 x 0.5 x 10 mm screws. Use lubricant, because metal on plastic will be squeaky.
 
-At this point, it is important to consider the mapping of motor driver terminal -> stepper motor -> motor mount -> corner of beam mapper frame. The `Executive.__init__()` function specifies this mapping, so the motor installation location and stepper instance in `__init__()` should match, to ensure the correct motor commands are sent to the correct stepper. Steppers and wire harnesses are labeled to assist with this.
+At this point, it is important to consider the mapping of motor driver terminal -> stepper motor -> motor mount -> corner of beam mapper frame -> corner of raft. The `Executive.__init__()` function specifies this mapping, so the motor installation location and stepper instance in `__init__()` should match, to ensure the correct motor commands are sent to the correct stepper. The stepper driver boards are addressable with a selector switch on top. Match the address selector to the correct corner of the raft in the `__init__()` function.
 
-In general, the driver board closest to the Pi (0n bottom) will be `kit0` (although this can be double-checked by looking at the address - `0x60` is the default I2C address for the hat, which can be changed by bridging the HAT pads A0-A4, so the board addressed by `0x60` will have no pads bridged). The terminal blocks M1-M2 are used for `stepper1` on each HAT, and M3-M4 are used for `stepper2`.
+#### Can the encoders provide position feedback?
 
-It doesn't really matter which terminal maps to which corner, but it really does matter that the code and physical arrangement agree.
+The EZHR17EN boards are capable of reading out [quadrature encoders](https://cdn.sparkfun.com/datasheets/Robotics/How%20to%20use%20a%20quadrature%20encoder.pdf) affixed to the stepper shafts. Encoder feedback is critical for accurate position of the raft.
+
+> **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the encoder connections are correct.
 
 ### Spools
 
@@ -197,7 +151,7 @@ The fishing line is affixed to the each spool by wrapping it around the setscrew
 
 > **NOTE:** Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
 
-After attaching the cables to the spools, the other end should be threaded through the ~.9mm hole in the motor mount bracket.
+After attaching the cables to the spools, the other end should be threaded through the ~.9mm hole in the motor mount bracket on the opposite E-W side of the frame. This additional distance allows us to neglect the changing cable length due to the exit position of the cable on the spiral drum.
 
 > **NOTE:** All cables should be long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be (~25.5").
 
@@ -211,7 +165,13 @@ The end effector of this robot is a rectangular raft carrying several Hawkeye Te
 
 If the raft is not already attached to the cables, the raft cap with the Hawkeye emitters must be removed to access the screws to fix the affix the lines.
 
-Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down. 
+Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down.
+
+#### Will the detectors see the Hawkeyes?
+
+After configuring the Hawkeye power supply, verify with a multimeter that the Hawkeyes are receiving 6.7 V by probing the Hawkeye pins or the screw terminal on the Hawkeye raft. Some voltage drop may occur from the power supply to the raft, so the power supply should be set such that the Hawkeyes receive no more or less than 6.7 V.
+
+This procedure ensures that the Hawkeyes are operating at the correct voltage, so they are bright enough in the relevant wavelengths.
 
 ### Cable Maintenance
 
@@ -233,7 +193,7 @@ Two aluminum registration tabs are screwed into the end of each frame piece oppo
 
 > **NOTE:** These tabs register the frame to a third edge of the mirror, so **it is important that they not be bent**.
 
-Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. 
+Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, a nyloc "jam" nut on the outside of the perforated aluminum extrusion provides clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. Care should be exercised with this slide-adjust nut, as pressing the button will release any tension on the threaded rod.
 
 ## Coordinate System
 
@@ -253,7 +213,7 @@ Read on to learn what they are for and what is inside each.
 
 `.ipynb` files are provided in the `data/input/*` directories to assist with making these input files. Most likely, you will only need `data/input/create_profile.ipynb`.
 
-The Raspberry Pi does not have Jupyter installed, so you would need a local checkout of `hotspot` or a copy of these notebooks to run on your own machine. Then simply copy the new files to the Raspberry Pi's `/data/input/*` directory with `scp`.
+You will need Jupyter installed on the computer running this notebook. Then simply copy the new files to the `/data/input/*` directory.
 
 ### Geometry
 Geometry files are one-line .csv files in `data/input/geometry`. 
