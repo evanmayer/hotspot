@@ -1765,8 +1765,8 @@ Read on to learn what they are for and what is inside each.</p>
 </code></pre></div>
 
 <h2 id="pycallgraph"><code>pycallgraph</code></h2>
-<p>To re-generate the call graph image, directory, run</p>
-<div class="codehilite"><pre><span></span><code>pycallgraph -i <span class="s2">&quot;alg*&quot;</span> -i <span class="s2">&quot;const*&quot;</span> -i <span class="s2">&quot;exec*&quot;</span> -i <span class="s2">&quot;hardw*&quot;</span> -i <span class="s2">&quot;hot*&quot;</span> -i <span class="s2">&quot;hw*&quot;</span> -i <span class="s2">&quot;tele*&quot;</span> graphviz --output-file<span class="o">=</span>../doc/img/pycallgraph.png -- main.py ../data/input/geometry/frame.csv ../data/input/profiles/box_frame.csv
+<p>To re-generate the call graph image, run</p>
+<div class="codehilite"><pre><span></span><code>pycallgraph -i <span class="s2">&quot;alg*&quot;</span> -i <span class="s2">&quot;const*&quot;</span> -i <span class="s2">&quot;exec*&quot;</span> -i <span class="s2">&quot;hardw*&quot;</span> -i <span class="s2">&quot;hot*&quot;</span> -i <span class="s2">&quot;hw*&quot;</span> -i <span class="s2">&quot;tele*&quot;</span> graphviz --output-file<span class="o">=</span>docs/img/pycallgraph.png -- main.py data/input/geometry/test_surface.csv data/input/profiles/box_frame.csv
 </code></pre></div>
 
 <p>You must have <code>graphviz</code> installed using your operating system's package manager. For most accurate graph and timing information, do this with all peripheral hardware attached, so the call graphs include interfacing with the motor drivers and LabJack.</p>
