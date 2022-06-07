@@ -2,6 +2,7 @@
 
 import logging
 import numpy as np
+import sys
 import threading
 import time
 
@@ -31,39 +32,81 @@ MODE = 'USB'
 # -----------------------------------------------------------------------------
 # Stepper functions
 # -----------------------------------------------------------------------------
-def ezstepper_write(ser: Serial, command_str: str):
+def ezstepper_check_status(resp):
+    status_good = True
+    if resp:
+        status = resp[3] & 0b0001111 # bits 0-3 form an error code
+    else:
+        status = b''
+        status_good = False
+    if 9 == status:
+        logger.warning('Overload Error (Physical system could not keep up with commanded position)')
+        status_good = False
+    if 15 == status:
+        logger.warning('Command overflow (unit was already executing a command when another command was received)')
+        status_good = False
+    if status:
+        logger.warning(f'Unrecognized error code {status}. Consult EZStepper documentation.')
+    return status_good
+
+
+def ezstepper_check_ready(resp):
+    '''
+    The EZStepper is ready to accept a new command if the ready bit is set. 
+    '''
+    return bool(resp[3] & 0b0100000)
+
+
+def wait_for_ready(ser, address, ready_timeout=1):
+    if '_' != address:
+        # only send a new command if ezstepper not busy
+        start_busywait = time.time()
+        ready = False
+        while not ready and (time.time() - start_busywait) < ready_timeout:
+            ser.write((f'/{address}Q\r\n').encode())
+            resp = ser.readline()
+            if resp:
+                ready = ezstepper_check_ready(resp)
+        # logging.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
+        if not ready:
+            logging.warning(f'EZStepper {address} was not ready in allotted time {ready_timeout} sec')
+    return
+
+
+def ezstepper_write(ser: Serial, address, command_str: str):
     '''
     ser
         pyserial instance, the port to send bytes over from
+    address
+        str, address of ezstepper
     command_str
         string, chars to send over EZStepper bus
+    busy_timeout
+        float, stop trying to wait for busy ezstepper after this time
     '''
-    ser.write(command_str.encode())
-    logging.debug('EZStepper cmd: {}'.format(command_str.rstrip('\r\n')))
+    wait_for_ready(ser, address)
+    ser.write((f'/{address}' + command_str).encode())
+    logging.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
     resp = ser.readline()
-    if resp:
-        status = bin(resp[3])
-    else:
-        status = b''
-    logging.debug('EZStepper status: {}, response: {}'.format(status, resp.rstrip(b'\r\n')))
+    status_good = ezstepper_check_status(resp)
+    logging.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
     return resp
 
 
 def get_encoder_pos(ser: Serial, address):
-    resp = ezstepper_write(ser, f'/{address}?8\r\n')
-    if resp:
-        status = resp[3]
+    resp = ezstepper_write(ser, address, '?8R\r\n')
+    if not ezstepper_check_status(resp):
+        logger.critical(f'Encoder {address} status bad: {resp}.')
+        sys.exit(1)
+    else:
         payload = resp[4:-3]
         if payload:
             ticks = int(payload.decode('utf-8'))
         else:
-            logger.warning(f'Encoder {address} didn\'t respond. Assuming 0 pos.')
-            return 0
-        logger.debug(f'Encoder status: {bin(status)}, encoder counts: {ticks}')
+            logger.critical(f'Encoder {address} didn\'t respond.')
+            sys.exit(1)
         return ticks
-    else:
-        logger.warning(f'Encoder {address} didn\'t respond. Assuming 0 pos.')
-        return 0
+        
 
 
 def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_current=50, move_current=50):
@@ -100,8 +143,8 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
         prev_ticks = curr_ticks
         resp = ezstepper_write(
             ser,
+            address,
             (
-                f'/{address}' +
                 f'm{move_current}' +
                 f'h{hold_current}' +
                 f'V{speed}' +
@@ -109,10 +152,7 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
                 'R\r\n'
             )
         )
-        logger.debug(f'Sleeping {t_move:.2f} sec for move')
-        time.sleep(t_move)
         curr_ticks = get_encoder_pos(ser, address)
-        time.sleep(1e-4)
         tries += 1
 
     return prev_ticks
@@ -176,16 +216,15 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
             # Set velocity and command absolute encoder ticks
             resp = ezstepper_write(
                 ser,
+                addresses[i],
                 (
-                    f'/{addresses[i]}V{vels[i]}'
-                  + f'A{ticks_int[i]}'
+                    f'V{vels[i]}' + 
+                    f'A{ticks_int[i]}'
                   + '\r\n'
                 )
             )
     # Execute buffered move commands for all addresses
-    ezstepper_write(ser, '/_R\r\n')
-    logger.debug(f'Sleeping {t_move:.2f} sec for move')
-    time.sleep(t_move)
+    ezstepper_write(ser, '_', 'R\r\n')
 
     return ticks_to_go, err
 

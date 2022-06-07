@@ -84,17 +84,18 @@ class Executive:
         }
 
         # terminate all running commands
-        resp = hw.ezstepper_write(self.ser, f'/_T\r\n')
+        resp = hw.ezstepper_write(self.ser, '_', 'T\r\n')
         for address in self.steppers.keys():
             # initialize driver settings
             resp = hw.ezstepper_write(
                 self.ser,
+                self.steppers[address],
                 (
-                    f'/{self.steppers[address]}' +
                     'n0' + # clear any special modes
                     'm50' + # set move current limit to 50% = 1 A
                     'h50' + # set hold current limit to 50% = 1 A
-                    'aC200' + # encoder coarse correction deadband, ticks
+                    # 'L2000' + # acceleration factor
+                    # 'aC200' + # encoder coarse correction deadband, ticks
                     'ac5' + # encoder fine correction deadband, ticks
                     # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
                     'aE1280' + # 1280 = 1000 * (256 * 200) / 40000
@@ -302,10 +303,12 @@ class Executive:
         - All cables are slack, but without excessive cable played out.
         - Corners form a rectangle.
         '''
-        coarse_ticks = 20000
-        coarse_homing_speed = 60000
+         # ought to be smaller than distance stepper bounced back after hitting hard stop
+        coarse_ticks = 5000
+        coarse_homing_speed = 100000
+        # sets the final zero-point length error for each axis
         fine_ticks = 20
-        fine_homing_speed = 1000
+        fine_homing_speed = 100000
 
         # Home each axis
         [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()]
@@ -313,8 +316,8 @@ class Executive:
         for current_axis in axes:
             logger.info(f'Homing to {current_axis}')
             # turn off current to axes not being homed
-            resp = hw.ezstepper_write(self.ser, f'/_m0R\r\n')
-            resp = hw.ezstepper_write(self.ser, f'/_h0R\r\n')
+            resp = hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
+            resp = hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
 
             # coarse hard stop homing
             hw.bump_hard_stop(
@@ -327,49 +330,48 @@ class Executive:
             )
 
             # fine hard stop homing
-            hard_stop_ticks = hw.bump_hard_stop(
+            hw.bump_hard_stop(
                 self.ser,
                 self.steppers[current_axis],
                 fine_ticks,
                 fine_homing_speed,
-                move_current=5,
-                hold_current=50
+                move_current=10,
+                hold_current=10
             )
 
             # run to position of hard stop
             resp = hw.ezstepper_write(
                 self.ser,
+                self.steppers[current_axis],
                 (
-                    f'/{self.steppers[current_axis]}' +
                     'm50' +
                     'h50' +
                     f'V{fine_homing_speed}' +
-                    f'A{hard_stop_ticks}' +
+                    f'D{fine_ticks}' +
                     'R\r\n'
                 )
             )
-            time.sleep(fine_ticks / fine_homing_speed)
-            # zero out encoder position
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}z0R\r\n')
-            time.sleep(1e-1)
-            logger.debug(f'Is encoder zeroed? {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
-            time.sleep(1e-1)
-            # run to zeroed position to verify
-            # resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}A0R\r\n')
-            # time.sleep(1e-1)
-            # logger.debug(f'Zeroed position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
+            # set cable length zero point
+            time.sleep(1)
+            resp = hw.ezstepper_write(self.ser, self.steppers[current_axis], 'z0R\r\n')
+            time.sleep(1)
+            # Check to see that homing operation succeeeded.
+            if hw.get_encoder_pos(self.ser, self.steppers[current_axis]) > 20:
+                logger.critical('Encoder failed to set zero point during homing. Aborting.')
+                sys.exit(1)
 
-        resp = hw.ezstepper_write(self.ser, f'/_m50R\r\n')
-        resp = hw.ezstepper_write(self.ser, f'/_h50R\r\n')
+        resp = hw.ezstepper_write(self.ser, '_', 'm50R\r\n')
+        resp = hw.ezstepper_write(self.ser, '_', 'h50R\r\n')
 
-        # Update current encoder position (used for
-        # velocity calc in move to home pos)
-        # for ax in axes:
-        #     address = self.steppers[ax]
-        #     actual_ticks = hw.get_encoder_pos(self.ser, address)
-        #     hw.ezstepper_write(self.ser, f'/{address}z{actual_ticks}R\r\n')
-        #     hw.ezstepper_write(self.ser, f'/{address}A{actual_ticks}R\r\n')
-        
+        # Update current encoder position (used for velocity calc in move to
+        # home pos)
+        for ax in axes:
+            address = self.steppers[ax]
+            actual_ticks = hw.get_encoder_pos(self.ser, address)
+            hw.ezstepper_write(self.ser, address, f'z{actual_ticks}R\r\n')
+            hw.ezstepper_write(self.ser, address, f'A{actual_ticks}R\r\n')
+
+        self.robot.raft.position = self.robot.surf.sw + np.array([0.1, 0.1])
         home = (
             np.mean([self.robot.surf.ne[0], self.robot.surf.sw[0]]),
             np.mean([self.robot.surf.ne[1], self.robot.surf.sw[1]])
@@ -377,8 +379,7 @@ class Executive:
         self.robot.home = home
         self.go_home()
 
-        print('achieved encoder pos:')
-        [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()]
+        print('Achieved encoder pos:', [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()])
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
         logger.warning('Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.')
 
@@ -474,27 +475,27 @@ class Executive:
         # Linear approximation only holds for small distances, so
         # chunk up big moves into tiny bits. This ensures all cables stay taut,
         # even when moving to opposite corners.
-        # MAX_DIST = .015
-        # pos_before = self.robot.raft.position
-        # pos_after = cmd['pos_cmd']
-        # dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
-        # while dist_to_go > MAX_DIST:
-        #     logger.debug(f'Dist. to go in this move: {dist_to_go}')
-        #     # determine a position MAX_DIST away from the starting pos along
-        #     # the line of travel
-        #     v = np.array(pos_after) - np.array(pos_before)
-        #     u = v / np.linalg.norm(v) # the unit vector pointing along the line
-        #     logger.debug(f'Direction vector: {v}, Unit vector: {u}')
-        #     pos_cmd = pos_before + MAX_DIST * u
-        #     logger.debug(f'Intermediate move: {pos_cmd}')
-        #     send_pos_cmd(pos_cmd) # alg updates raft position
-        #     # calculate new dist to go
-        #     pos_before = self.robot.raft.position
-        #     dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
-        # logger.debug(f'Final move: {pos_after}')
-        # send_pos_cmd(pos_after)
+        MAX_DIST = .005
+        pos_before = self.robot.raft.position
+        pos_after = cmd['pos_cmd']
+        dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        while dist_to_go > MAX_DIST:
+            logger.debug(f'Dist. to go in this move: {dist_to_go}')
+            # determine a position MAX_DIST away from the starting pos along
+            # the line of travel
+            v = np.array(pos_after) - np.array(pos_before)
+            u = v / np.linalg.norm(v) # the unit vector pointing along the line
+            logger.debug(f'Direction vector: {v}, Unit vector: {u}')
+            pos_cmd = pos_before + MAX_DIST * u
+            logger.debug(f'Intermediate move: {pos_cmd}')
+            send_pos_cmd(pos_cmd) # alg updates raft position
+            # calculate new dist to go
+            pos_before = self.robot.raft.position
+            dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        logger.debug(f'Final move: {pos_after}')
+        send_pos_cmd(pos_after)
 
-        send_pos_cmd(cmd['pos_cmd']) # everything all at once
+        # send_pos_cmd(cmd['pos_cmd']) # everything all at once
 
         return
 
@@ -509,7 +510,7 @@ class Executive:
         self.tm_queue.put(packet)
         
         freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 10
+        num_blinks = 0#10
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
@@ -528,12 +529,9 @@ class Executive:
 
     def close(self):
         # Terminate all running commands
-        hw.ezstepper_write(self.ser, f'/_T\r\n')
+        hw.ezstepper_write(self.ser, '_', 'TR\r\n')
         # Release torque
-        hw.ezstepper_write(self.ser, f'/_m0R\r\n')
-        hw.ezstepper_write(self.ser, f'/_h0R\r\n')
-        # Zero out position
-        resp = hw.ezstepper_write(self.ser, f'/_z0R\r\n')
-
+        hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
+        hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
         self.ser.close()
         return
