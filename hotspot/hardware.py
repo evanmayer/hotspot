@@ -35,6 +35,8 @@ def ezstepper_write(ser: Serial, command_str: str):
     '''
     ser
         pyserial instance, the port to send bytes over from
+    command_str
+        string, chars to send over EZStepper bus
     '''
     ser.write(command_str.encode())
     logging.debug('EZStepper cmd: {}'.format(command_str.rstrip('\r\n')))
@@ -52,12 +54,68 @@ def get_encoder_pos(ser: Serial, address):
     if resp:
         status = resp[3]
         payload = resp[4:-3]
-        ticks = int(payload.decode('utf-8'))
+        if payload:
+            ticks = int(payload.decode('utf-8'))
+        else:
+            logger.warning(f'Encoder {address} didn\'t respond. Assuming 0 pos.')
+            return 0
         logger.debug(f'Encoder status: {bin(status)}, encoder counts: {ticks}')
         return ticks
     else:
         logger.warning(f'Encoder {address} didn\'t respond. Assuming 0 pos.')
         return 0
+
+
+def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_current=50, move_current=50):
+    '''
+    Run the motor backward until it can't anymore.
+
+    Parameters
+    ----------
+    ser
+        pyserial instance, the port to send bytes over from
+    address
+        ezstepper selector switch number to send command to
+    ticks
+        encoder ticks to move on each trial while searching for hard stop
+    speed
+        encoder ticks per second
+    hold_current (optional)
+        target current, % of 2 A limit for motor when stationary
+    move_current (optional)
+        target current, % of 2 A limit for motor when moving
+
+    Returns
+    -------
+    prev_ticks
+        The last encoder position before the hard stop was hit
+    '''
+    t_move = ticks / speed
+    max_tries = 10000
+    tries = 0
+    prev_ticks = 800000
+    curr_ticks = prev_ticks - 1
+
+    while ((curr_ticks < prev_ticks) and (tries < max_tries)):
+        prev_ticks = curr_ticks
+        resp = ezstepper_write(
+            ser,
+            (
+                f'/{address}' +
+                f'm{move_current}' +
+                f'h{hold_current}' +
+                f'V{speed}' +
+                f'D{ticks}' +
+                'R\r\n'
+            )
+        )
+        logger.debug(f'Sleeping {t_move:.2f} sec for move')
+        time.sleep(t_move)
+        curr_ticks = get_encoder_pos(ser, address)
+        time.sleep(1e-4)
+        tries += 1
+
+    return prev_ticks
 
 
 def all_steppers_ez(ser: Serial, addresses, radians: list):

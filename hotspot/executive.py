@@ -94,12 +94,13 @@ class Executive:
                     'n0' + # clear any special modes
                     'm50' + # set move current limit to 50% = 1 A
                     'h50' + # set hold current limit to 50% = 1 A
-                    'aC250' + # encoder coarse correction deadband, ticks
+                    'aC200' + # encoder coarse correction deadband, ticks
+                    'ac5' + # encoder fine correction deadband, ticks
                     # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
                     'aE1280' + # 1280 = 1000 * (256 * 200) / 40000
                     'au1' + # number of retries allowed under stall condition
                     # 'A0' + # zero out position
-                    'z0' + # set encoder zero point
+                    'z400000' + # set encoder zero point
                     'n8' + # enable encoder feedback mode
                     'R\r\n'
                 )
@@ -301,74 +302,74 @@ class Executive:
         - All cables are slack, but without excessive cable played out.
         - Corners form a rectangle.
         '''
-        # On average, about how far would we have to move before hitting an 
-        # opposite corner?
-        # The total available cable length should be sized so that the raft
-        # can just reach all corners of the workspace at the maximum eyelet
-        # separation of 0.6177 m (accommodates ~25.5" mirror K2).
-        # In position correction mode, the EZStepper will attempt this move a 
-        # set number of times before giving up, which is what we want upon
-        # hitting a hard stop.
-        max_length = np.linalg.norm(
-            [
-                self.robot.surf.sw + np.array([0., 0.715 / 2]), # meas. fully extended cable
-                self.robot.surf.se
-            ]
-        )
-        max_radians = max_length / const.PULLEY_RADIUS
-        max_ticks = np.round(np.abs(max_radians) * const.DEG_PER_RAD / const.DEG_PER_STEP / const.STEP_PER_TICK).astype(int)
-        homing_speed = int(const.MAX_SPEED_TICKS * 10)
-        t_move = max(max_ticks / homing_speed, 1e-9)
-        num_ticks = max(1, max_ticks)
+        coarse_ticks = 20000
+        coarse_homing_speed = 60000
+        fine_ticks = 20
+        fine_homing_speed = 1000
 
         # Home each axis
-        for current_axis in ['ne', 'se', 'sw', 'nw']:
+        [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()]
+        axes = ['nw', 'ne', 'se', 'sw']
+        for current_axis in axes:
             logger.info(f'Homing to {current_axis}')
             # turn off current to axes not being homed
             resp = hw.ezstepper_write(self.ser, f'/_m0R\r\n')
             resp = hw.ezstepper_write(self.ser, f'/_h0R\r\n')
+
             # coarse hard stop homing
-            resp = hw.ezstepper_write(
+            hw.bump_hard_stop(
                 self.ser,
-                (
-                    f'/{self.steppers[current_axis]}' +
-                    f'm50' + # set move current limit to 50% = 1 A
-                    f'h50' + # set hold current limit to 50% = 1 A
-                    f'V{homing_speed}' + # # set speed for moving axis
-                    f'D{num_ticks}' + # home axis, negative direction (D) retracts
-                    'R\r\n'
-                )
+                self.steppers[current_axis],
+                coarse_ticks,
+                coarse_homing_speed,
+                move_current=50,
+                hold_current=50
             )
-            logger.debug(f'Sleeping {t_move:.2f} sec for move')
-            time.sleep(t_move + 1e-1)
+
             # fine hard stop homing
+            hard_stop_ticks = hw.bump_hard_stop(
+                self.ser,
+                self.steppers[current_axis],
+                fine_ticks,
+                fine_homing_speed,
+                move_current=5,
+                hold_current=50
+            )
+
+            # run to position of hard stop
             resp = hw.ezstepper_write(
                 self.ser,
                 (
                     f'/{self.steppers[current_axis]}' +
-                    f'm15' + # set move current limit to 50% = 1 A
-                    f'h50' + # set hold current limit to 50% = 1 A
-                    f'V{int(homing_speed / 10)}' + # # set speed for moving axis
-                    f'D{int(num_ticks / 10)}' + # home axis, negative direction (D) retracts
+                    'm50' +
+                    'h50' +
+                    f'V{fine_homing_speed}' +
+                    f'A{hard_stop_ticks}' +
                     'R\r\n'
                 )
             )
-            logger.debug(f'Sleeping {t_move:.2f} sec for move')
-            time.sleep(t_move)
-            logger.debug(f'Post-homing position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
+            time.sleep(fine_ticks / fine_homing_speed)
             # zero out encoder position
             resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}z0R\r\n')
             time.sleep(1e-1)
-            # run to zeroed position to verify
-            resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}A0R\r\n')
+            logger.debug(f'Is encoder zeroed? {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
             time.sleep(1e-1)
-            logger.debug(f'Zeroed position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
+            # run to zeroed position to verify
+            # resp = hw.ezstepper_write(self.ser, f'/{self.steppers[current_axis]}A0R\r\n')
+            # time.sleep(1e-1)
+            # logger.debug(f'Zeroed position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}')
 
-        # Restore proper current limits to all drivers
         resp = hw.ezstepper_write(self.ser, f'/_m50R\r\n')
         resp = hw.ezstepper_write(self.ser, f'/_h50R\r\n')
 
-        logger.debug(f'encoder pos: {[hw.get_encoder_pos(self.ser, address) for address in [1,2,3,4]]}')
+        # Update current encoder position (used for
+        # velocity calc in move to home pos)
+        # for ax in axes:
+        #     address = self.steppers[ax]
+        #     actual_ticks = hw.get_encoder_pos(self.ser, address)
+        #     hw.ezstepper_write(self.ser, f'/{address}z{actual_ticks}R\r\n')
+        #     hw.ezstepper_write(self.ser, f'/{address}A{actual_ticks}R\r\n')
+        
         home = (
             np.mean([self.robot.surf.ne[0], self.robot.surf.sw[0]]),
             np.mean([self.robot.surf.ne[1], self.robot.surf.sw[1]])
@@ -376,6 +377,8 @@ class Executive:
         self.robot.home = home
         self.go_home()
 
+        print('achieved encoder pos:')
+        [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()]
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
         logger.warning('Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.')
 
@@ -491,7 +494,7 @@ class Executive:
         # logger.debug(f'Final move: {pos_after}')
         # send_pos_cmd(pos_after)
 
-        send_pos_cmd(cmd['pos_cmd'])
+        send_pos_cmd(cmd['pos_cmd']) # everything all at once
 
         return
 
@@ -506,7 +509,7 @@ class Executive:
         self.tm_queue.put(packet)
         
         freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 0#10
+        num_blinks = 10
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
