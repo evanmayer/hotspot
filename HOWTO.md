@@ -83,7 +83,7 @@ In order to verify that basic low-level functionality is unbroken, run `pytest` 
 
 Each motor is controlled by an [AllMotion EZStepper EZHR17EN](https://www.americancontrolelectronics.com/ezhr17en). These are [chopper driver](https://homepage.divms.uiowa.edu/~jones/step/current.html#pwm) boards that accept 10-40 V input.
 
-[photo of EZStepper board]
+![photo of EZStepper board](docs/img/ezstepper.jpg)
 
 Configure a constant-voltage DC power supply to provide:
 * 24 V
@@ -137,7 +137,7 @@ The EZHR17EN stepper drivers receive commands from a control computer running th
 
 The control computer needs either a 9-pin serial output port, or a USB-to-RS485 adapter to send bytes out over the RS485 bus. The inverting/non-inverting outputs are blue and yellow wires. If you are connecting your adapter to the bus for the first time, you may have to guess incorrectly and swap the wires before it will work.
 
-[photo of USB-RS485 adapter]
+![photo of USB-RS485 adapter](docs/img/usb_adapter.jpg)
 
 The motor drivers must have power and ground (via the 24 VDC power supply) to receive commands.
 
@@ -147,17 +147,17 @@ The motor drivers must have power and ground (via the 24 VDC power supply) to re
 
 The stepper motors themselves have NEMA-17 spec hole patterns, which mate to the 3D printed motor mount brackets which are attached to the beam mapper frame. Each stepper motor should be attached to its motor mount using M3 x 0.5 x 10 mm screws. If attaching motors for the first time, use lubricant, because metal on plastic will be squeaky.
 
-[photo of stepper mounted on motor mount]
+![photo of stepper mounted on motor mount](docs/img/mounted_motor.jpg)
 
 At this point, it is important to consider the mapping of motor driver board address -> stepper motor -> motor mount -> corner of beam mapper frame -> corner of raft. The `Executive.__init__()` function in `executive.py` specifies this mapping, so the motor installation location and stepper instance in `__init__()` should match, to ensure the correct motor commands are sent to the correct stepper. The stepper driver boards are addressable with a selector switch on top. Match the address selector to the correct corner of the raft in the `__init__()` function.
 
-[photo of address selector switch]
+![photo of address selector switch](docs/img/address_selector.jpg)
 
 #### Can the encoders provide position feedback?
 
 The EZHR17EN boards are capable of reading out [quadrature encoders](https://cdn.sparkfun.com/datasheets/Robotics/How%20to%20use%20a%20quadrature%20encoder.pdf) affixed to the stepper shafts. Encoder feedback is critical for accurate positioning of the raft.
 
-[photo of stepper encoder]
+![photo of stepper encoder](docs/img/encoder.jpg)
 
 > **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the encoder connections are correct.
 
@@ -167,7 +167,9 @@ The EZHR17EN boards are capable of reading out [quadrature encoders](https://cdn
 
 The stepper motors drive winch-like drums directly, to change the length of the cables predictably. They are cylindrical drums with helical threads to accept the cables.
 
-[photo of drum with cable extended, at each rotational limit]
+![photo of drum with cable extended, at longer rotational limit](docs/img/spool_empty.jpg)
+
+![photo of drum with cable extended, at shorter rotational limit](docs/img/spool_full.jpg)
 
 > **NOTE:** Since helical threads change the position along the drum that the cable exits as a function of motor position, this imparts a difference in cable length change as a function of motor position if not mitigated. To mitigate this, we route the cable from each drum to a distant eyelet, a distance much greater than the height of the drum helix, on the opposite E-W side of the frame. Then we can leverage a small angle approximation to assert that the error is negligible (<< 1 mm).
 
@@ -175,7 +177,7 @@ If they are not already attached, the cable drums should be fixed to the 5 mm st
 
 The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.
 
-[photo of cable in screw]
+![photo of cable in screw](docs/img/cable_fixture.jpg)
 
 > **NOTE:** Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
 

@@ -889,7 +889,7 @@
 
         <span class="c1"># terminate all running commands</span>
 
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_T</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;T</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 
@@ -899,9 +899,9 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
 
-                <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">],</span>
 
-                    <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
+                <span class="p">(</span>
 
                     <span class="s1">&#39;n0&#39;</span> <span class="o">+</span> <span class="c1"># clear any special modes</span>
 
@@ -909,7 +909,11 @@
 
                     <span class="s1">&#39;h50&#39;</span> <span class="o">+</span> <span class="c1"># set hold current limit to 50% = 1 A</span>
 
-                    <span class="s1">&#39;aC250&#39;</span> <span class="o">+</span> <span class="c1"># encoder coarse correction deadband, ticks</span>
+                    <span class="s1">&#39;L250&#39;</span> <span class="o">+</span> <span class="c1"># acceleration factor</span>
+
+                    <span class="s1">&#39;aC200&#39;</span> <span class="o">+</span> <span class="c1"># encoder coarse correction deadband, ticks</span>
+
+                    <span class="s1">&#39;ac5&#39;</span> <span class="o">+</span> <span class="c1"># encoder fine correction deadband, ticks</span>
 
                     <span class="c1"># encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)</span>
 
@@ -917,9 +921,7 @@
 
                     <span class="s1">&#39;au1&#39;</span> <span class="o">+</span> <span class="c1"># number of retries allowed under stall condition</span>
 
-                    <span class="c1"># &#39;A0&#39; + # zero out position</span>
-
-                    <span class="s1">&#39;z0&#39;</span> <span class="o">+</span> <span class="c1"># set encoder zero point</span>
+                    <span class="s1">&#39;z400000&#39;</span> <span class="o">+</span> <span class="c1"># set encoder zero point</span>
 
                     <span class="s1">&#39;n8&#39;</span> <span class="o">+</span> <span class="c1"># enable encoder feedback mode</span>
 
@@ -1271,47 +1273,27 @@
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
-        <span class="c1"># On average, about how far would we have to move before hitting an</span>
+         <span class="c1"># ought to be smaller than distance stepper bounced back after hitting hard stop</span>
 
-        <span class="c1"># opposite corner?</span>
+        <span class="n">coarse_ticks</span> <span class="o">=</span> <span class="mi">5000</span>
 
-        <span class="c1"># The total available cable length should be sized so that the raft</span>
+        <span class="n">coarse_homing_speed</span> <span class="o">=</span> <span class="mi">80000</span>
 
-        <span class="c1"># can just reach all corners of the workspace at the maximum eyelet</span>
+        <span class="n">fine_ticks</span> <span class="o">=</span> <span class="mi">500</span>
 
-        <span class="c1"># separation of 0.6177 m (accommodates ~25.5&quot; mirror K2).</span>
+        <span class="n">fine_homing_speed</span> <span class="o">=</span> <span class="n">coarse_homing_speed</span>
 
-        <span class="c1"># In position correction mode, the EZStepper will attempt this move a</span>
+        <span class="c1"># sets the final zero-point length error for each axis</span>
 
-        <span class="c1"># set number of times before giving up, which is what we want upon</span>
+        <span class="n">ultra_fine_ticks</span> <span class="o">=</span> <span class="mi">5</span>
 
-        <span class="c1"># hitting a hard stop.</span>
-
-        <span class="n">max_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
-
-            <span class="p">[</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.715</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]),</span> <span class="c1"># meas. fully extended cable</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span>
-
-            <span class="p">]</span>
-
-        <span class="p">)</span>
-
-        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_length</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
-
-        <span class="n">max_ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">STEP_PER_TICK</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-
-        <span class="n">coarse_homing_speed</span> <span class="o">=</span> <span class="mi">60000</span>
-
-        <span class="n">fine_homing_speed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">coarse_homing_speed</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span>
-
-        <span class="n">num_ticks</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_ticks</span><span class="p">)</span>
+        <span class="n">ultra_fine_homing_speed</span> <span class="o">=</span> <span class="n">coarse_homing_speed</span>
 
         <span class="c1"># Home each axis</span>
 
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">,</span> <span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">,</span> <span class="s1">&#39;sw&#39;</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">current_axis</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
 
@@ -1319,27 +1301,81 @@
 
             <span class="c1"># turn off current to axes not being homed</span>
 
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="c1"># coarse hard stop homing</span>
+            <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Coarse homing against hard stop.&#39;</span><span class="p">)</span>
+
+            <span class="n">hw</span><span class="o">.</span><span class="n">bump_hard_stop</span><span class="p">(</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
+                <span class="n">coarse_ticks</span><span class="p">,</span>
+
+                <span class="n">coarse_homing_speed</span><span class="p">,</span>
+
+                <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+
+                <span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span>
+
+            <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Fine homing against hard stop.&#39;</span><span class="p">)</span>
+
+            <span class="n">hw</span><span class="o">.</span><span class="n">bump_hard_stop</span><span class="p">(</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
+                <span class="n">fine_ticks</span><span class="p">,</span>
+
+                <span class="n">fine_homing_speed</span><span class="p">,</span>
+
+                <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+
+                <span class="n">hold_current</span><span class="o">=</span><span class="mi">10</span>
+
+            <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Ultra-fine homing against hard stop.&#39;</span><span class="p">)</span>
+
+            <span class="n">hw</span><span class="o">.</span><span class="n">bump_hard_stop</span><span class="p">(</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
+                <span class="n">ultra_fine_ticks</span><span class="p">,</span>
+
+                <span class="n">ultra_fine_homing_speed</span><span class="p">,</span>
+
+                <span class="n">move_current</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+
+                <span class="n">hold_current</span><span class="o">=</span><span class="mi">10</span>
+
+            <span class="p">)</span>
+
+            <span class="c1"># run to position of hard stop</span>
 
             <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
 
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
                 <span class="p">(</span>
 
-                    <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;m50&#39;</span> <span class="o">+</span>
 
-                    <span class="sa">f</span><span class="s1">&#39;m50&#39;</span> <span class="o">+</span> <span class="c1"># set move current limit to 50% = 1 A</span>
+                    <span class="s1">&#39;h50&#39;</span> <span class="o">+</span>
 
-                    <span class="sa">f</span><span class="s1">&#39;h50&#39;</span> <span class="o">+</span> <span class="c1"># set hold current limit to 50% = 1 A</span>
+                    <span class="sa">f</span><span class="s1">&#39;V</span><span class="si">{</span><span class="n">fine_homing_speed</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-                    <span class="sa">f</span><span class="s1">&#39;V</span><span class="si">{</span><span class="n">coarse_homing_speed</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="c1"># set speed for moving axis</span>
-
-                    <span class="sa">f</span><span class="s1">&#39;D</span><span class="si">{</span><span class="n">num_ticks</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="c1"># home axis, negative direction (D) retracts</span>
+                    <span class="sa">f</span><span class="s1">&#39;D</span><span class="si">{</span><span class="n">fine_ticks</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
                     <span class="s1">&#39;R</span><span class="se">\r\n</span><span class="s1">&#39;</span>
 
@@ -1347,77 +1383,29 @@
 
             <span class="p">)</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Sleeping </span><span class="si">{</span><span class="n">max_ticks</span> <span class="o">/</span> <span class="n">coarse_homing_speed</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> sec for move&#39;</span><span class="p">)</span>
+            <span class="c1"># set cable length zero point</span>
 
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">max_ticks</span> <span class="o">/</span> <span class="n">coarse_homing_speed</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="c1"># fine hard stop homing</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span> <span class="s1">&#39;z0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">curr_ticks</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="n">prev_ticks</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Check to see that homing operation succeeeded.</span>
 
-            <span class="n">tries</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
 
-            <span class="n">max_tries</span> <span class="o">=</span> <span class="mi">1000</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s1">&#39;Encoder failed to set zero point during homing. Aborting.&#39;</span><span class="p">)</span>
 
-            <span class="k">while</span> <span class="p">((</span><span class="n">curr_ticks</span> <span class="o">&lt;</span> <span class="n">prev_ticks</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tries</span> <span class="o">&lt;</span> <span class="n">max_tries</span><span class="p">)):</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-                <span class="n">prev_ticks</span> <span class="o">=</span> <span class="n">curr_ticks</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;m50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-                <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;h50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-                    <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+        <span class="c1"># Update current encoder position (used for velocity calc in move to</span>
 
-                    <span class="p">(</span>
-
-                        <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
-
-                        <span class="sa">f</span><span class="s1">&#39;m15&#39;</span> <span class="o">+</span> <span class="c1"># set move current limit to 50% = 1 A</span>
-
-                        <span class="sa">f</span><span class="s1">&#39;h50&#39;</span> <span class="o">+</span> <span class="c1"># set hold current limit to 50% = 1 A</span>
-
-                        <span class="sa">f</span><span class="s1">&#39;V</span><span class="si">{</span><span class="n">fine_homing_speed</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="c1"># # set speed for moving axis</span>
-
-                        <span class="sa">f</span><span class="s1">&#39;D</span><span class="si">{</span><span class="mi">20</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="c1"># home axis, negative direction (D) retracts</span>
-
-                        <span class="s1">&#39;R</span><span class="se">\r\n</span><span class="s1">&#39;</span>
-
-                    <span class="p">)</span>
-
-                <span class="p">)</span>
-
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Sleeping </span><span class="si">{</span><span class="mi">20</span> <span class="o">/</span> <span class="n">fine_homing_speed</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> sec for move&#39;</span><span class="p">)</span>
-
-                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">20</span> <span class="o">/</span> <span class="n">fine_homing_speed</span><span class="p">)</span>
-
-                <span class="n">curr_ticks</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">])</span>
-
-                <span class="n">tries</span> <span class="o">+=</span> <span class="mi">1</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Post-homing position: </span><span class="si">{</span><span class="n">curr_ticks</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="c1"># zero out encoder position</span>
-
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">]</span><span class="si">}</span><span class="s1">z0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="c1"># time.sleep(1e-1)</span>
-
-            <span class="c1"># run to zeroed position to verify</span>
-
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">]</span><span class="si">}</span><span class="s1">A0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="c1"># time.sleep(1e-1)</span>
-
-            <span class="c1"># logger.debug(f&#39;Zeroed position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}&#39;)</span>
-
-        <span class="c1"># Restore proper current limits to all drivers</span>
-
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_m50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_h50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-        <span class="c1"># Update move position with dragged encoder position</span>
+        <span class="c1"># home pos)</span>
 
         <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
 
@@ -1425,9 +1413,11 @@
 
             <span class="n">actual_ticks</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span>
 
-            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">z</span><span class="si">{</span><span class="n">actual_ticks</span><span class="si">}</span><span class="s1">R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;z</span><span class="si">{</span><span class="n">actual_ticks</span><span class="si">}</span><span class="s1">R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">A</span><span class="si">{</span><span class="n">actual_ticks</span><span class="si">}</span><span class="s1">R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;A</span><span class="si">{</span><span class="n">actual_ticks</span><span class="si">}</span><span class="s1">R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span>
 
         <span class="n">home</span> <span class="o">=</span> <span class="p">(</span>
 
@@ -1441,9 +1431,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">go_home</span><span class="p">()</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;achieved encoder pos:&#39;</span><span class="p">)</span>
-
-        <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Achieved encoder pos:&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Raft is homed with centroid position </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
@@ -1579,7 +1567,7 @@
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
-        <span class="k">def</span> <span class="nf">send_pos_cmd</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">send_pos_cmd</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
             <span class="sd">&#39;&#39;&#39;</span>
 
@@ -1597,7 +1585,7 @@
 
             <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]]</span>
 
-            <span class="n">ticks_to_go</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="n">angs</span><span class="p">)</span>
+            <span class="n">ticks_to_go</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="n">angs</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
 
         <span class="c1"># Linear approximation only holds for small distances, so</span>
 
@@ -1605,45 +1593,47 @@
 
         <span class="c1"># even when moving to opposite corners.</span>
 
-        <span class="c1"># MAX_DIST = .015</span>
+        <span class="n">MAX_DIST</span> <span class="o">=</span> <span class="mf">.03</span>
 
-        <span class="c1"># pos_before = self.robot.raft.position</span>
+        <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
 
-        <span class="c1"># pos_after = cmd[&#39;pos_cmd&#39;]</span>
+        <span class="n">pos_after</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>
 
-        <span class="c1"># dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))</span>
+        <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
 
-        <span class="c1"># while dist_to_go &gt; MAX_DIST:</span>
+        <span class="k">while</span> <span class="n">dist_to_go</span> <span class="o">&gt;</span> <span class="n">MAX_DIST</span><span class="p">:</span>
 
-        <span class="c1">#     logger.debug(f&#39;Dist. to go in this move: {dist_to_go}&#39;)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Dist. to go in this move: </span><span class="si">{</span><span class="n">dist_to_go</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1">#     # determine a position MAX_DIST away from the starting pos along</span>
+            <span class="c1"># determine a position MAX_DIST away from the starting pos along</span>
 
-        <span class="c1">#     # the line of travel</span>
+            <span class="c1"># the line of travel</span>
 
-        <span class="c1">#     v = np.array(pos_after) - np.array(pos_before)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span>
 
-        <span class="c1">#     u = v / np.linalg.norm(v) # the unit vector pointing along the line</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="c1"># the unit vector pointing along the line</span>
 
-        <span class="c1">#     logger.debug(f&#39;Direction vector: {v}, Unit vector: {u}&#39;)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Direction vector: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">, Unit vector: </span><span class="si">{</span><span class="n">u</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1">#     pos_cmd = pos_before + MAX_DIST * u</span>
+            <span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_before</span> <span class="o">+</span> <span class="n">MAX_DIST</span> <span class="o">*</span> <span class="n">u</span>
 
-        <span class="c1">#     logger.debug(f&#39;Intermediate move: {pos_cmd}&#39;)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Intermediate move: </span><span class="si">{</span><span class="n">pos_cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1">#     send_pos_cmd(pos_cmd) # alg updates raft position</span>
+            <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># alg updates raft position</span>
 
-        <span class="c1">#     # calculate new dist to go</span>
+            <span class="c1"># calculate new dist to go</span>
 
-        <span class="c1">#     pos_before = self.robot.raft.position</span>
+            <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
 
-        <span class="c1">#     dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))</span>
+            <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
 
-        <span class="c1"># logger.debug(f&#39;Final move: {pos_after}&#39;)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Final move: </span><span class="si">{</span><span class="n">pos_after</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1"># send_pos_cmd(pos_after)</span>
+        <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># comment above block, uncomment below to not do &quot;chunking&quot; algorithm</span>
+
+        <span class="c1"># send_pos_cmd(cmd[&#39;pos_cmd&#39;])</span>
 
         <span class="k">return</span>
 
@@ -1697,17 +1687,17 @@
 
         <span class="c1"># Terminate all running commands</span>
 
-        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_T</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">.1</span><span class="p">)</span>
+
+        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;TR</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="c1"># Release torque</span>
 
-        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">.1</span><span class="p">)</span>
 
-        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1"># Zero out position</span>
-
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;/_z0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
@@ -1893,7 +1883,7 @@
 
         <span class="c1"># terminate all running commands</span>
 
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_T</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;T</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 
@@ -1903,9 +1893,9 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
 
-                <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">],</span>
 
-                    <span class="n">f</span><span class="s1">&#39;/{self.steppers[address]}&#39;</span> <span class="o">+</span>
+                <span class="p">(</span>
 
                     <span class="s1">&#39;n0&#39;</span> <span class="o">+</span> <span class="c1"># clear any special modes</span>
 
@@ -1913,7 +1903,11 @@
 
                     <span class="s1">&#39;h50&#39;</span> <span class="o">+</span> <span class="c1"># set hold current limit to 50% = 1 A</span>
 
-                    <span class="s1">&#39;aC250&#39;</span> <span class="o">+</span> <span class="c1"># encoder coarse correction deadband, ticks</span>
+                    <span class="s1">&#39;L250&#39;</span> <span class="o">+</span> <span class="c1"># acceleration factor</span>
+
+                    <span class="s1">&#39;aC200&#39;</span> <span class="o">+</span> <span class="c1"># encoder coarse correction deadband, ticks</span>
+
+                    <span class="s1">&#39;ac5&#39;</span> <span class="o">+</span> <span class="c1"># encoder fine correction deadband, ticks</span>
 
                     <span class="c1"># encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)</span>
 
@@ -1921,9 +1915,7 @@
 
                     <span class="s1">&#39;au1&#39;</span> <span class="o">+</span> <span class="c1"># number of retries allowed under stall condition</span>
 
-                    <span class="c1"># &#39;A0&#39; + # zero out position</span>
-
-                    <span class="s1">&#39;z0&#39;</span> <span class="o">+</span> <span class="c1"># set encoder zero point</span>
+                    <span class="s1">&#39;z400000&#39;</span> <span class="o">+</span> <span class="c1"># set encoder zero point</span>
 
                     <span class="s1">&#39;n8&#39;</span> <span class="o">+</span> <span class="c1"># enable encoder feedback mode</span>
 
@@ -2275,47 +2267,27 @@
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
-        <span class="c1"># On average, about how far would we have to move before hitting an</span>
+         <span class="c1"># ought to be smaller than distance stepper bounced back after hitting hard stop</span>
 
-        <span class="c1"># opposite corner?</span>
+        <span class="n">coarse_ticks</span> <span class="o">=</span> <span class="mi">5000</span>
 
-        <span class="c1"># The total available cable length should be sized so that the raft</span>
+        <span class="n">coarse_homing_speed</span> <span class="o">=</span> <span class="mi">80000</span>
 
-        <span class="c1"># can just reach all corners of the workspace at the maximum eyelet</span>
+        <span class="n">fine_ticks</span> <span class="o">=</span> <span class="mi">500</span>
 
-        <span class="c1"># separation of 0.6177 m (accommodates ~25.5&quot; mirror K2).</span>
+        <span class="n">fine_homing_speed</span> <span class="o">=</span> <span class="n">coarse_homing_speed</span>
 
-        <span class="c1"># In position correction mode, the EZStepper will attempt this move a</span>
+        <span class="c1"># sets the final zero-point length error for each axis</span>
 
-        <span class="c1"># set number of times before giving up, which is what we want upon</span>
+        <span class="n">ultra_fine_ticks</span> <span class="o">=</span> <span class="mi">5</span>
 
-        <span class="c1"># hitting a hard stop.</span>
-
-        <span class="n">max_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
-
-            <span class="p">[</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.715</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]),</span> <span class="c1"># meas. fully extended cable</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">se</span>
-
-            <span class="p">]</span>
-
-        <span class="p">)</span>
-
-        <span class="n">max_radians</span> <span class="o">=</span> <span class="n">max_length</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
-
-        <span class="n">max_ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">STEP_PER_TICK</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb nb-Type">int</span><span class="p">)</span>
-
-        <span class="n">coarse_homing_speed</span> <span class="o">=</span> <span class="mi">60000</span>
-
-        <span class="n">fine_homing_speed</span> <span class="o">=</span> <span class="nb nb-Type">int</span><span class="p">(</span><span class="n">coarse_homing_speed</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span>
-
-        <span class="n">num_ticks</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_ticks</span><span class="p">)</span>
+        <span class="n">ultra_fine_homing_speed</span> <span class="o">=</span> <span class="n">coarse_homing_speed</span>
 
         <span class="c1"># Home each axis</span>
 
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">,</span> <span class="s1">&#39;sw&#39;</span><span class="p">,</span> <span class="s1">&#39;nw&#39;</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">,</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;se&#39;</span><span class="p">,</span> <span class="s1">&#39;sw&#39;</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">current_axis</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
 
@@ -2323,27 +2295,81 @@
 
             <span class="c1"># turn off current to axes not being homed</span>
 
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="c1"># coarse hard stop homing</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Coarse homing against hard stop.&#39;</span><span class="p">)</span>
+
+            <span class="n">hw</span><span class="o">.</span><span class="n">bump_hard_stop</span><span class="p">(</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
+                <span class="n">coarse_ticks</span><span class="p">,</span>
+
+                <span class="n">coarse_homing_speed</span><span class="p">,</span>
+
+                <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+
+                <span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span>
+
+            <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Fine homing against hard stop.&#39;</span><span class="p">)</span>
+
+            <span class="n">hw</span><span class="o">.</span><span class="n">bump_hard_stop</span><span class="p">(</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
+                <span class="n">fine_ticks</span><span class="p">,</span>
+
+                <span class="n">fine_homing_speed</span><span class="p">,</span>
+
+                <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+
+                <span class="n">hold_current</span><span class="o">=</span><span class="mi">10</span>
+
+            <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Ultra-fine homing against hard stop.&#39;</span><span class="p">)</span>
+
+            <span class="n">hw</span><span class="o">.</span><span class="n">bump_hard_stop</span><span class="p">(</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
+                <span class="n">ultra_fine_ticks</span><span class="p">,</span>
+
+                <span class="n">ultra_fine_homing_speed</span><span class="p">,</span>
+
+                <span class="n">move_current</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+
+                <span class="n">hold_current</span><span class="o">=</span><span class="mi">10</span>
+
+            <span class="p">)</span>
+
+            <span class="c1"># run to position of hard stop</span>
 
             <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
 
+                <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span>
+
                 <span class="p">(</span>
 
-                    <span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}&#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;m50&#39;</span> <span class="o">+</span>
 
-                    <span class="n">f</span><span class="s1">&#39;m50&#39;</span> <span class="o">+</span> <span class="c1"># set move current limit to 50% = 1 A</span>
+                    <span class="s1">&#39;h50&#39;</span> <span class="o">+</span>
 
-                    <span class="n">f</span><span class="s1">&#39;h50&#39;</span> <span class="o">+</span> <span class="c1"># set hold current limit to 50% = 1 A</span>
+                    <span class="n">f</span><span class="s1">&#39;V{fine_homing_speed}&#39;</span> <span class="o">+</span>
 
-                    <span class="n">f</span><span class="s1">&#39;V{coarse_homing_speed}&#39;</span> <span class="o">+</span> <span class="c1"># set speed for moving axis</span>
-
-                    <span class="n">f</span><span class="s1">&#39;D{num_ticks}&#39;</span> <span class="o">+</span> <span class="c1"># home axis, negative direction (D) retracts</span>
+                    <span class="n">f</span><span class="s1">&#39;D{fine_ticks}&#39;</span> <span class="o">+</span>
 
                     <span class="s1">&#39;R</span><span class="se">\r\n</span><span class="s1">&#39;</span>
 
@@ -2351,77 +2377,29 @@
 
             <span class="p">)</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Sleeping {max_ticks / coarse_homing_speed:.2f} sec for move&#39;</span><span class="p">)</span>
+            <span class="c1"># set cable length zero point</span>
 
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">max_ticks</span> <span class="o">/</span> <span class="n">coarse_homing_speed</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="c1"># fine hard stop homing</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">],</span> <span class="s1">&#39;z0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">curr_ticks</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="n">prev_ticks</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Check to see that homing operation succeeeded.</span>
 
-            <span class="n">tries</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
 
-            <span class="n">max_tries</span> <span class="o">=</span> <span class="mi">1000</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s1">&#39;Encoder failed to set zero point during homing. Aborting.&#39;</span><span class="p">)</span>
 
-            <span class="k">while</span> <span class="p">((</span><span class="n">curr_ticks</span> <span class="o">&lt;</span> <span class="n">prev_ticks</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tries</span> <span class="o">&lt;</span> <span class="n">max_tries</span><span class="p">)):</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-                <span class="n">prev_ticks</span> <span class="o">=</span> <span class="n">curr_ticks</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;m50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-                <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;h50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-                    <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span>
+        <span class="c1"># Update current encoder position (used for velocity calc in move to</span>
 
-                    <span class="p">(</span>
-
-                        <span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}&#39;</span> <span class="o">+</span>
-
-                        <span class="n">f</span><span class="s1">&#39;m15&#39;</span> <span class="o">+</span> <span class="c1"># set move current limit to 50% = 1 A</span>
-
-                        <span class="n">f</span><span class="s1">&#39;h50&#39;</span> <span class="o">+</span> <span class="c1"># set hold current limit to 50% = 1 A</span>
-
-                        <span class="n">f</span><span class="s1">&#39;V{fine_homing_speed}&#39;</span> <span class="o">+</span> <span class="c1"># # set speed for moving axis</span>
-
-                        <span class="n">f</span><span class="s1">&#39;D{20}&#39;</span> <span class="o">+</span> <span class="c1"># home axis, negative direction (D) retracts</span>
-
-                        <span class="s1">&#39;R</span><span class="se">\r\n</span><span class="s1">&#39;</span>
-
-                    <span class="p">)</span>
-
-                <span class="p">)</span>
-
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Sleeping {20 / fine_homing_speed:.2f} sec for move&#39;</span><span class="p">)</span>
-
-                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">20</span> <span class="o">/</span> <span class="n">fine_homing_speed</span><span class="p">)</span>
-
-                <span class="n">curr_ticks</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">current_axis</span><span class="p">])</span>
-
-                <span class="n">tries</span> <span class="o">+=</span> <span class="mi">1</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Post-homing position: {curr_ticks}&#39;</span><span class="p">)</span>
-
-            <span class="c1"># zero out encoder position</span>
-
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}z0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="c1"># time.sleep(1e-1)</span>
-
-            <span class="c1"># run to zeroed position to verify</span>
-
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}A0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="c1"># time.sleep(1e-1)</span>
-
-            <span class="c1"># logger.debug(f&#39;Zeroed position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}&#39;)</span>
-
-        <span class="c1"># Restore proper current limits to all drivers</span>
-
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_m50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_h50R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-        <span class="c1"># Update move position with dragged encoder position</span>
+        <span class="c1"># home pos)</span>
 
         <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
 
@@ -2429,9 +2407,11 @@
 
             <span class="n">actual_ticks</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span>
 
-            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/{address}z{actual_ticks}R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;z{actual_ticks}R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/{address}A{actual_ticks}R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;A{actual_ticks}R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">sw</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span>
 
         <span class="n">home</span> <span class="o">=</span> <span class="p">(</span>
 
@@ -2445,9 +2425,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">go_home</span><span class="p">()</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;achieved encoder pos:&#39;</span><span class="p">)</span>
-
-        <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Achieved encoder pos:&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft is homed with centroid position {self.robot.raft.position}&#39;</span><span class="p">)</span>
 
@@ -2583,7 +2561,7 @@
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
-        <span class="n">def</span> <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">:</span> <span class="n">tuple</span><span class="p">):</span>
+        <span class="n">def</span> <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd_tuple</span><span class="p">:</span> <span class="n">tuple</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">True</span><span class="p">):</span>
 
             <span class="sd">&#39;&#39;&#39;</span>
 
@@ -2601,7 +2579,7 @@
 
             <span class="n">angs</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">[</span><span class="n">motor_cmds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]]</span>
 
-            <span class="n">ticks_to_go</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="n">angs</span><span class="p">)</span>
+            <span class="n">ticks_to_go</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="n">angs</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
 
         <span class="c1"># Linear approximation only holds for small distances, so</span>
 
@@ -2609,45 +2587,47 @@
 
         <span class="c1"># even when moving to opposite corners.</span>
 
-        <span class="c1"># MAX_DIST = .015</span>
+        <span class="n">MAX_DIST</span> <span class="o">=</span> <span class="o">.</span><span class="mi">03</span>
 
-        <span class="c1"># pos_before = self.robot.raft.position</span>
+        <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
 
-        <span class="c1"># pos_after = cmd[&#39;pos_cmd&#39;]</span>
+        <span class="n">pos_after</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">]</span>
 
-        <span class="c1"># dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))</span>
+        <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
 
-        <span class="c1"># while dist_to_go &gt; MAX_DIST:</span>
+        <span class="k">while</span> <span class="n">dist_to_go</span> <span class="o">&gt;</span> <span class="n">MAX_DIST</span><span class="p">:</span>
 
-        <span class="c1">#     logger.debug(f&#39;Dist. to go in this move: {dist_to_go}&#39;)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Dist. to go in this move: {dist_to_go}&#39;</span><span class="p">)</span>
 
-        <span class="c1">#     # determine a position MAX_DIST away from the starting pos along</span>
+            <span class="c1"># determine a position MAX_DIST away from the starting pos along</span>
 
-        <span class="c1">#     # the line of travel</span>
+            <span class="c1"># the line of travel</span>
 
-        <span class="c1">#     v = np.array(pos_after) - np.array(pos_before)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span>
 
-        <span class="c1">#     u = v / np.linalg.norm(v) # the unit vector pointing along the line</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="c1"># the unit vector pointing along the line</span>
 
-        <span class="c1">#     logger.debug(f&#39;Direction vector: {v}, Unit vector: {u}&#39;)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Direction vector: {v}, Unit vector: {u}&#39;</span><span class="p">)</span>
 
-        <span class="c1">#     pos_cmd = pos_before + MAX_DIST * u</span>
+            <span class="n">pos_cmd</span> <span class="o">=</span> <span class="n">pos_before</span> <span class="o">+</span> <span class="n">MAX_DIST</span> <span class="o">*</span> <span class="n">u</span>
 
-        <span class="c1">#     logger.debug(f&#39;Intermediate move: {pos_cmd}&#39;)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Intermediate move: {pos_cmd}&#39;</span><span class="p">)</span>
 
-        <span class="c1">#     send_pos_cmd(pos_cmd) # alg updates raft position</span>
+            <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">False</span><span class="p">)</span> <span class="c1"># alg updates raft position</span>
 
-        <span class="c1">#     # calculate new dist to go</span>
+            <span class="c1"># calculate new dist to go</span>
 
-        <span class="c1">#     pos_before = self.robot.raft.position</span>
+            <span class="n">pos_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span>
 
-        <span class="c1">#     dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))</span>
+            <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
 
-        <span class="c1"># logger.debug(f&#39;Final move: {pos_after}&#39;)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span>
 
-        <span class="c1"># send_pos_cmd(pos_after)</span>
+        <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">True</span><span class="p">)</span>
 
-        <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">[</span><span class="s1">&#39;pos_cmd&#39;</span><span class="p">])</span>
+        <span class="c1"># comment above block, uncomment below to not do &quot;chunking&quot; algorithm</span>
+
+        <span class="c1"># send_pos_cmd(cmd[&#39;pos_cmd&#39;])</span>
 
         <span class="k">return</span>
 
@@ -2701,17 +2681,17 @@
 
         <span class="c1"># Terminate all running commands</span>
 
-        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_T</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;TR</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="c1"># Release torque</span>
 
-        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;m0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="c1"># Zero out position</span>
-
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;/_z0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">hw</span><span class="o">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;h0R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
@@ -2876,47 +2856,27 @@
 
 <span class="s1">        &#39;&#39;&#39;</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">On</span><span class="w"> </span><span class="n">average</span><span class="p">,</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="n">how</span><span class="w"> </span><span class="n">far</span><span class="w"> </span><span class="n">would</span><span class="w"> </span><span class="n">we</span><span class="w"> </span><span class="n">have</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="k">before</span><span class="w"> </span><span class="n">hitting</span><span class="w"> </span><span class="n">an</span><span class="w"></span>
+<span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="n">ought</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">smaller</span><span class="w"> </span><span class="k">than</span><span class="w"> </span><span class="n">distance</span><span class="w"> </span><span class="n">stepper</span><span class="w"> </span><span class="n">bounced</span><span class="w"> </span><span class="n">back</span><span class="w"> </span><span class="k">after</span><span class="w"> </span><span class="n">hitting</span><span class="w"> </span><span class="n">hard</span><span class="w"> </span><span class="n">stop</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">opposite</span><span class="w"> </span><span class="n">corner</span><span class="vm">?</span><span class="w"></span>
+<span class="w">        </span><span class="n">coarse_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5000</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="n">available</span><span class="w"> </span><span class="n">cable</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="n">should</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">sized</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">raft</span><span class="w"></span>
+<span class="w">        </span><span class="n">coarse_homing_speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">80000</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">just</span><span class="w"> </span><span class="n">reach</span><span class="w"> </span><span class="ow">all</span><span class="w"> </span><span class="n">corners</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">workspace</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">maximum</span><span class="w"> </span><span class="n">eyelet</span><span class="w"></span>
+<span class="w">        </span><span class="n">fine_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">separation</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="mf">0.6177</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="n">accommodates</span><span class="w"> </span><span class="o">~</span><span class="mf">25.5</span><span class="err">&quot;</span><span class="w"> </span><span class="n">mirror</span><span class="w"> </span><span class="n">K2</span><span class="p">).</span><span class="w"></span>
+<span class="w">        </span><span class="n">fine_homing_speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coarse_homing_speed</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="ow">In</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="n">correction</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">EZStepper</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">attempt</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="n">a</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">sets</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">final</span><span class="w"> </span><span class="n">zero</span><span class="o">-</span><span class="n">point</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">each</span><span class="w"> </span><span class="n">axis</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">times</span><span class="w"> </span><span class="k">before</span><span class="w"> </span><span class="n">giving</span><span class="w"> </span><span class="n">up</span><span class="p">,</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">what</span><span class="w"> </span><span class="n">we</span><span class="w"> </span><span class="n">want</span><span class="w"> </span><span class="n">upon</span><span class="w"></span>
+<span class="w">        </span><span class="n">ultra_fine_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">hitting</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">hard</span><span class="w"> </span><span class="n">stop</span><span class="p">.</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">max_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="w"></span>
-
-<span class="w">            </span><span class="o">[</span><span class="n"></span>
-
-<span class="n">                self.robot.surf.sw + np.array([0., 0.715 / 2</span><span class="o">]</span><span class="p">),</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">meas</span><span class="p">.</span><span class="w"> </span><span class="n">fully</span><span class="w"> </span><span class="n">extended</span><span class="w"> </span><span class="n">cable</span><span class="w"></span>
-
-<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">surf</span><span class="p">.</span><span class="n">se</span><span class="w"></span>
-
-<span class="w">            </span><span class="err">]</span><span class="w"></span>
-
-<span class="w">        </span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">max_radians</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max_length</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">PULLEY_RADIUS</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">max_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">max_radians</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">DEG_PER_RAD</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">DEG_PER_STEP</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">STEP_PER_TICK</span><span class="p">).</span><span class="n">astype</span><span class="p">(</span><span class="nc">int</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">coarse_homing_speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">60000</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">fine_homing_speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">int</span><span class="p">(</span><span class="n">coarse_homing_speed</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">num_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_ticks</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">ultra_fine_homing_speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coarse_homing_speed</span><span class="w"></span>
 
 <span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Home</span><span class="w"> </span><span class="k">each</span><span class="w"> </span><span class="n">axis</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">&#39;ne&#39;, &#39;se&#39;, &#39;sw&#39;, &#39;nw&#39;</span><span class="o">]</span><span class="w"></span>
+<span class="w">        </span><span class="o">[</span><span class="n">hw.get_encoder_pos(self.ser, self.steppers[address</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()</span><span class="err">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">&#39;nw&#39;, &#39;ne&#39;, &#39;se&#39;, &#39;sw&#39;</span><span class="o">]</span><span class="w"></span>
 
 <span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">current_axis</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nl">axes</span><span class="p">:</span><span class="w"></span>
 
@@ -2924,27 +2884,81 @@
 
 <span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">turn</span><span class="w"> </span><span class="k">off</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">axes</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">being</span><span class="w"> </span><span class="n">homed</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/_m0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;m0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/_h0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;h0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">coarse</span><span class="w"> </span><span class="n">hard</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="n">homing</span><span class="w"></span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Coarse homing against hard stop.&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">bump_hard_stop</span><span class="p">(</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">coarse_ticks</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">coarse_homing_speed</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span><span class="w"></span>
+
+<span class="w">            </span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Fine homing against hard stop.&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">bump_hard_stop</span><span class="p">(</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">fine_ticks</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">fine_homing_speed</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">hold_current</span><span class="o">=</span><span class="mi">10</span><span class="w"></span>
+
+<span class="w">            </span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Ultra-fine homing against hard stop.&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">bump_hard_stop</span><span class="p">(</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">ultra_fine_ticks</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">ultra_fine_homing_speed</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">move_current</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">hold_current</span><span class="o">=</span><span class="mi">10</span><span class="w"></span>
+
+<span class="w">            </span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">hard</span><span class="w"> </span><span class="n">stop</span><span class="w"></span>
 
 <span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="w"></span>
 
 <span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"></span>
 
+<span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">,</span><span class="w"></span>
+
 <span class="w">                </span><span class="p">(</span><span class="w"></span>
 
-<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                    </span><span class="s1">&#39;m50&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
 
-<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;m50&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="mi">50</span><span class="o">%</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
+<span class="w">                    </span><span class="s1">&#39;h50&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
 
-<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;h50&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="k">hold</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="mi">50</span><span class="o">%</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
+<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;V{fine_homing_speed}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
 
-<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;V{coarse_homing_speed}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">speed</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">moving</span><span class="w"> </span><span class="n">axis</span><span class="w"></span>
-
-<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;D{num_ticks}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="n">axis</span><span class="p">,</span><span class="w"> </span><span class="n">negative</span><span class="w"> </span><span class="n">direction</span><span class="w"> </span><span class="p">(</span><span class="n">D</span><span class="p">)</span><span class="w"> </span><span class="n">retracts</span><span class="w"></span>
+<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;D{fine_ticks}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
 
 <span class="w">                    </span><span class="s1">&#39;R\r\n&#39;</span><span class="w"></span>
 
@@ -2952,77 +2966,29 @@
 
 <span class="w">            </span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Sleeping {max_ticks / coarse_homing_speed:.2f} sec for move&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">cable</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="n">zero</span><span class="w"> </span><span class="n">point</span><span class="w"></span>
 
-<span class="w">            </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">max_ticks</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">coarse_homing_speed</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">fine</span><span class="w"> </span><span class="n">hard</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="n">homing</span><span class="w"></span>
+<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;z0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">curr_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"></span>
+<span class="w">            </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">prev_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="k">Check</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">see</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">homing</span><span class="w"> </span><span class="k">operation</span><span class="w"> </span><span class="n">succeeeded</span><span class="p">.</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">tries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">20</span><span class="err">:</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">max_tries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span><span class="w"></span>
+<span class="w">                </span><span class="n">logger</span><span class="p">.</span><span class="n">critical</span><span class="p">(</span><span class="s1">&#39;Encoder failed to set zero point during homing. Aborting.&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">((</span><span class="n">curr_ticks</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">prev_ticks</span><span class="p">)</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="p">(</span><span class="n">tries</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_tries</span><span class="p">))</span><span class="err">:</span><span class="w"></span>
+<span class="w">                </span><span class="n">sys</span><span class="p">.</span><span class="k">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">                </span><span class="n">prev_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">curr_ticks</span><span class="w"></span>
+<span class="w">        </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;m50R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">                </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;h50R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">                    </span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">Update</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="p">(</span><span class="n">used</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">velocity</span><span class="w"> </span><span class="n">calc</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="k">to</span><span class="w"></span>
 
-<span class="w">                    </span><span class="p">(</span><span class="w"></span>
-
-<span class="w">                        </span><span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
-
-<span class="w">                        </span><span class="n">f</span><span class="s1">&#39;m15&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="mi">50</span><span class="o">%</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
-
-<span class="w">                        </span><span class="n">f</span><span class="s1">&#39;h50&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="k">hold</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="mi">50</span><span class="o">%</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">A</span><span class="w"></span>
-
-<span class="w">                        </span><span class="n">f</span><span class="s1">&#39;V{fine_homing_speed}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">speed</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">moving</span><span class="w"> </span><span class="n">axis</span><span class="w"></span>
-
-<span class="w">                        </span><span class="n">f</span><span class="s1">&#39;D{20}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="n">axis</span><span class="p">,</span><span class="w"> </span><span class="n">negative</span><span class="w"> </span><span class="n">direction</span><span class="w"> </span><span class="p">(</span><span class="n">D</span><span class="p">)</span><span class="w"> </span><span class="n">retracts</span><span class="w"></span>
-
-<span class="w">                        </span><span class="s1">&#39;R\r\n&#39;</span><span class="w"></span>
-
-<span class="w">                    </span><span class="p">)</span><span class="w"></span>
-
-<span class="w">                </span><span class="p">)</span><span class="w"></span>
-
-<span class="w">                </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Sleeping {20 / fine_homing_speed:.2f} sec for move&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">                </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">20</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">fine_homing_speed</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">                </span><span class="n">curr_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="o">[</span><span class="n">current_axis</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">                </span><span class="n">tries</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
-
-<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Post-homing position: {curr_ticks}&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">zero</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
-
-<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}z0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-1</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">zeroed</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">verify</span><span class="w"></span>
-
-<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/{self.steppers[current_axis]}A0R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nc">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1e-1</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Zeroed position: {hw.get_encoder_pos(self.ser, self.steppers[current_axis])}&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">Restore</span><span class="w"> </span><span class="n">proper</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="ow">all</span><span class="w"> </span><span class="n">drivers</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/_m50R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/_h50R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">Update</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">dragged</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="n">pos</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="n">ax</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nl">axes</span><span class="p">:</span><span class="w"></span>
 
@@ -3030,9 +2996,11 @@
 
 <span class="w">            </span><span class="n">actual_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/{address}z{actual_ticks}R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;z{actual_ticks}R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;/{address}A{actual_ticks}R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">hw</span><span class="p">.</span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="s1">&#39;A{actual_ticks}R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">surf</span><span class="p">.</span><span class="n">sw</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="o">[</span><span class="n">0.1, 0.1</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">home</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
 
@@ -3046,9 +3014,7 @@
 
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">go_home</span><span class="p">()</span><span class="w"></span>
 
-<span class="w">        </span><span class="k">print</span><span class="p">(</span><span class="s1">&#39;achieved encoder pos:&#39;</span><span class="p">)</span><span class="w"></span>
-
-<span class="w">        </span><span class="o">[</span><span class="n">hw.get_encoder_pos(self.ser, self.steppers[address</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()</span><span class="err">]</span><span class="w"></span>
+<span class="w">        </span><span class="k">print</span><span class="p">(</span><span class="s1">&#39;Achieved encoder pos:&#39;</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">hw.get_encoder_pos(self.ser, self.steppers[address</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()</span><span class="err">]</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft is homed with centroid position {self.robot.raft.position}&#39;</span><span class="p">)</span><span class="w"></span>
 
@@ -3130,17 +3096,17 @@
 
         # <span class="nv">Terminate</span> <span class="nv">all</span> <span class="nv">running</span> <span class="nv">commands</span>
 
-        <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="nv">f</span><span class="s1">&#39;</span><span class="s">/_T\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+        <span class="nv">time</span>.<span class="nv">sleep</span><span class="ss">(</span>.<span class="mi">1</span><span class="ss">)</span>
+
+        <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="s1">&#39;</span><span class="s">_</span><span class="s1">&#39;</span>, <span class="s1">&#39;</span><span class="s">TR\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
 
         # <span class="nv">Release</span> <span class="nv">torque</span>
 
-        <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="nv">f</span><span class="s1">&#39;</span><span class="s">/_m0R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+        <span class="nv">time</span>.<span class="nv">sleep</span><span class="ss">(</span>.<span class="mi">1</span><span class="ss">)</span>
 
-        <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="nv">f</span><span class="s1">&#39;</span><span class="s">/_h0R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+        <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="s1">&#39;</span><span class="s">_</span><span class="s1">&#39;</span>, <span class="s1">&#39;</span><span class="s">m0R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
 
-        # <span class="nv">Zero</span> <span class="nv">out</span> <span class="nv">position</span>
-
-        <span class="nv">resp</span> <span class="o">=</span> <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="nv">f</span><span class="s1">&#39;</span><span class="s">/_z0R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+        <span class="nv">hw</span>.<span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">ser</span>, <span class="s1">&#39;</span><span class="s">_</span><span class="s1">&#39;</span>, <span class="s1">&#39;</span><span class="s">h0R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
 
         <span class="nv">self</span>.<span class="nv">ser</span>.<span class="nv">close</span><span class="ss">()</span>
 
@@ -3258,7 +3224,7 @@
 
 <span class="s1">        &#39;&#39;&#39;</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">def</span><span class="w"> </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="nl">cmd_tuple</span><span class="p">:</span><span class="w"> </span><span class="n">tuple</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">def</span><span class="w"> </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="nl">cmd_tuple</span><span class="p">:</span><span class="w"> </span><span class="n">tuple</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">True</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
 <span class="w">            </span><span class="s1">&#39;&#39;&#39;</span>
 
@@ -3276,7 +3242,7 @@
 
 <span class="w">            </span><span class="n">angs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">cmd for cmd in [motor_cmds[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">keys</span><span class="err">]]</span><span class="w"></span>
 
-<span class="w">            </span><span class="n">ticks_to_go</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">self.steppers[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">keys</span><span class="err">]</span><span class="p">,</span><span class="w"> </span><span class="n">angs</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">ticks_to_go</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw</span><span class="p">.</span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">self.steppers[key</span><span class="o">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">keys</span><span class="err">]</span><span class="p">,</span><span class="w"> </span><span class="n">angs</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Linear</span><span class="w"> </span><span class="n">approximation</span><span class="w"> </span><span class="k">only</span><span class="w"> </span><span class="n">holds</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">small</span><span class="w"> </span><span class="n">distances</span><span class="p">,</span><span class="w"> </span><span class="n">so</span><span class="w"></span>
 
@@ -3284,45 +3250,47 @@
 
 <span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">even</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">moving</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">opposite</span><span class="w"> </span><span class="n">corners</span><span class="p">.</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">.015</span><span class="w"></span>
+<span class="w">        </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">.03</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">pos_before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"></span>
+<span class="w">        </span><span class="n">pos_before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">pos_after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="w"></span>
+<span class="w">        </span><span class="n">pos_after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nl">MAX_DIST</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nl">MAX_DIST</span><span class="p">:</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Dist. to go in this move: {dist_to_go}&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Dist. to go in this move: {dist_to_go}&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="n">determine</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="n">away</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">starting</span><span class="w"> </span><span class="n">pos</span><span class="w"> </span><span class="n">along</span><span class="w"></span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">determine</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="n">away</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">starting</span><span class="w"> </span><span class="n">pos</span><span class="w"> </span><span class="n">along</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">travel</span><span class="w"></span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">travel</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">unit</span><span class="w"> </span><span class="n">vector</span><span class="w"> </span><span class="n">pointing</span><span class="w"> </span><span class="n">along</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">line</span><span class="w"></span>
+<span class="w">            </span><span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">unit</span><span class="w"> </span><span class="n">vector</span><span class="w"> </span><span class="n">pointing</span><span class="w"> </span><span class="n">along</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">line</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Direction vector: {v}, Unit vector: {u}&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Direction vector: {v}, Unit vector: {u}&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">pos_cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pos_before</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">u</span><span class="w"></span>
+<span class="w">            </span><span class="n">pos_cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pos_before</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MAX_DIST</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">u</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Intermediate move: {pos_cmd}&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Intermediate move: {pos_cmd}&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">alg</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">raft</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
+<span class="w">            </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">False</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">alg</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">raft</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="n">calculate</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">dist</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">go</span><span class="w"></span>
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">calculate</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">dist</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">go</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">pos_before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"></span>
+<span class="w">            </span><span class="n">pos_before</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">robot</span><span class="p">.</span><span class="n">raft</span><span class="p">.</span><span class="k">position</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w">     </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
+<span class="w">            </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">True</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">comment</span><span class="w"> </span><span class="n">above</span><span class="w"> </span><span class="n">block</span><span class="p">,</span><span class="w"> </span><span class="n">uncomment</span><span class="w"> </span><span class="n">below</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="ss">&quot;chunking&quot;</span><span class="w"> </span><span class="n">algorithm</span><span class="w"></span>
+
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="k">return</span><span class="w"></span>
 </code></pre></div>
@@ -3331,7 +3299,7 @@
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f620b90b940</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f8327a4b8d0</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
