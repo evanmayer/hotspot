@@ -94,13 +94,11 @@ class Executive:
                     'n0' + # clear any special modes
                     'm50' + # set move current limit to 50% = 1 A
                     'h50' + # set hold current limit to 50% = 1 A
-                    # 'L2000' + # acceleration factor
-                    # 'aC200' + # encoder coarse correction deadband, ticks
+                    'aC200' + # encoder coarse correction deadband, ticks
                     'ac5' + # encoder fine correction deadband, ticks
                     # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
                     'aE1280' + # 1280 = 1000 * (256 * 200) / 40000
                     'au1' + # number of retries allowed under stall condition
-                    # 'A0' + # zero out position
                     'z400000' + # set encoder zero point
                     'n8' + # enable encoder feedback mode
                     'R\r\n'
@@ -305,10 +303,12 @@ class Executive:
         '''
          # ought to be smaller than distance stepper bounced back after hitting hard stop
         coarse_ticks = 5000
-        coarse_homing_speed = 100000
+        coarse_homing_speed = 80000
+        fine_ticks = 500
+        fine_homing_speed = coarse_homing_speed
         # sets the final zero-point length error for each axis
-        fine_ticks = 20
-        fine_homing_speed = 100000
+        ultra_fine_ticks = 5
+        ultra_fine_homing_speed = coarse_homing_speed
 
         # Home each axis
         [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()]
@@ -319,7 +319,6 @@ class Executive:
             resp = hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
             resp = hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
 
-            # coarse hard stop homing
             hw.bump_hard_stop(
                 self.ser,
                 self.steppers[current_axis],
@@ -328,14 +327,20 @@ class Executive:
                 move_current=50,
                 hold_current=50
             )
-
-            # fine hard stop homing
             hw.bump_hard_stop(
                 self.ser,
                 self.steppers[current_axis],
                 fine_ticks,
                 fine_homing_speed,
-                move_current=10,
+                move_current=50,
+                hold_current=10
+            )
+            hw.bump_hard_stop(
+                self.ser,
+                self.steppers[current_axis],
+                ultra_fine_ticks,
+                ultra_fine_homing_speed,
+                move_current=100,
                 hold_current=10
             )
 
@@ -475,7 +480,7 @@ class Executive:
         # Linear approximation only holds for small distances, so
         # chunk up big moves into tiny bits. This ensures all cables stay taut,
         # even when moving to opposite corners.
-        MAX_DIST = .005
+        MAX_DIST = .02
         pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
         dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
@@ -495,7 +500,8 @@ class Executive:
         logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after)
 
-        # send_pos_cmd(cmd['pos_cmd']) # everything all at once
+        # comment above block, uncomment below to not do "chunking" algorithm
+        # send_pos_cmd(cmd['pos_cmd']) 
 
         return
 
@@ -510,7 +516,7 @@ class Executive:
         self.tm_queue.put(packet)
         
         freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 0#10
+        num_blinks = 10
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
@@ -529,9 +535,10 @@ class Executive:
 
     def close(self):
         # Terminate all running commands
-        hw.ezstepper_write(self.ser, '_', 'TR\r\n')
+        time.sleep(.1)
+        hw.ezstepper_write(self.ser, '_', 'm0h0TR\r\n')
         # Release torque
-        hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
-        hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
+        # hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
+        # hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
         self.ser.close()
         return

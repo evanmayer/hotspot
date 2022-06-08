@@ -67,9 +67,9 @@ def wait_for_ready(ser, address, ready_timeout=1):
             resp = ser.readline()
             if resp:
                 ready = ezstepper_check_ready(resp)
-        # logging.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
+        # logger.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
         if not ready:
-            logging.warning(f'EZStepper {address} was not ready in allotted time {ready_timeout} sec')
+            logger.warning(f'EZStepper {address} was not ready in allotted time {ready_timeout} sec')
     return
 
 
@@ -86,10 +86,10 @@ def ezstepper_write(ser: Serial, address, command_str: str):
     '''
     wait_for_ready(ser, address)
     ser.write((f'/{address}' + command_str).encode())
-    logging.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
+    logger.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
     resp = ser.readline()
     status_good = ezstepper_check_status(resp)
-    logging.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
+    logger.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
     return resp
 
 
