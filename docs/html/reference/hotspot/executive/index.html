@@ -415,13 +415,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cal_home_manual" class="md-nav__link">
-    cal_home_manual
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#close" class="md-nav__link">
     close
   </a>
@@ -445,6 +438,13 @@
           <li class="md-nav__item">
   <a href="#empty_queue" class="md-nav__link">
     empty_queue
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_new_sequence" class="md-nav__link">
+    get_new_sequence
   </a>
   
 </li>
@@ -649,13 +649,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cal_home_manual" class="md-nav__link">
-    cal_home_manual
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#close" class="md-nav__link">
     close
   </a>
@@ -679,6 +672,13 @@
           <li class="md-nav__item">
   <a href="#empty_queue" class="md-nav__link">
     empty_queue
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_new_sequence" class="md-nav__link">
+    get_new_sequence
   </a>
   
 </li>
@@ -753,6 +753,8 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
+<span class="kn">import</span> <span class="nn">os</span>
+
 <span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="kn">import</span> <span class="nn">threading</span>
@@ -771,11 +773,11 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="n">MODES</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="s1">&#39;CAL_HOME&#39;</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="s1">&#39;HOME&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">:</span> <span class="s1">&#39;SEQ&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="s1">&#39;WAIT&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="s1">&#39;BLINK&#39;</span><span class="p">}</span>
+<span class="n">MODES</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="s1">&#39;CAL_HOME&#39;</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="s1">&#39;HOME&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="s1">&#39;RUN&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">:</span> <span class="s1">&#39;SEL&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="s1">&#39;WAIT&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="s1">&#39;BLINK&#39;</span><span class="p">}</span>
 
 <span class="n">HR</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">80</span>
 
-<span class="n">MENU_STR</span> <span class="o">=</span> <span class="n">HR</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Listening for user input for mode changes. Type a mode char and press enter:</span><span class="se">\n</span><span class="si">{</span><span class="n">MODES</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">HR</span>
+<span class="n">MENU_STR</span> <span class="o">=</span> <span class="n">HR</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Listening for mode changes. Type a mode char and press enter:</span><span class="se">\n</span><span class="si">{</span><span class="n">MODES</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">HR</span>
 
 <span class="k">class</span> <span class="nc">Executive</span><span class="p">:</span>
 
@@ -959,7 +961,7 @@
 
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
 
-            <span class="n">queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">queue</span><span class="o">.</span><span class="kp">put</span><span class="p">(</span><span class="nb">input</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">add_cmds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 
@@ -1101,23 +1103,23 @@
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
 
-                    <span class="k">elif</span> <span class="s1">&#39;i&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
-
-                        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Home position override requested.&#39;</span><span class="p">)</span>
-
-                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;INPUT_HOME&#39;</span>
-
                     <span class="k">elif</span> <span class="s1">&#39;h&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
 
                         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Moving to home requested.&#39;</span><span class="p">)</span>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;HOME&#39;</span>
 
-                    <span class="k">elif</span> <span class="s1">&#39;s&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
+                    <span class="k">elif</span> <span class="s1">&#39;r&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
 
                         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Sequence run requested.&#39;</span><span class="p">)</span>
 
-                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;SEQ&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;RUN&#39;</span>
+
+                    <span class="k">elif</span> <span class="s1">&#39;s&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
+
+                        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Select sequence requested.&#39;</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;SEL&#39;</span>
 
                     <span class="k">elif</span> <span class="s1">&#39;w&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
 
@@ -1143,14 +1145,6 @@
 
                     <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
 
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;INPUT_HOME&#39;</span><span class="p">:</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cal_home_manual</span><span class="p">()</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;WAIT&#39;</span>
-
-                    <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
-
                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;HOME&#39;</span><span class="p">:</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">go_home</span><span class="p">()</span>
@@ -1159,9 +1153,17 @@
 
                     <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
 
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;SEQ&#39;</span><span class="p">:</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;RUN&#39;</span><span class="p">:</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;SEL&#39;</span><span class="p">:</span>
+
+                    <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;WAIT&#39;</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
 
                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;WAIT&#39;</span><span class="p">:</span>
 
@@ -1224,36 +1226,6 @@
         <span class="k">else</span><span class="p">:</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="s1">&#39;Already home, nothing to do.&#39;</span><span class="p">)</span>
-
-        <span class="k">return</span>
-
-    <span class="k">def</span> <span class="nf">cal_home_manual</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="sd">&#39;&#39;&#39;</span>
-
-<span class="sd">        Ask the user to input the current position of the center of the raft to</span>
-
-<span class="sd">        store it as the home position.</span>
-
-<span class="sd">        &#39;&#39;&#39;</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Where is home? Input the current position, in meters, of&#39;</span>
-
-            <span class="o">+</span> <span class="s1">&#39; the raft centroid relative to the mirror origin, then press&#39;</span>
-
-            <span class="o">+</span> <span class="s1">&#39; ENTER to store it as home.&#39;</span><span class="p">)</span>
-
-        <span class="n">x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s1">&#39;x-coord: &#39;</span><span class="p">))</span>
-
-        <span class="n">y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s1">&#39;y-coord: &#39;</span><span class="p">))</span>
-
-        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">pos</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home position set: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="k">return</span>
 
@@ -1431,8 +1403,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">go_home</span><span class="p">()</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Achieved encoder pos:&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
-
         <span class="n">logger</span><span class="o">.</span><span class="kp">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Raft is homed with centroid position </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.&#39;</span><span class="p">)</span>
@@ -1520,6 +1490,58 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">)</span>
 
         <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">get_new_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Prompt the user to input the path to a sequence .csv file to run.</span>
+
+<span class="sd">        Returns</span>
+
+<span class="sd">        -------</span>
+
+<span class="sd">        fname (str) the filename of the new scan profile to run on next &#39;r&#39; command</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">profile_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">TOPLEVEL_DIR</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;profiles&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+
+            <span class="s1">&#39;Please input the path to a new profile .csv file to run. &#39;</span> <span class="o">+</span>
+
+            <span class="sa">f</span><span class="s1">&#39;Profile sequence files are stored in </span><span class="si">{</span><span class="n">profile_dir</span><span class="si">}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">Hit Enter&#39;</span> <span class="o">+</span>
+
+            <span class="s1">&#39; for the prompt.&#39;</span>
+
+        <span class="p">)</span>
+
+        <span class="n">input_str</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Type a file path, or type </span><span class="se">\&#39;</span><span class="s1">l</span><span class="se">\&#39;</span><span class="s1"> for a list: &#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">input_str</span> <span class="o">==</span> <span class="s1">&#39;l&#39;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Options are:&#39;</span><span class="p">)</span>
+
+            <span class="p">[</span><span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">profile_dir</span><span class="p">)]</span>
+
+            <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile_dir</span><span class="p">,</span> <span class="n">input_str</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;File </span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s1"> does not exist.&#39;</span><span class="p">)</span>
+
+                <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The next run command (r) will execute this profile: </span><span class="se">\n</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fname</span>
 
     <span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -1627,6 +1649,8 @@
 
             <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
 
+        <span class="c1"># Signal ezsteppers to run once we&#39;ve sent all commands for this move</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Final move: </span><span class="si">{</span><span class="n">pos_after</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1655,7 +1679,7 @@
 
         <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># switching freq, Hz, i.e. flashing freq is 1/2 this</span>
 
-        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">0</span><span class="c1">#10</span>
+        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
         <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">0</span>
 
@@ -1953,7 +1977,7 @@
 
         <span class="k">while</span> <span class="n">True</span><span class="p">:</span>
 
-            <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">input</span><span class="p">())</span>
 
     <span class="n">def</span> <span class="n">add_cmds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 
@@ -2095,23 +2119,23 @@
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;CAL_HOME&#39;</span>
 
-                    <span class="k">elif</span> <span class="s1">&#39;i&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
-
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Home position override requested.&#39;</span><span class="p">)</span>
-
-                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;INPUT_HOME&#39;</span>
-
                     <span class="k">elif</span> <span class="s1">&#39;h&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
 
                         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Moving to home requested.&#39;</span><span class="p">)</span>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;HOME&#39;</span>
 
-                    <span class="k">elif</span> <span class="s1">&#39;s&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
+                    <span class="k">elif</span> <span class="s1">&#39;r&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
 
                         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Sequence run requested.&#39;</span><span class="p">)</span>
 
-                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;SEQ&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;RUN&#39;</span>
+
+                    <span class="k">elif</span> <span class="s1">&#39;s&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
+
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Select sequence requested.&#39;</span><span class="p">)</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;SEL&#39;</span>
 
                     <span class="k">elif</span> <span class="s1">&#39;w&#39;</span> <span class="o">==</span> <span class="n">kbd_in</span><span class="p">:</span>
 
@@ -2137,14 +2161,6 @@
 
                     <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
 
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;INPUT_HOME&#39;</span><span class="p">:</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cal_home_manual</span><span class="p">()</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;WAIT&#39;</span>
-
-                    <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
-
                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;HOME&#39;</span><span class="p">:</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">go_home</span><span class="p">()</span>
@@ -2153,9 +2169,17 @@
 
                     <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
 
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;SEQ&#39;</span><span class="p">:</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;RUN&#39;</span><span class="p">:</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;SEL&#39;</span><span class="p">:</span>
+
+                    <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;WAIT&#39;</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="n">MENU_STR</span><span class="p">)</span>
 
                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;WAIT&#39;</span><span class="p">:</span>
 
@@ -2218,36 +2242,6 @@
         <span class="k">else</span><span class="p">:</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Already home, nothing to do.&#39;</span><span class="p">)</span>
-
-        <span class="k">return</span>
-
-    <span class="n">def</span> <span class="n">cal_home_manual</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="sd">&#39;&#39;&#39;</span>
-
-<span class="sd">        Ask the user to input the current position of the center of the raft to</span>
-
-<span class="sd">        store it as the home position.</span>
-
-<span class="sd">        &#39;&#39;&#39;</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Where is home? Input the current position, in meters, of&#39;</span>
-
-            <span class="o">+</span> <span class="s1">&#39; the raft centroid relative to the mirror origin, then press&#39;</span>
-
-            <span class="o">+</span> <span class="s1">&#39; ENTER to store it as home.&#39;</span><span class="p">)</span>
-
-        <span class="n">x</span> <span class="o">=</span> <span class="nb nb-Type">float</span><span class="p">(</span><span class="n">input</span><span class="p">(</span><span class="s1">&#39;x-coord: &#39;</span><span class="p">))</span>
-
-        <span class="n">y</span> <span class="o">=</span> <span class="nb nb-Type">float</span><span class="p">(</span><span class="n">input</span><span class="p">(</span><span class="s1">&#39;y-coord: &#39;</span><span class="p">))</span>
-
-        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">home</span> <span class="o">=</span> <span class="n">pos</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">pos</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Home position set: {self.robot.home}&#39;</span><span class="p">)</span>
 
         <span class="k">return</span>
 
@@ -2425,8 +2419,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">go_home</span><span class="p">()</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Achieved encoder pos:&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">hw</span><span class="o">.</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ser</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="p">[</span><span class="n">address</span><span class="p">])</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steppers</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
-
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft is homed with centroid position {self.robot.raft.position}&#39;</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.&#39;</span><span class="p">)</span>
@@ -2514,6 +2506,58 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_enable</span><span class="p">)</span>
 
         <span class="k">return</span>
+
+    <span class="n">def</span> <span class="n">get_new_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Prompt the user to input the path to a sequence .csv file to run.</span>
+
+<span class="sd">        Returns</span>
+
+<span class="sd">        -------</span>
+
+<span class="sd">        fname (str) the filename of the new scan profile to run on next &#39;r&#39; command</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">profile_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">TOPLEVEL_DIR</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;profiles&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+
+            <span class="s1">&#39;Please input the path to a new profile .csv file to run. &#39;</span> <span class="o">+</span>
+
+            <span class="n">f</span><span class="s1">&#39;Profile sequence files are stored in {profile_dir}.</span><span class="se">\n</span><span class="s1">Hit Enter&#39;</span> <span class="o">+</span>
+
+            <span class="s1">&#39; for the prompt.&#39;</span>
+
+        <span class="p">)</span>
+
+        <span class="n">input_str</span> <span class="o">=</span> <span class="n">input</span><span class="p">(</span><span class="s1">&#39;Type a file path, or type </span><span class="se">\&#39;</span><span class="s1">l</span><span class="se">\&#39;</span><span class="s1"> for a list: &#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">input_str</span> <span class="o">==</span> <span class="s1">&#39;l&#39;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Options are:&#39;</span><span class="p">)</span>
+
+            <span class="p">[</span><span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">profile_dir</span><span class="p">)]</span>
+
+            <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile_dir</span><span class="p">,</span> <span class="n">input_str</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;File {fname} does not exist.&#39;</span><span class="p">)</span>
+
+                <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;The next run command (r) will execute this profile: </span><span class="se">\n</span><span class="s1">{fname}&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fname</span>
 
     <span class="n">def</span> <span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -2621,6 +2665,8 @@
 
             <span class="n">dist_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span>
 
+        <span class="c1"># Signal ezsteppers to run once we&#39;ve sent all commands for this move</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span>
 
         <span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">True</span><span class="p">)</span>
@@ -2649,7 +2695,7 @@
 
         <span class="n">freq</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1"># switching freq, Hz, i.e. flashing freq is 1/2 this</span>
 
-        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">0</span><span class="c1">#10</span>
+        <span class="n">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
         <span class="n">flipflop</span> <span class="o">=</span> <span class="mi">0</span>
 
@@ -3014,8 +3060,6 @@
 
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">go_home</span><span class="p">()</span><span class="w"></span>
 
-<span class="w">        </span><span class="k">print</span><span class="p">(</span><span class="s1">&#39;Achieved encoder pos:&#39;</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">hw.get_encoder_pos(self.ser, self.steppers[address</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">steppers</span><span class="p">.</span><span class="n">keys</span><span class="p">()</span><span class="err">]</span><span class="p">)</span><span class="w"></span>
-
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Raft is homed with centroid position {self.robot.raft.position}&#39;</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.&#39;</span><span class="p">)</span><span class="w"></span>
@@ -3039,48 +3083,6 @@
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">router</span><span class="p">.</span><span class="n">process_tm</span><span class="p">(</span><span class="n">plot_enable</span><span class="o">=</span><span class="n">self</span><span class="p">.</span><span class="n">plot_enable</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="k">return</span><span class="w"></span>
-</code></pre></div>
-
-</details>
-<h4 id="cal_home_manual">cal_home_manual</h4>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">cal_home_manual</span><span class="p">(</span>
-    <span class="bp">self</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<p>Ask the user to input the current position of the center of the raft to</p>
-<p>store it as the home position.</p>
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">cal_home_manual</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
-
-        <span class="s1">&#39;&#39;&#39;</span>
-
-        <span class="nv">Ask</span> <span class="nv">the</span> <span class="nv">user</span> <span class="nv">to</span> <span class="nv">input</span> <span class="nv">the</span> <span class="nv">current</span> <span class="nv">position</span> <span class="nv">of</span> <span class="nv">the</span> <span class="nv">center</span> <span class="nv">of</span> <span class="nv">the</span> <span class="nv">raft</span> <span class="nv">to</span>
-
-        <span class="nv">store</span> <span class="nv">it</span> <span class="nv">as</span> <span class="nv">the</span> <span class="nv">home</span> <span class="nv">position</span>.
-
-        <span class="s1">&#39;&#39;&#39;</span>
-
-        <span class="nv">print</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Where is home? Input the current position, in meters, of</span><span class="s1">&#39;</span>
-
-            <span class="o">+</span> <span class="s1">&#39;</span><span class="s"> the raft centroid relative to the mirror origin, then press</span><span class="s1">&#39;</span>
-
-            <span class="o">+</span> <span class="s1">&#39;</span><span class="s"> ENTER to store it as home.</span><span class="s1">&#39;</span><span class="ss">)</span>
-
-        <span class="nv">x</span> <span class="o">=</span> <span class="nv">float</span><span class="ss">(</span><span class="nv">input</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">x-coord: </span><span class="s1">&#39;</span><span class="ss">))</span>
-
-        <span class="nv">y</span> <span class="o">=</span> <span class="nv">float</span><span class="ss">(</span><span class="nv">input</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">y-coord: </span><span class="s1">&#39;</span><span class="ss">))</span>
-
-        <span class="nv">pos</span> <span class="o">=</span> <span class="ss">(</span><span class="nv">x</span>, <span class="nv">y</span><span class="ss">)</span>
-
-        <span class="nv">self</span>.<span class="nv">robot</span>.<span class="nv">home</span> <span class="o">=</span> <span class="nv">pos</span>
-
-        <span class="nv">self</span>.<span class="nv">robot</span>.<span class="nv">raft</span>.<span class="nv">position</span> <span class="o">=</span> <span class="nv">pos</span>
-
-        <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="nv">f</span><span class="s1">&#39;</span><span class="s">Home position set: {self.robot.home}</span><span class="s1">&#39;</span><span class="ss">)</span>
-
-        <span class="k">return</span>
 </code></pre></div>
 
 </details>
@@ -3141,7 +3143,7 @@
 
         <span class="nv">freq</span> <span class="o">=</span> <span class="mi">10</span>. # <span class="nv">switching</span> <span class="nv">freq</span>, <span class="nv">Hz</span>, <span class="nv">i</span>.<span class="nv">e</span>. <span class="nv">flashing</span> <span class="nv">freq</span> <span class="nv">is</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="nv">this</span>
 
-        <span class="nv">num_blinks</span> <span class="o">=</span> <span class="mi">0</span><span class="sc">#10</span>
+        <span class="nv">num_blinks</span> <span class="o">=</span> <span class="mi">10</span>
 
         <span class="nv">flipflop</span> <span class="o">=</span> <span class="mi">0</span>
 
@@ -3284,13 +3286,15 @@
 
 <span class="w">            </span><span class="n">dist_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_after</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="n">pos_before</span><span class="p">))</span><span class="w"></span>
 
-<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Final move: {pos_after}&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Signal</span><span class="w"> </span><span class="n">ezsteppers</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">once</span><span class="w"> </span><span class="n">we</span><span class="s1">&#39;ve sent all commands for this move</span>
 
-<span class="w">        </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">pos_after</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">True</span><span class="p">)</span><span class="w"></span>
+<span class="s1">        logger.debug(f&#39;</span><span class="n">Final</span><span class="w"> </span><span class="nl">move</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">pos_after</span><span class="err">}</span><span class="s1">&#39;)</span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">comment</span><span class="w"> </span><span class="n">above</span><span class="w"> </span><span class="n">block</span><span class="p">,</span><span class="w"> </span><span class="n">uncomment</span><span class="w"> </span><span class="n">below</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="ss">&quot;chunking&quot;</span><span class="w"> </span><span class="n">algorithm</span><span class="w"></span>
+<span class="s1">        send_pos_cmd(pos_after, run=True)</span>
 
-<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">send_pos_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="o">[</span><span class="n">&#39;pos_cmd&#39;</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
+<span class="s1">        # comment above block, uncomment below to not do &quot;chunking&quot; algorithm</span>
+
+<span class="s1">        # send_pos_cmd(cmd[&#39;</span><span class="n">pos_cmd</span><span class="err">&#39;]</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="k">return</span><span class="w"></span>
 </code></pre></div>
@@ -3299,7 +3303,7 @@
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f8327a4b8d0</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7faccb74b940</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -3346,6 +3350,84 @@
             <span class="nv">queue</span>.<span class="nv">get</span><span class="ss">()</span>
 
         <span class="k">return</span>
+</code></pre></div>
+
+</details>
+<h4 id="get_new_sequence">get_new_sequence</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_sequence</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Prompt the user to input the path to a sequence .csv file to run.</p>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fname (str) the filename of the new scan profile to run on next 'r' command</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    <span class="n">def</span> <span class="n">get_new_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        Prompt the user to input the path to a sequence .csv file to run.</span>
+
+<span class="sd">        Returns</span>
+
+<span class="sd">        -------</span>
+
+<span class="sd">        fname (str) the filename of the new scan profile to run on next &#39;r&#39; command</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">profile_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">TOPLEVEL_DIR</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;profiles&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+
+            <span class="s1">&#39;Please input the path to a new profile .csv file to run. &#39;</span> <span class="o">+</span>
+
+            <span class="n">f</span><span class="s1">&#39;Profile sequence files are stored in {profile_dir}.</span><span class="se">\n</span><span class="s1">Hit Enter&#39;</span> <span class="o">+</span>
+
+            <span class="s1">&#39; for the prompt.&#39;</span>
+
+        <span class="p">)</span>
+
+        <span class="n">input_str</span> <span class="o">=</span> <span class="n">input</span><span class="p">(</span><span class="s1">&#39;Type a file path, or type </span><span class="se">\&#39;</span><span class="s1">l</span><span class="se">\&#39;</span><span class="s1"> for a list: &#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">input_str</span> <span class="o">==</span> <span class="s1">&#39;l&#39;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Options are:&#39;</span><span class="p">)</span>
+
+            <span class="p">[</span><span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">profile_dir</span><span class="p">)]</span>
+
+            <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile_dir</span><span class="p">,</span> <span class="n">input_str</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;File {fname} does not exist.&#39;</span><span class="p">)</span>
+
+                <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_new_sequence</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;The next run command (r) will execute this profile: </span><span class="se">\n</span><span class="s1">{fname}&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fname</span>
 </code></pre></div>
 
 </details>
@@ -3492,23 +3574,23 @@
 
                         <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">CAL_HOME</span><span class="s1">&#39;</span>
 
-                    <span class="nv">elif</span> <span class="s1">&#39;</span><span class="s">i</span><span class="s1">&#39;</span> <span class="o">==</span> <span class="nv">kbd_in</span>:
-
-                        <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Home position override requested.</span><span class="s1">&#39;</span><span class="ss">)</span>
-
-                        <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">INPUT_HOME</span><span class="s1">&#39;</span>
-
                     <span class="nv">elif</span> <span class="s1">&#39;</span><span class="s">h</span><span class="s1">&#39;</span> <span class="o">==</span> <span class="nv">kbd_in</span>:
 
                         <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Moving to home requested.</span><span class="s1">&#39;</span><span class="ss">)</span>
 
                         <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">HOME</span><span class="s1">&#39;</span>
 
-                    <span class="nv">elif</span> <span class="s1">&#39;</span><span class="s">s</span><span class="s1">&#39;</span> <span class="o">==</span> <span class="nv">kbd_in</span>:
+                    <span class="nv">elif</span> <span class="s1">&#39;</span><span class="s">r</span><span class="s1">&#39;</span> <span class="o">==</span> <span class="nv">kbd_in</span>:
 
                         <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Sequence run requested.</span><span class="s1">&#39;</span><span class="ss">)</span>
 
-                        <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">SEQ</span><span class="s1">&#39;</span>
+                        <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">RUN</span><span class="s1">&#39;</span>
+
+                    <span class="nv">elif</span> <span class="s1">&#39;</span><span class="s">s</span><span class="s1">&#39;</span> <span class="o">==</span> <span class="nv">kbd_in</span>:
+
+                        <span class="nv">logger</span>.<span class="nv">info</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">Select sequence requested.</span><span class="s1">&#39;</span><span class="ss">)</span>
+
+                        <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">SEL</span><span class="s1">&#39;</span>
 
                     <span class="nv">elif</span> <span class="s1">&#39;</span><span class="s">w</span><span class="s1">&#39;</span> <span class="o">==</span> <span class="nv">kbd_in</span>:
 
@@ -3534,14 +3616,6 @@
 
                     <span class="nv">print</span><span class="ss">(</span><span class="nv">MENU_STR</span><span class="ss">)</span>
 
-                <span class="nv">elif</span> <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="s">INPUT_HOME</span><span class="s1">&#39;</span>:
-
-                    <span class="nv">self</span>.<span class="nv">cal_home_manual</span><span class="ss">()</span>
-
-                    <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">WAIT</span><span class="s1">&#39;</span>
-
-                    <span class="nv">print</span><span class="ss">(</span><span class="nv">MENU_STR</span><span class="ss">)</span>
-
                 <span class="nv">elif</span> <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="s">HOME</span><span class="s1">&#39;</span>:
 
                     <span class="nv">self</span>.<span class="nv">go_home</span><span class="ss">()</span>
@@ -3550,9 +3624,17 @@
 
                     <span class="nv">print</span><span class="ss">(</span><span class="nv">MENU_STR</span><span class="ss">)</span>
 
-                <span class="nv">elif</span> <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="s">SEQ</span><span class="s1">&#39;</span>:
+                <span class="nv">elif</span> <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="s">RUN</span><span class="s1">&#39;</span>:
 
                     <span class="nv">self</span>.<span class="nv">sequence</span><span class="ss">(</span><span class="nv">fname</span><span class="ss">)</span>
+
+                <span class="nv">elif</span> <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="s">SEL</span><span class="s1">&#39;</span>:
+
+                    <span class="nv">fname</span> <span class="o">=</span> <span class="nv">self</span>.<span class="nv">get_new_sequence</span><span class="ss">()</span>
+
+                    <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="s">WAIT</span><span class="s1">&#39;</span>
+
+                    <span class="nv">print</span><span class="ss">(</span><span class="nv">MENU_STR</span><span class="ss">)</span>
 
                 <span class="nv">elif</span> <span class="nv">self</span>.<span class="nv">mode</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="s">WAIT</span><span class="s1">&#39;</span>:
 

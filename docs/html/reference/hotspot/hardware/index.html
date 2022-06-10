@@ -783,7 +783,7 @@
 
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b0100000</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">.5</span><span class="p">):</span>
 
     <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="o">!=</span> <span class="n">address</span><span class="p">:</span>
 
@@ -2198,13 +2198,13 @@ busy_timeout
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span>
     <span class="n">ser</span><span class="p">,</span>
     <span class="n">address</span><span class="p">,</span>
-    <span class="n">ready_timeout</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">0.5</span>
 <span class="p">)</span>
 </code></pre></div>
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=.</span><span class="mi">5</span><span class="p">):</span>
 
     <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="o">!=</span> <span class="n">address</span><span class="p">:</span>
 
