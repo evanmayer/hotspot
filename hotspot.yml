@@ -2,7 +2,6 @@ name: hotspot
 channels:
   - conda-forge
   - defaults
-  - rpi
 dependencies:
   - python=3.6
   - numpy
@@ -12,7 +11,6 @@ dependencies:
   - pySerial
   - pip
   - pip:
-    - adafruit-circuitpython-motorkit
     - labjack-ljm
     - pycallgraph2
     - portray

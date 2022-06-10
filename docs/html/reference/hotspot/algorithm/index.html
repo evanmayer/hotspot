@@ -969,7 +969,7 @@
 
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home location </span><span class="si">{</span><span class="n">home_pos</span><span class="si">}</span><span class="s1"> is outside of bounds for surface </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Home location </span><span class="si">{</span><span class="n">home_pos</span><span class="si">}</span><span class="s1"> is outside of bounds for surface with corners </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
 
@@ -997,7 +997,7 @@
 
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Position command </span><span class="si">{</span><span class="n">new_pos</span><span class="si">}</span><span class="s1"> is outside of bounds for surface </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Position command </span><span class="si">{</span><span class="n">new_pos</span><span class="si">}</span><span class="s1"> is outside of bounds for surface with corners </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">process_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_cmd</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
 
@@ -1053,8 +1053,6 @@
 
             <span class="k">return</span> <span class="n">motor_cmds</span>
 
-        <span class="n">lengths_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
         <span class="c1"># update the commanded position</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Commanded position: </span><span class="si">{</span><span class="n">pos_cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -1069,69 +1067,41 @@
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Lengths after move:</span><span class="si">{</span><span class="n">lengths_after</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-        <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
+        <span class="c1"># Cable is wound onto a helical drum, so the length change goes like:</span>
 
-        <span class="c1"># compensate total angular travel by considering the effect of cable</span>
+        <span class="c1"># sqrt(helix channel gullet diameter^2 + helix channel pitch^2)</span>
 
-        <span class="c1"># wound onto the spool increasing the radius.</span>
+        <span class="c1"># or in machinist&#39;s thread-speak:</span>
 
-        <span class="c1"># assume a constant radius change k per radian, then</span>
+        <span class="c1"># sqrt(minor diameter^2 + thread pitch^2)</span>
 
-        <span class="c1"># dl = k / 2 (theta1^2 - theta0^2) + r (theta1 - theta0), and solve for</span>
+        <span class="c1"># for a single rotation.</span>
 
-        <span class="c1"># theta1.</span>
+        <span class="c1"># The implicit assumption here is that the end not attached to</span>
 
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span> <span class="c1"># support &quot;ideal spool&quot; case</span>
+        <span class="c1"># the drum that goes through the eyelet is far enough away from the</span>
 
-            <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+        <span class="c1"># drum that a small-angle assumption is valid, such that the induced</span>
 
-        <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># change in cable length as a function of the position the cable leaves</span>
 
-            <span class="c1"># requires solution of quadratic eqn., so some combos are disallowed</span>
+        <span class="c1"># the drum is negligible.</span>
 
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">delta_lengths</span><span class="o">.</span><span class="kp">flatten</span><span class="p">():</span>
+        <span class="n">length_per_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">sqrt</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
 
-                <span class="n">radicand</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="n">s</span> <span class="o">+</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span>
+        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">length_per_rev</span>
 
-                <span class="k">assert</span> <span class="p">(</span><span class="n">radicand</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Angle calculation will fail, disallowed radicand </span><span class="si">{</span><span class="n">radicand</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">num_revs</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Uncorrected motor commands: </span><span class="si">{</span><span class="n">delta_lengths</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># Constraint that dtheta and dl have the same sign imposes choice of</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># the positive quadratic solution</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-            <span class="n">final_angles</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-                <span class="o">-</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
-
-                <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="kp">sqrt</span><span class="p">(</span>
-
-                    <span class="mf">2.</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span>
-
-                    <span class="o">+</span> <span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">delta_lengths</span><span class="p">)</span>
-
-                    <span class="o">+</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
-
-            <span class="p">)</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span>
-
-            <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">final_angles</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Corrected motor commands: </span><span class="si">{</span><span class="n">delta_angles</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="c1"># keep track of the net angular offset</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">=</span> <span class="n">final_angles</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Motor commands: </span><span class="si">{</span><span class="n">motor_cmds</span><span class="si">}</span><span class="se">\n</span><span class="s1">Delta lengths:</span><span class="si">{</span><span class="n">delta_lengths</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Motor commands: </span><span class="si">{</span><span class="n">motor_cmds</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
 
@@ -1141,9 +1111,7 @@
 
                 <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos_cmd</span><span class="p">,</span>
 
-                <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">delta_angles</span><span class="o">.</span><span class="kp">flatten</span><span class="p">(),</span>
-
-                <span class="s1">&#39;Angle Correction Due to Spool Radius (rad)&#39;</span> <span class="p">:</span> <span class="p">(</span><span class="n">delta_angles</span> <span class="o">-</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span><span class="o">.</span><span class="kp">flatten</span><span class="p">(),</span>
+                <span class="s1">&#39;Motor Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">angles</span><span class="o">.</span><span class="kp">flatten</span><span class="p">(),</span>
 
             <span class="p">}</span>
 
@@ -1260,7 +1228,7 @@
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Robot</span><span class="p">(</span>
     <span class="n">surf</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">TestSurface</span><span class="p">,</span>
     <span class="n">raft</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">Raft</span><span class="p">,</span>
-    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f9f547be978</span><span class="o">&gt;&gt;</span>
+    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7faccb74b940</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1342,7 +1310,7 @@
 
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="n">raise</span> <span class="n">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Home location {home_pos} is outside of bounds for surface {self.surf}&#39;</span><span class="p">)</span>
+            <span class="n">raise</span> <span class="n">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Home location {home_pos} is outside of bounds for surface with corners {self.surf.corners}&#39;</span><span class="p">)</span>
 
     <span class="err">@</span><span class="n">property</span>
 
@@ -1370,7 +1338,7 @@
 
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="n">raise</span> <span class="n">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command {new_pos} is outside of bounds for surface {self.surf}&#39;</span><span class="p">)</span>
+            <span class="n">raise</span> <span class="n">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command {new_pos} is outside of bounds for surface with corners {self.surf.corners}&#39;</span><span class="p">)</span>
 
     <span class="n">def</span> <span class="n">process_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_cmd</span><span class="p">:</span> <span class="n">tuple</span><span class="p">):</span>
 
@@ -1426,8 +1394,6 @@
 
             <span class="k">return</span> <span class="n">motor_cmds</span>
 
-        <span class="n">lengths_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
         <span class="c1"># update the commanded position</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded position: {pos_cmd}&#39;</span><span class="p">)</span>
@@ -1442,69 +1408,41 @@
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Lengths after move:{lengths_after}&#39;</span><span class="p">)</span>
 
-        <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
+        <span class="c1"># Cable is wound onto a helical drum, so the length change goes like:</span>
 
-        <span class="c1"># compensate total angular travel by considering the effect of cable</span>
+        <span class="c1"># sqrt(helix channel gullet diameter^2 + helix channel pitch^2)</span>
 
-        <span class="c1"># wound onto the spool increasing the radius.</span>
+        <span class="c1"># or in machinist&#39;s thread-speak:</span>
 
-        <span class="c1"># assume a constant radius change k per radian, then</span>
+        <span class="c1"># sqrt(minor diameter^2 + thread pitch^2)</span>
 
-        <span class="c1"># dl = k / 2 (theta1^2 - theta0^2) + r (theta1 - theta0), and solve for</span>
+        <span class="c1"># for a single rotation.</span>
 
-        <span class="c1"># theta1.</span>
+        <span class="c1"># The implicit assumption here is that the end not attached to</span>
 
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span> <span class="c1"># support &quot;ideal spool&quot; case</span>
+        <span class="c1"># the drum that goes through the eyelet is far enough away from the</span>
 
-            <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+        <span class="c1"># drum that a small-angle assumption is valid, such that the induced</span>
 
-        <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># change in cable length as a function of the position the cable leaves</span>
 
-            <span class="c1"># requires solution of quadratic eqn., so some combos are disallowed</span>
+        <span class="c1"># the drum is negligible.</span>
 
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">delta_lengths</span><span class="o">.</span><span class="n">flatten</span><span class="p">():</span>
+        <span class="n">length_per_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
 
-                <span class="n">radicand</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="n">s</span> <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span>
+        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">length_per_rev</span>
 
-                <span class="nb">assert</span> <span class="p">(</span><span class="n">radicand</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">),</span> <span class="n">f</span><span class="s2">&quot;Angle calculation will fail, disallowed radicand {radicand}&quot;</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">num_revs</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Uncorrected motor commands: {delta_lengths / const.PULLEY_RADIUS}&#39;</span><span class="p">)</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># Constraint that dtheta and dl have the same sign imposes choice of</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># the positive quadratic solution</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-            <span class="n">final_angles</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-                <span class="o">-</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
-
-                <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
-
-                    <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span>
-
-                    <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">delta_lengths</span><span class="p">)</span>
-
-                    <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
-
-            <span class="p">)</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span>
-
-            <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">final_angles</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Corrected motor commands: {delta_angles}&#39;</span><span class="p">)</span>
-
-            <span class="c1"># keep track of the net angular offset</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">=</span> <span class="n">final_angles</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor commands: {motor_cmds}</span><span class="se">\n</span><span class="s1">Delta lengths:{delta_lengths}&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor commands: {motor_cmds}&#39;</span><span class="p">)</span>
 
         <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
 
@@ -1514,9 +1452,7 @@
 
                 <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos_cmd</span><span class="p">,</span>
 
-                <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">delta_angles</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-
-                <span class="s1">&#39;Angle Correction Due to Spool Radius (rad)&#39;</span> <span class="p">:</span> <span class="p">(</span><span class="n">delta_angles</span> <span class="o">-</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                <span class="s1">&#39;Motor Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">angles</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
 
             <span class="p">}</span>
 
@@ -1642,8 +1578,6 @@ from rear.</p>
 
             <span class="k">return</span> <span class="n">motor_cmds</span>
 
-        <span class="n">lengths_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">corners</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">surf</span><span class="o">.</span><span class="n">corners</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
         <span class="c1"># update the commanded position</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded position: {pos_cmd}&#39;</span><span class="p">)</span>
@@ -1658,69 +1592,41 @@ from rear.</p>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Lengths after move:{lengths_after}&#39;</span><span class="p">)</span>
 
-        <span class="n">delta_lengths</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">-</span> <span class="n">lengths_before</span>
+        <span class="c1"># Cable is wound onto a helical drum, so the length change goes like:</span>
 
-        <span class="c1"># compensate total angular travel by considering the effect of cable</span>
+        <span class="c1"># sqrt(helix channel gullet diameter^2 + helix channel pitch^2)</span>
 
-        <span class="c1"># wound onto the spool increasing the radius.</span>
+        <span class="c1"># or in machinist&#39;s thread-speak:</span>
 
-        <span class="c1"># assume a constant radius change k per radian, then</span>
+        <span class="c1"># sqrt(minor diameter^2 + thread pitch^2)</span>
 
-        <span class="c1"># dl = k / 2 (theta1^2 - theta0^2) + r (theta1 - theta0), and solve for</span>
+        <span class="c1"># for a single rotation.</span>
 
-        <span class="c1"># theta1.</span>
+        <span class="c1"># The implicit assumption here is that the end not attached to</span>
 
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span> <span class="c1"># support &quot;ideal spool&quot; case</span>
+        <span class="c1"># the drum that goes through the eyelet is far enough away from the</span>
 
-            <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
+        <span class="c1"># drum that a small-angle assumption is valid, such that the induced</span>
 
-        <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># change in cable length as a function of the position the cable leaves</span>
 
-            <span class="c1"># requires solution of quadratic eqn., so some combos are disallowed</span>
+        <span class="c1"># the drum is negligible.</span>
 
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">delta_lengths</span><span class="o">.</span><span class="n">flatten</span><span class="p">():</span>
+        <span class="n">length_per_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
 
-                <span class="n">radicand</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="n">s</span> <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span>
+        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">length_per_rev</span>
 
-                <span class="nb">assert</span> <span class="p">(</span><span class="n">radicand</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">),</span> <span class="n">f</span><span class="s2">&quot;Angle calculation will fail, disallowed radicand {radicand}&quot;</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">num_revs</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Uncorrected motor commands: {delta_lengths / const.PULLEY_RADIUS}&#39;</span><span class="p">)</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># Constraint that dtheta and dl have the same sign imposes choice of</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># the positive quadratic solution</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-            <span class="n">final_angles</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-                <span class="o">-</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span>
-
-                <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
-
-                    <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span>
-
-                    <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">delta_lengths</span><span class="p">)</span>
-
-                    <span class="o">+</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
-
-            <span class="p">)</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">RADIUS_M_PER_RAD</span>
-
-            <span class="n">delta_angles</span> <span class="o">=</span> <span class="n">final_angles</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Corrected motor commands: {delta_angles}&#39;</span><span class="p">)</span>
-
-            <span class="c1"># keep track of the net angular offset</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">spool_angles</span> <span class="o">=</span> <span class="n">final_angles</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;sw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;se&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;nw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">motor_cmds</span><span class="p">[</span><span class="s1">&#39;ne&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor commands: {motor_cmds}</span><span class="se">\n</span><span class="s1">Delta lengths:{delta_lengths}&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor commands: {motor_cmds}&#39;</span><span class="p">)</span>
 
         <span class="n">packet</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;algorithm&#39;</span><span class="p">:</span>
 
@@ -1730,9 +1636,7 @@ from rear.</p>
 
                 <span class="s1">&#39;Position Command (m)&#39;</span> <span class="p">:</span> <span class="n">pos_cmd</span><span class="p">,</span>
 
-                <span class="s1">&#39;Motor Delta Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">delta_angles</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-
-                <span class="s1">&#39;Angle Correction Due to Spool Radius (rad)&#39;</span> <span class="p">:</span> <span class="p">(</span><span class="n">delta_angles</span> <span class="o">-</span> <span class="n">delta_lengths</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                <span class="s1">&#39;Motor Angle Command (rad)&#39;</span> <span class="p">:</span> <span class="n">angles</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
 
             <span class="p">}</span>
 

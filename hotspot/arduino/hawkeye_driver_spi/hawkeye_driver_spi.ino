@@ -7,34 +7,27 @@
 //  Notes   : Code for using a 74HC595 Shift Register           //
 //          : to count from 0 to 255
 //****************************************************************
+#include <SPI.h>
 
 //Pin connected to ST_CP of 74HC595
-int latchPin = 4;
-//Pin connected to SH_CP of 74HC595
-int clockPin = 3;
-////Pin connected to DS of 74HC595
-int dataPin = 2;
+int latchPin = 0;
 
 void setup() {
   //set pins to output so you can control the shift register
   pinMode(latchPin, OUTPUT);
-  pinMode(clockPin, OUTPUT);
-  pinMode(dataPin, OUTPUT);
+
+  SPI.begin();
+  SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
 }
 
 void loop() {
-  // take the latchPin low so
-  // the LEDs don't change while you're sending in bits:
   digitalWrite(latchPin, LOW);
-  // shift out the bits:
-  shiftOut(dataPin, clockPin, MSBFIRST, 0);
-  //take the latch pin high so the LEDs will light up:
+  SPI.transfer(0);
   digitalWrite(latchPin, HIGH);
-  // pause before next value:
-  delay(500);
+  delay(250);
   
   digitalWrite(latchPin, LOW);
-  shiftOut(dataPin, clockPin, MSBFIRST, 7);
+  SPI.transfer(7);
   digitalWrite(latchPin, HIGH);
-  delay(500);
+  delay(250);
 }

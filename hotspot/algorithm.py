@@ -166,7 +166,7 @@ class Robot:
         if inbounds:
             self._home = home_pos
         else:
-            raise ValueError(f'Home location {home_pos} is outside of bounds for surface {self.surf}')
+            raise ValueError(f'Home location {home_pos} is outside of bounds for surface with corners {self.surf.corners}')
 
 
     @property
@@ -183,7 +183,7 @@ class Robot:
         if inbounds:
             self._pos_cmd = new_pos
         else:
-            raise ValueError(f'Position command {new_pos} is outside of bounds for surface {self.surf}')
+            raise ValueError(f'Position command {new_pos} is outside of bounds for surface with corners {self.surf.corners}')
 
 
     def process_input(self, pos_cmd: tuple):
@@ -217,7 +217,6 @@ class Robot:
             logger.warning(f'Position command malformed: distance: {distance}')
             return motor_cmds
 
-        lengths_before = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
         # update the commanded position
         logger.debug(f'Commanded position: {pos_cmd}')
         self.pos_cmd = pos_cmd
@@ -226,34 +225,34 @@ class Robot:
         lengths_after = np.linalg.norm(self.raft.corners - self.surf.corners, axis=-1)
         logger.debug(f'Lengths after move:{lengths_after}')
 
-        delta_lengths = lengths_after - lengths_before
-
-        # cable is wound onto a helical drum, so the length change goes like:
-        # sqrt(helix channel gullet diameter^2 + helix channel pitch^2), or in thread-speak
+        # Cable is wound onto a helical drum, so the length change goes like:
+        # sqrt(helix channel gullet diameter^2 + helix channel pitch^2)
+        # or in machinist's thread-speak:
         # sqrt(minor diameter^2 + thread pitch^2)
         # for a single rotation.
         
-        # the implicit assumption here is that the other end not attached to the drum and
-        # going through the eyelet is far enough away that the small-angle
-        # assumption is valid, such that the induced cable length as a function of position
-        # on the drum is negligible.
+        # The implicit assumption here is that the end not attached to 
+        # the drum that goes through the eyelet is far enough away from the
+        # drum that a small-angle assumption is valid, such that the induced 
+        # change in cable length as a function of the position the cable leaves
+        # the drum is negligible.
 
         length_per_rev = np.sqrt(const.DRUM_PITCH ** 2. + (np.pi * 2. * const.PULLEY_RADIUS) ** 2.)
-        length_per_rad = length_per_rev / 2. / np.pi
-        delta_angles = delta_lengths / length_per_rad
+        num_revs = lengths_after / length_per_rev
+        angles = 2. * np.pi * num_revs
 
-        motor_cmds['sw'] = delta_angles[0, 0]
-        motor_cmds['se'] = delta_angles[1, 0]
-        motor_cmds['nw'] = delta_angles[0, 1]
-        motor_cmds['ne'] = delta_angles[1, 1]
+        motor_cmds['sw'] = angles[0, 0]
+        motor_cmds['se'] = angles[1, 0]
+        motor_cmds['nw'] = angles[0, 1]
+        motor_cmds['ne'] = angles[1, 1]
 
-        logger.debug(f'Motor commands: {motor_cmds}\nDelta lengths:{delta_lengths}')
+        logger.debug(f'Motor commands: {motor_cmds}')
         
         packet = {'algorithm':
             {
                 'Local Time (s)': time.time(),
                 'Position Command (m)' : pos_cmd,
-                'Motor Delta Angle Command (rad)' : delta_angles.flatten(),
+                'Motor Angle Command (rad)' : angles.flatten(),
             }
         }
         self.tm_queue.put(packet)

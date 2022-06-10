@@ -385,6 +385,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#functions" class="md-nav__link">
     Functions
   </a>
@@ -434,11 +441,11 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dummysteppermotor" class="md-nav__link">
-    DummyStepperMotor
+  <a href="#dummyserial" class="md-nav__link">
+    DummySerial
   </a>
   
-    <nav class="md-nav" aria-label="DummyStepperMotor">
+    <nav class="md-nav" aria-label="DummySerial">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -449,15 +456,22 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#onestep" class="md-nav__link">
-    onestep
+  <a href="#close" class="md-nav__link">
+    close
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    release
+  <a href="#readline" class="md-nav__link">
+    readline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write" class="md-nav__link">
+    write
   </a>
   
 </li>
@@ -468,9 +482,43 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#motorkit" class="md-nav__link">
-    MotorKit
+  <a href="#serial" class="md-nav__link">
+    Serial
   </a>
+  
+    <nav class="md-nav" aria-label="Serial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methods_1" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close_1" class="md-nav__link">
+    close
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readline_1" class="md-nav__link">
+    readline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_1" class="md-nav__link">
+    write
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -555,6 +603,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#functions" class="md-nav__link">
     Functions
   </a>
@@ -604,11 +659,11 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dummysteppermotor" class="md-nav__link">
-    DummyStepperMotor
+  <a href="#dummyserial" class="md-nav__link">
+    DummySerial
   </a>
   
-    <nav class="md-nav" aria-label="DummyStepperMotor">
+    <nav class="md-nav" aria-label="DummySerial">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -619,15 +674,22 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#onestep" class="md-nav__link">
-    onestep
+  <a href="#close" class="md-nav__link">
+    close
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    release
+  <a href="#readline" class="md-nav__link">
+    readline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write" class="md-nav__link">
+    write
   </a>
   
 </li>
@@ -638,9 +700,43 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#motorkit" class="md-nav__link">
-    MotorKit
+  <a href="#serial" class="md-nav__link">
+    Serial
   </a>
+  
+    <nav class="md-nav" aria-label="Serial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methods_1" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close_1" class="md-nav__link">
+    close
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readline_1" class="md-nav__link">
+    readline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_1" class="md-nav__link">
+    write
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -673,53 +769,15 @@
 <summary>View Source</summary>
 <div class="codehilite"><pre><span></span><code><span class="c1"># This file abstracts the hardware module imports away and provides contingency</span>
 
-<span class="c1"># modules so dev and testing can be done on a non-rpi machine without hardware</span>
+<span class="c1"># modules so dev and testing can be done on a machine without hardware</span>
 
 <span class="c1"># attached.</span>
 
-<span class="kn">from</span> <span class="nn">adafruit_motor</span> <span class="kn">import</span> <span class="n">stepper</span>
-
 <span class="kn">from</span> <span class="nn">labjack</span> <span class="kn">import</span> <span class="n">ljm</span>
 
-<span class="k">try</span><span class="p">:</span>
+<span class="kn">import</span> <span class="nn">serial</span>
 
-    <span class="kn">from</span> <span class="nn">adafruit_motorkit</span> <span class="kn">import</span> <span class="n">MotorKit</span>
-
-<span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No Adafruit MotorKit module compatibility found at import. Falling back to dummy class for simulation support.&#39;</span><span class="p">)</span>
-
-    <span class="k">class</span> <span class="nc">DummyStepperMotor</span><span class="p">:</span>
-
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-        <span class="k">def</span> <span class="nf">onestep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-        <span class="k">def</span> <span class="nf">release</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-    <span class="c1"># Dummy motorkit</span>
-
-    <span class="k">class</span> <span class="nc">MotorKit</span><span class="p">:</span>
-
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">steppers_microsteps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">pwm_frequency</span><span class="o">=</span><span class="mi">1600</span><span class="p">):</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">address</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">steppers_microsteps</span> <span class="o">=</span> <span class="n">steppers_microsteps</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">pwm_frequency</span> <span class="o">=</span> <span class="n">pwm_frequency</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">stepper1</span> <span class="o">=</span> <span class="n">DummyStepperMotor</span><span class="p">()</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">stepper2</span> <span class="o">=</span> <span class="n">DummyStepperMotor</span><span class="p">()</span>
+<span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
 
 <span class="k">try</span><span class="p">:</span>
 
@@ -748,9 +806,51 @@
     <span class="n">eWriteAddress</span> <span class="o">=</span> <span class="n">dummyEwriteAddress</span>
 
     <span class="n">openS</span> <span class="o">=</span> <span class="n">dummyOpenS</span>
+
+<span class="k">try</span><span class="p">:</span>
+
+    <span class="n">serial_instance</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_TIMEOUT</span><span class="p">)</span>
+
+    <span class="n">Serial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
+
+<span class="k">except</span> <span class="n">serial</span><span class="o">.</span><span class="n">serialutil</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Open constants.py and try another SERIAL_PORT, or connect a device&#39;</span>
+
+        <span class="o">+</span> <span class="s1">&#39; to the serial port.&#39;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Continuing with dummy serial port.&#39;</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">DummySerial</span><span class="p">:</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="k">pass</span>
+
+        <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+
+            <span class="k">pass</span>
+
+        <span class="k">def</span> <span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+
+        <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="k">pass</span>
+
+    <span class="n">serial_instance</span> <span class="o">=</span> <span class="n">DummySerial</span><span class="p">()</span>
+
+    <span class="n">Serial</span> <span class="o">=</span> <span class="n">DummySerial</span>
 </code></pre></div>
 
 </details>
+<h2 id="variables">Variables</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">serial_instance</span>
+</code></pre></div>
+
 <h2 id="functions">Functions</h2>
 <h3 id="dummyewriteaddress">dummyEwriteAddress</h3>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">dummyEwriteAddress</span><span class="p">(</span>
@@ -817,25 +917,29 @@
 
 </details>
 <h2 id="classes">Classes</h2>
-<h3 id="dummysteppermotor">DummyStepperMotor</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">DummyStepperMotor</span><span class="p">(</span>
+<h3 id="dummyserial">DummySerial</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">DummySerial</span><span class="p">(</span>
 
 <span class="p">)</span>
 </code></pre></div>
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="k">class</span> <span class="n">DummyStepperMotor:</span>
+<div class="codehilite"><pre><span></span><code>    <span class="k">class</span> <span class="n">DummySerial:</span>
 
         <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>):
 
             <span class="nb">pass</span>
 
-        <span class="n">def</span> <span class="n">onestep</span>(<span class="nb">self</span>, <span class="n">direction</span>=<span class="mi">1</span>, <span class="n">style</span>=<span class="mi">1</span>):
+        <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
 
             <span class="nb">pass</span>
 
-        <span class="n">def</span> <span class="nb">release</span>(<span class="nb">self</span>):
+        <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
+
+            <span class="k">return</span> <span class="n">b&#39;&#39;</span>
+
+        <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
 
             <span class="nb">pass</span>
 </code></pre></div>
@@ -843,63 +947,122 @@
 </details>
 <hr />
 <h4 id="methods">Methods</h4>
-<h4 id="onestep">onestep</h4>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">onestep</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">direction</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">style</span><span class="o">=</span><span class="mi">1</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        def onestep(self, direction=1, style=1):
-
-            pass
-</code></pre></div>
-
-</details>
-<h4 id="release">release</h4>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">release</span><span class="p">(</span>
+<h4 id="close">close</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span>
     <span class="bp">self</span>
 <span class="p">)</span>
 </code></pre></div>
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        def release(self):
+<div class="codehilite"><pre><span></span><code>        def close(self):
 
             pass
 </code></pre></div>
 
 </details>
-<h3 id="motorkit">MotorKit</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MotorKit</span><span class="p">(</span>
-    <span class="n">address</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">steppers_microsteps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">pwm_frequency</span><span class="o">=</span><span class="mi">1600</span>
+<h4 id="readline">readline</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">readline</span><span class="p">(</span>
+    <span class="bp">self</span>
 <span class="p">)</span>
 </code></pre></div>
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="k">class</span> <span class="n">MotorKit:</span>
+<div class="codehilite"><pre><span></span><code>        <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
 
-        <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>, <span class="n">address</span>=<span class="mh">0x0</span>, <span class="n">steppers_microsteps</span>=<span class="mi">1</span>, <span class="n">pwm_frequency</span>=<span class="mi">1600</span>):
+            <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
+</code></pre></div>
 
-            <span class="nb">self</span>.<span class="n">address</span> = <span class="n">address</span>
+</details>
+<h4 id="write">write</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="nb">bytes</span>
+<span class="p">)</span>
+</code></pre></div>
 
-            <span class="nb">self</span>.<span class="n">steppers_microsteps</span> = <span class="n">steppers_microsteps</span>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>        def write(self, bytes):
 
-            <span class="nb">self</span>.<span class="n">pwm_frequency</span> = <span class="n">pwm_frequency</span>
+            pass
+</code></pre></div>
 
-            <span class="nb">self</span>.<span class="n">stepper1</span> = <span class="n">DummyStepperMotor</span>()
+</details>
+<h3 id="serial">Serial</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Serial</span><span class="p">(</span>
 
-            <span class="nb">self</span>.<span class="n">stepper2</span> = <span class="n">DummyStepperMotor</span>()
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    <span class="k">class</span> <span class="n">DummySerial:</span>
+
+        <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>):
+
+            <span class="nb">pass</span>
+
+        <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
+
+            <span class="nb">pass</span>
+
+        <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
+
+            <span class="k">return</span> <span class="n">b&#39;&#39;</span>
+
+        <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
+
+            <span class="nb">pass</span>
 </code></pre></div>
 
 </details>
 <hr />
+<h4 id="methods_1">Methods</h4>
+<h4 id="close_1">close</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>        def close(self):
+
+            pass
+</code></pre></div>
+
+</details>
+<h4 id="readline_1">readline</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">readline</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>        <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
+
+            <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
+</code></pre></div>
+
+</details>
+<h4 id="write_1">write</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="nb">bytes</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>        def write(self, bytes):
+
+            pass
+</code></pre></div>
+
+</details>
                 
               
               

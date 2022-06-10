@@ -386,8 +386,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#all_steppers" class="md-nav__link">
-    all_steppers
+  <a href="#all_steppers_ez" class="md-nav__link">
+    all_steppers_ez
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bump_hard_stop" class="md-nav__link">
+    bump_hard_stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ezstepper_check_ready" class="md-nav__link">
+    ezstepper_check_ready
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ezstepper_check_status" class="md-nav__link">
+    ezstepper_check_status
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ezstepper_write" class="md-nav__link">
+    ezstepper_write
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_encoder_pos" class="md-nav__link">
+    get_encoder_pos
   </a>
   
 </li>
@@ -416,6 +451,13 @@
           <li class="md-nav__item">
   <a href="#try_open" class="md-nav__link">
     try_open
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wait_for_ready" class="md-nav__link">
+    wait_for_ready
   </a>
   
 </li>
@@ -537,8 +579,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#all_steppers" class="md-nav__link">
-    all_steppers
+  <a href="#all_steppers_ez" class="md-nav__link">
+    all_steppers_ez
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bump_hard_stop" class="md-nav__link">
+    bump_hard_stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ezstepper_check_ready" class="md-nav__link">
+    ezstepper_check_ready
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ezstepper_check_status" class="md-nav__link">
+    ezstepper_check_status
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ezstepper_write" class="md-nav__link">
+    ezstepper_write
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_encoder_pos" class="md-nav__link">
+    get_encoder_pos
   </a>
   
 </li>
@@ -567,6 +644,13 @@
           <li class="md-nav__item">
   <a href="#try_open" class="md-nav__link">
     try_open
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wait_for_ready" class="md-nav__link">
+    wait_for_ready
   </a>
   
 </li>
@@ -611,6 +695,8 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
+
 <span class="kn">import</span> <span class="nn">threading</span>
 
 <span class="kn">import</span> <span class="nn">time</span>
@@ -619,17 +705,17 @@
 
 <span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
 
-<span class="kn">from</span> <span class="nn">hotspot.hw_context</span> <span class="kn">import</span> <span class="n">stepper</span><span class="p">,</span> <span class="n">openS</span><span class="p">,</span> <span class="n">eWriteAddress</span>
+<span class="kn">from</span> <span class="nn">hotspot.hw_context</span> <span class="kn">import</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">openS</span><span class="p">,</span> <span class="n">eWriteAddress</span>
 
 <span class="c1"># Conventions:</span>
 
-<span class="c1"># - positive steps/angular rates (stepper.FORWARD) spin the motor shaft</span>
+<span class="c1"># - positive steps/angular rates spin the motor shaft clockwise (CW) when</span>
 
-<span class="c1">#     clockwise (CW) when viewed from the rear.</span>
+<span class="c1">#   viewed from the rear.</span>
 
-<span class="c1"># - negative steps/angular rates (stepper.BACKWARD) spin the motor shaft</span>
+<span class="c1"># - negative steps/angular rates spin the motor shaft counterclockwise (CCW)</span>
 
-<span class="c1">#     counterclockwise (CCW) when viewed from the rear.</span>
+<span class="c1">#   when viewed from the rear.</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -655,115 +741,351 @@
 
 <span class="c1"># -----------------------------------------------------------------------------</span>
 
-<span class="k">def</span> <span class="nf">all_steppers</span><span class="p">(</span><span class="n">steppers</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
+
+    <span class="n">status_good</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
+
+        <span class="n">status</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b0001111</span> <span class="c1"># bits 0-3 form an error code</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">status</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+
+        <span class="n">status_good</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="mi">9</span> <span class="o">==</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Overload Error (Physical system could not keep up with commanded position)&#39;</span><span class="p">)</span>
+
+        <span class="n">status_good</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="mi">15</span> <span class="o">==</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Command overflow (unit was already executing a command when another command was received)&#39;</span><span class="p">)</span>
+
+        <span class="n">status_good</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unrecognized error code </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s1">. Consult EZStepper documentation.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">status_good</span>
+
+<span class="k">def</span> <span class="nf">ezstepper_check_ready</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
 
-<span class="sd">    The number of steps any motor must take on each loop execution can be cast</span>
+<span class="sd">    The EZStepper is ready to accept a new command if the ready bit is set.</span>
 
-<span class="sd">    as a special case of Bresenham&#39;s Line Algorithm, in the pos quadrant only,</span>
+<span class="sd">    &#39;&#39;&#39;</span>
 
-<span class="sd">    with all lines starting at (0, 0).</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b0100000</span><span class="p">)</span>
 
-<span class="sd">    All motors will either step or not according to the algorithm.</span>
+<span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">.5</span><span class="p">):</span>
 
-<span class="sd">    (We are kind of forgoing linear travel speed control here, but we never</span>
+    <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="o">!=</span> <span class="n">address</span><span class="p">:</span>
 
-<span class="sd">    had reliable speed control anyway, because RPI Debian is not a RT OS.)</span>
+        <span class="c1"># only send a new command if ezstepper not busy</span>
+
+        <span class="n">start_busywait</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">ready</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">ready</span> <span class="ow">and</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_busywait</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ready_timeout</span><span class="p">:</span>
+
+            <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">Q</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
+
+                <span class="n">ready</span> <span class="o">=</span> <span class="n">ezstepper_check_ready</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+
+        <span class="c1"># logger.debug(f&#39;Waited {time.time() - start_busywait:.2f} sec for ready signal&#39;)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ready</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;EZStepper </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1"> was not ready in allotted time </span><span class="si">{</span><span class="n">ready_timeout</span><span class="si">}</span><span class="s1"> sec&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span>
+
+<span class="k">def</span> <span class="nf">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">command_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    ser</span>
+
+<span class="sd">        pyserial instance, the port to send bytes over from</span>
+
+<span class="sd">    address</span>
+
+<span class="sd">        str, address of ezstepper</span>
+
+<span class="sd">    command_str</span>
+
+<span class="sd">        string, chars to send over EZStepper bus</span>
+
+<span class="sd">    busy_timeout</span>
+
+<span class="sd">        float, stop trying to wait for busy ezstepper after this time</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span>
+
+    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">command_str</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;EZStepper cmd: </span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">command_str</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)))</span>
+
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+    <span class="n">status_good</span> <span class="o">=</span> <span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;EZStepper response: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">resp</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">resp</span>
+
+<span class="k">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="s1">&#39;?8R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Encoder </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1"> status bad: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">payload</span><span class="p">:</span>
+
+            <span class="n">ticks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Encoder </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1"> didn</span><span class="se">\&#39;</span><span class="s1">t respond.&#39;</span><span class="p">)</span>
+
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ticks</span>
+
+<span class="k">def</span> <span class="nf">bump_hard_stop</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Run the motor backward until it can&#39;t anymore.</span>
 
 <span class="sd">    Parameters</span>
 
 <span class="sd">    ----------</span>
 
-<span class="sd">    steppers</span>
+<span class="sd">    ser</span>
 
-<span class="sd">        iterable of 4x Adafruit MotorKit stepper instances</span>
+<span class="sd">        pyserial instance, the port to send bytes over from</span>
 
-<span class="sd">        (not adafruit_motor.stepper module)</span>
+<span class="sd">    address</span>
 
-<span class="sd">    radians</span>
+<span class="sd">        ezstepper selector switch number to send command to</span>
 
-<span class="sd">        iterable of signed angle to move each stepper (radians)</span>
+<span class="sd">    ticks</span>
+
+<span class="sd">        encoder ticks to move on each trial while searching for hard stop</span>
+
+<span class="sd">    speed</span>
+
+<span class="sd">        encoder ticks per second</span>
+
+<span class="sd">    hold_current (optional)</span>
+
+<span class="sd">        target current, % of 2 A limit for motor when stationary</span>
+
+<span class="sd">    move_current (optional)</span>
+
+<span class="sd">        target current, % of 2 A limit for motor when moving</span>
 
 <span class="sd">    Returns</span>
 
 <span class="sd">    -------</span>
 
-<span class="sd">    steps_taken</span>
+<span class="sd">    prev_ticks</span>
 
-<span class="sd">        iterable of integers reporting the number of steps taken by each</span>
-
-<span class="sd">        stepper</span>
+<span class="sd">        The last encoder position before the hard stop was hit</span>
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="n">style</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">STEPPER_STYLE</span>
+    <span class="n">t_move</span> <span class="o">=</span> <span class="n">ticks</span> <span class="o">/</span> <span class="n">speed</span>
 
-    <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">sign</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span>
+    <span class="n">max_tries</span> <span class="o">=</span> <span class="mi">10000</span>
 
-    <span class="c1"># Perform steps in an order that avoids over-tension to mitigate skipping</span>
+    <span class="n">tries</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="c1"># steps: positive steps first to unwind cable, then negative</span>
+    <span class="n">prev_ticks</span> <span class="o">=</span> <span class="mi">800000</span>
 
-    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">argsort</span><span class="p">(</span><span class="n">directions</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">curr_ticks</span> <span class="o">=</span> <span class="n">prev_ticks</span> <span class="o">-</span> <span class="mi">1</span>
 
-    <span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">directions</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="k">while</span> <span class="p">((</span><span class="n">curr_ticks</span> <span class="o">&lt;</span> <span class="n">prev_ticks</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tries</span> <span class="o">&lt;</span> <span class="n">max_tries</span><span class="p">)):</span>
 
-    <span class="n">radians</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+        <span class="n">prev_ticks</span> <span class="o">=</span> <span class="n">curr_ticks</span>
 
-    <span class="n">steppers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">steppers</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">ezstepper_write</span><span class="p">(</span>
 
-    <span class="n">steps_float</span> <span class="o">=</span> <span class="n">radians</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span>
+            <span class="n">ser</span><span class="p">,</span>
 
-    <span class="c1"># We can detect and correct at the end of each move, using the accumulated</span>
+            <span class="n">address</span><span class="p">,</span>
 
-    <span class="c1"># rounding errors.</span>
+            <span class="p">(</span>
 
-    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">steps_float</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s1">&#39;m</span><span class="si">{</span><span class="n">move_current</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="n">err</span> <span class="o">=</span> <span class="n">steps_float</span> <span class="o">-</span> <span class="n">steps_to_go</span>
+                <span class="sa">f</span><span class="s1">&#39;h</span><span class="si">{</span><span class="n">hold_current</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="n">steps_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s1">&#39;V</span><span class="si">{</span><span class="n">speed</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="n">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">stepper</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+                <span class="sa">f</span><span class="s1">&#39;D</span><span class="si">{</span><span class="n">ticks</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">direction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">directions</span><span class="p">):</span>
+                <span class="s1">&#39;R</span><span class="se">\r\n</span><span class="s1">&#39;</span>
 
-        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="p">)</span>
 
-            <span class="n">stepper_dirs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">stepper</span><span class="o">.</span><span class="n">BACKWARD</span>
+        <span class="p">)</span>
 
-    <span class="c1"># Normalize the slopes of the lines by making the motor that must take</span>
+        <span class="n">curr_ticks</span> <span class="o">=</span> <span class="n">get_encoder_pos</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span>
 
-    <span class="c1"># the most total steps have a slope = 1, or 1 step per loop cycle.</span>
+        <span class="n">tries</span> <span class="o">+=</span> <span class="mi">1</span>
 
-    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">max</span><span class="p">(</span><span class="n">steps_to_go</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">prev_ticks</span>
 
-    <span class="n">dy</span> <span class="o">=</span> <span class="n">steps_to_go</span>
+<span class="k">def</span> <span class="nf">all_steppers_ez</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">addresses</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
-    <span class="n">steps_taken</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+    <span class="sd">&#39;&#39;&#39;</span>
 
-    <span class="n">deltas</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span> <span class="o">-</span> <span class="n">dx</span> <span class="c1"># 2x to allow integer arithmetic</span>
+<span class="sd">    Send serial commands to AllMotion EZHR17EN driver boards.</span>
 
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dx</span><span class="p">):</span>
+<span class="sd">    Driver boards should already be in position-correction mode, so will take</span>
 
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stepper_n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">steppers</span><span class="p">):</span>
+<span class="sd">    encoder ticks as commands. The driver boards handle achieving the requested</span>
 
-            <span class="c1"># decide whether to step or not</span>
+<span class="sd">    absolute position.</span>
 
-            <span class="k">if</span> <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<span class="sd">    Commands in radians are converted to encoder ticks and sent to driver</span>
 
-                <span class="n">stepper_n</span><span class="o">.</span><span class="n">onestep</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">stepper_dirs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="sd">    boards in order, based on their addresses [1,2,3,4].</span>
 
-                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEP_WAIT</span><span class="p">)</span>
+<span class="sd">    Parameters</span>
 
-                <span class="n">steps_taken</span><span class="p">[</span><span class="n">order</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">directions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="sd">    ----------</span>
 
-                <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dx</span>
+<span class="sd">    ser</span>
 
-            <span class="n">deltas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="sd">        pyserial instance, the port to send bytes over from</span>
 
-    <span class="k">return</span> <span class="n">order</span><span class="p">,</span> <span class="n">steps_taken</span><span class="p">,</span> <span class="n">err</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+<span class="sd">    addresses</span>
+
+<span class="sd">        iterable of addresses e.g. [1,2,3,4] to route commands to</span>
+
+<span class="sd">    radians</span>
+
+<span class="sd">        iterable of signed angle to move each stepper to (radians)</span>
+
+<span class="sd">    run (optional)</span>
+
+<span class="sd">        If True, execute EZStepper command queue. If False, add to it.</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    ticks_to_go</span>
+
+<span class="sd">        iterable of integers reporting the number of encoder ticks moved by</span>
+
+<span class="sd">        each stepper</span>
+
+<span class="sd">    err</span>
+
+<span class="sd">        iterable of rounding errors incurred by converting radians to encoder</span>
+
+<span class="sd">        ticks</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># Get the current absolute encoder position</span>
+
+    <span class="n">current_ticks_raw</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_encoder_pos</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">]</span>
+
+    <span class="n">current_ticks</span> <span class="o">=</span> <span class="n">current_ticks_raw</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Current encoder positions before move: </span><span class="si">{</span><span class="n">current_ticks</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Get the final absolute position</span>
+
+    <span class="n">radians</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span>
+
+    <span class="n">ticks_float</span> <span class="o">=</span> <span class="n">radians</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_RAD</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">DEG_PER_STEP</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">STEP_PER_TICK</span>
+
+    <span class="n">ticks_int</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">ticks_float</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">ticks_to_go</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">ticks_float</span> <span class="o">-</span> <span class="n">current_ticks</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">err</span> <span class="o">=</span> <span class="p">(</span><span class="n">ticks_float</span> <span class="o">-</span> <span class="n">current_ticks</span><span class="p">)</span> <span class="o">-</span> <span class="n">ticks_to_go</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Commanded encoder positions: </span><span class="si">{</span><span class="n">ticks_int</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Delta encoder positions: </span><span class="si">{</span><span class="n">ticks_to_go</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">tick_int</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">tick_int</span> <span class="ow">in</span> <span class="n">ticks_int</span><span class="p">]):</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Move command past hard stop detected: </span><span class="si">{</span><span class="n">addresses</span><span class="si">}</span><span class="s1"> : </span><span class="si">{</span><span class="n">ticks_int</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Set the velocity of each motor such that they arrive at the final</span>
+
+    <span class="c1"># position at the same time.</span>
+
+    <span class="c1"># The motor with the longest move moves at the maximum velocity.</span>
+
+    <span class="n">max_ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">ticks_to_go</span><span class="p">))</span>
+
+    <span class="n">t_move</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_ticks</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">MAX_SPEED_TICKS</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
+
+    <span class="n">vels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">abs</span><span class="p">(</span><span class="n">ticks_to_go</span><span class="p">)</span> <span class="o">/</span> <span class="n">t_move</span><span class="p">)</span><span class="o">.</span><span class="kp">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Motor speeds: </span><span class="si">{</span><span class="n">vels</span><span class="si">}</span><span class="s1"> ticks / sec&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ticks_to_go</span><span class="p">)):</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">ticks_to_go</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vels</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+
+            <span class="c1"># Set velocity and command absolute encoder ticks</span>
+
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">ezstepper_write</span><span class="p">(</span>
+
+                <span class="n">ser</span><span class="p">,</span>
+
+                <span class="n">addresses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+
+                <span class="p">(</span>
+
+                    <span class="sa">f</span><span class="s1">&#39;V</span><span class="si">{</span><span class="n">vels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span>
+
+                    <span class="sa">f</span><span class="s1">&#39;A</span><span class="si">{</span><span class="n">ticks_int</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+
+                  <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1">&#39;</span>
+
+                <span class="p">)</span>
+
+            <span class="p">)</span>
+
+    <span class="c1"># Execute buffered move commands for all addresses</span>
+
+    <span class="k">if</span> <span class="n">run</span><span class="p">:</span>
+
+        <span class="n">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ticks_to_go</span><span class="p">,</span> <span class="n">err</span>
 
 <span class="c1"># -----------------------------------------------------------------------------</span>
 
@@ -1015,19 +1337,21 @@
 </code></pre></div>
 
 <h2 id="functions">Functions</h2>
-<h3 id="all_steppers">all_steppers</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">all_steppers</span><span class="p">(</span>
-    <span class="n">steppers</span><span class="p">:</span><span class="nb">list</span><span class="p">,</span>
-    <span class="n">radians</span><span class="p">:</span><span class="nb">list</span>
+<h3 id="all_steppers_ez">all_steppers_ez</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">all_steppers_ez</span><span class="p">(</span>
+    <span class="n">ser</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">hw_context</span><span class="o">.</span><span class="n">DummySerial</span><span class="p">,</span>
+    <span class="n">addresses</span><span class="p">,</span>
+    <span class="n">radians</span><span class="p">:</span><span class="nb">list</span><span class="p">,</span>
+    <span class="n">run</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
 
-<p>The number of steps any motor must take on each loop execution can be cast</p>
-<p>as a special case of Bresenham's Line Algorithm, in the pos quadrant only,
-with all lines starting at (0, 0).
-All motors will either step or not according to the algorithm.
-(We are kind of forgoing linear travel speed control here, but we never
-had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
+<p>Send serial commands to AllMotion EZHR17EN driver boards.</p>
+<p>Driver boards should already be in position-correction mode, so will take
+encoder ticks as commands. The driver boards handle achieving the requested
+absolute position.
+Commands in radians are converted to encoder ticks and sent to driver
+boards in order, based on their addresses [1,2,3,4].</p>
 <p><strong>Parameters:</strong></p>
 <table>
 <thead>
@@ -1040,21 +1364,27 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 </thead>
 <tbody>
 <tr>
-<td>steppers</td>
+<td>ser</td>
 <td>None</td>
-<td>iterable of 4x Adafruit MotorKit stepper instances</td>
-<td></td>
+<td>pyserial instance, the port to send bytes over from</td>
+<td>None</td>
 </tr>
 <tr>
-<td>(not adafruit_motor.stepper module)</td>
+<td>addresses</td>
 <td>None</td>
-<td></td>
-<td></td>
+<td>iterable of addresses e.g. [1,2,3,4] to route commands to</td>
+<td>None</td>
 </tr>
 <tr>
 <td>radians</td>
 <td>None</td>
-<td>iterable of signed angle to move each stepper (radians)</td>
+<td>iterable of signed angle to move each stepper to (radians)</td>
+<td>None</td>
+</tr>
+<tr>
+<td>run (optional)</td>
+<td>None</td>
+<td>If True, execute EZStepper command queue. If False, add to it.</td>
 <td>None</td>
 </tr>
 </tbody>
@@ -1069,126 +1399,466 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
 </thead>
 <tbody>
 <tr>
-<td>steps_taken</td>
-<td>iterable of integers reporting the number of steps taken by each</td>
+<td>ticks_to_go</td>
+<td>iterable of integers reporting the number of encoder ticks moved by</td>
 </tr>
 <tr>
-<td>stepper</td>
+<td>each stepper</td>
 <td></td>
 </tr>
 </tbody>
 </table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="s s-Atom">def</span> <span class="nf">all_steppers</span><span class="p">(</span><span class="nn">steppers</span><span class="p">:</span> <span class="s s-Atom">list</span><span class="p">,</span> <span class="nn">radians</span><span class="p">:</span> <span class="s s-Atom">list</span><span class="p">)</span><span class="s s-Atom">:</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="nl">ser</span><span class="p">:</span><span class="w"> </span><span class="n">Serial</span><span class="p">,</span><span class="w"> </span><span class="n">addresses</span><span class="p">,</span><span class="w"> </span><span class="nf">radians</span><span class="err">:</span><span class="w"> </span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">True</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
-    <span class="s s-Atom">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="s1">&#39;&#39;&#39;</span>
 
-<span class="s s-Atom">    The number of steps any motor must take on each loop execution can be cast</span>
+<span class="s1">    Send serial commands to AllMotion EZHR17EN driver boards.</span>
 
-<span class="s s-Atom">    as a special case of Bresenham&#39;s</span> <span class="nv">Line</span> <span class="nv">Algorithm</span><span class="p">,</span> <span class="s s-Atom">in</span> <span class="s s-Atom">the</span> <span class="s s-Atom">pos</span> <span class="s s-Atom">quadrant</span> <span class="s s-Atom">only</span><span class="p">,</span>
+<span class="s1">    Driver boards should already be in position-correction mode, so will take</span>
 
-    <span class="s s-Atom">with</span> <span class="s s-Atom">all</span> <span class="s s-Atom">lines</span> <span class="s s-Atom">starting</span> <span class="nf">at</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span>
+<span class="s1">    encoder ticks as commands. The driver boards handle achieving the requested</span>
 
-    <span class="nv">All</span> <span class="s s-Atom">motors</span> <span class="s s-Atom">will</span> <span class="s s-Atom">either</span> <span class="s s-Atom">step</span> <span class="s s-Atom">or</span> <span class="o">not</span> <span class="s s-Atom">according</span> <span class="s s-Atom">to</span> <span class="s s-Atom">the</span> <span class="s s-Atom">algorithm</span><span class="p">.</span>
+<span class="s1">    absolute position.</span>
 
-    <span class="p">(</span><span class="nv">We</span> <span class="s s-Atom">are</span> <span class="s s-Atom">kind</span> <span class="s s-Atom">of</span> <span class="s s-Atom">forgoing</span> <span class="s s-Atom">linear</span> <span class="s s-Atom">travel</span> <span class="s s-Atom">speed</span> <span class="s s-Atom">control</span> <span class="s s-Atom">here</span><span class="p">,</span> <span class="s s-Atom">but</span> <span class="s s-Atom">we</span> <span class="s s-Atom">never</span>
+<span class="s1">    Commands in radians are converted to encoder ticks and sent to driver</span>
 
-    <span class="s s-Atom">had</span> <span class="s s-Atom">reliable</span> <span class="s s-Atom">speed</span> <span class="s s-Atom">control</span> <span class="s s-Atom">anyway</span><span class="p">,</span> <span class="s s-Atom">because</span> <span class="nv">RPI</span> <span class="nv">Debian</span> <span class="o">is</span> <span class="o">not</span> <span class="s s-Atom">a</span> <span class="nv">RT</span> <span class="nv">OS</span><span class="p">.)</span>
+<span class="s1">    boards in order, based on their addresses [1,2,3,4].</span>
+
+<span class="s1">    Parameters</span>
+
+<span class="s1">    ----------</span>
+
+<span class="s1">    ser</span>
+
+<span class="s1">        pyserial instance, the port to send bytes over from</span>
+
+<span class="s1">    addresses</span>
+
+<span class="s1">        iterable of addresses e.g. [1,2,3,4] to route commands to</span>
+
+<span class="s1">    radians</span>
+
+<span class="s1">        iterable of signed angle to move each stepper to (radians)</span>
+
+<span class="s1">    run (optional)</span>
+
+<span class="s1">        If True, execute EZStepper command queue. If False, add to it.</span>
+
+<span class="s1">    Returns</span>
+
+<span class="s1">    -------</span>
+
+<span class="s1">    ticks_to_go</span>
+
+<span class="s1">        iterable of integers reporting the number of encoder ticks moved by</span>
+
+<span class="s1">        each stepper</span>
+
+<span class="s1">    err</span>
+
+<span class="s1">        iterable of rounding errors incurred by converting radians to encoder</span>
+
+<span class="s1">        ticks</span>
+
+<span class="s1">    &#39;&#39;&#39;</span><span class="w"></span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="k">Get</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="k">current</span><span class="w"> </span><span class="k">absolute</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">current_ticks_raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">get_encoder_pos(ser, address) for address in addresses</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">current_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_ticks_raw</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Current encoder positions before move: {current_ticks}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="k">Get</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">final</span><span class="w"> </span><span class="k">absolute</span><span class="w"> </span><span class="k">position</span><span class="w"></span>
+
+<span class="w">    </span><span class="nf">radians</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="k">array</span><span class="p">(</span><span class="nf">radians</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">ticks_float</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">radians</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">DEG_PER_RAD</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">DEG_PER_STEP</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">STEP_PER_TICK</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">ticks_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="n">ticks_float</span><span class="p">).</span><span class="n">astype</span><span class="p">(</span><span class="nc">int</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">ticks_to_go</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="n">ticks_float</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">current_ticks</span><span class="p">).</span><span class="n">astype</span><span class="p">(</span><span class="nc">int</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ticks_float</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">current_ticks</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ticks_to_go</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded encoder positions: {ticks_int}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Delta encoder positions: {ticks_to_go}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="ow">any</span><span class="p">(</span><span class="o">[</span><span class="n">tick_int &lt; 0 for tick_int in ticks_int</span><span class="o">]</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Move command past hard stop detected: {addresses} : {ticks_int}&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="k">Set</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">velocity</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="k">each</span><span class="w"> </span><span class="n">motor</span><span class="w"> </span><span class="n">such</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">they</span><span class="w"> </span><span class="n">arrive</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">final</span><span class="w"></span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="k">position</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">same</span><span class="w"> </span><span class="nc">time</span><span class="p">.</span><span class="w"></span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">motor</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">longest</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="n">moves</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">maximum</span><span class="w"> </span><span class="n">velocity</span><span class="p">.</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">max_ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">ticks_to_go</span><span class="p">))</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">t_move</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">max_ticks</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">const</span><span class="p">.</span><span class="n">MAX_SPEED_TICKS</span><span class="p">,</span><span class="w"> </span><span class="mf">1e-9</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">vels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">ticks_to_go</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">t_move</span><span class="p">).</span><span class="n">astype</span><span class="p">(</span><span class="nc">int</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Motor speeds: {vels} ticks / sec&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">ticks_to_go</span><span class="p">))</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ticks_to_go</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">vels</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="k">Set</span><span class="w"> </span><span class="n">velocity</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">command</span><span class="w"> </span><span class="k">absolute</span><span class="w"> </span><span class="n">encoder</span><span class="w"> </span><span class="n">ticks</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ezstepper_write</span><span class="p">(</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">ser</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">addresses</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                </span><span class="p">(</span><span class="w"></span>
+
+<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;V{vels[i]}&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+
+<span class="w">                    </span><span class="n">f</span><span class="s1">&#39;A{ticks_int[i]}&#39;</span><span class="w"></span>
+
+<span class="w">                  </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;\r\n&#39;</span><span class="w"></span>
+
+<span class="w">                </span><span class="p">)</span><span class="w"></span>
+
+<span class="w">            </span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="k">Execute</span><span class="w"> </span><span class="n">buffered</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="n">commands</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="ow">all</span><span class="w"> </span><span class="n">addresses</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nl">run</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;R\r\n&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ticks_to_go</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="w"></span>
+</code></pre></div>
+
+</details>
+<h3 id="bump_hard_stop">bump_hard_stop</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">bump_hard_stop</span><span class="p">(</span>
+    <span class="n">ser</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">hw_context</span><span class="o">.</span><span class="n">DummySerial</span><span class="p">,</span>
+    <span class="n">address</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+    <span class="n">ticks</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+    <span class="n">speed</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+    <span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Run the motor backward until it can't anymore.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ser</td>
+<td>None</td>
+<td>pyserial instance, the port to send bytes over from</td>
+<td>None</td>
+</tr>
+<tr>
+<td>address</td>
+<td>None</td>
+<td>ezstepper selector switch number to send command to</td>
+<td>None</td>
+</tr>
+<tr>
+<td>ticks</td>
+<td>None</td>
+<td>encoder ticks to move on each trial while searching for hard stop</td>
+<td>None</td>
+</tr>
+<tr>
+<td>speed</td>
+<td>None</td>
+<td>encoder ticks per second</td>
+<td>None</td>
+</tr>
+<tr>
+<td>hold_current (optional)</td>
+<td>None</td>
+<td>target current, % of 2 A limit for motor when stationary</td>
+<td>None</td>
+</tr>
+<tr>
+<td>move_current (optional)</td>
+<td>None</td>
+<td>target current, % of 2 A limit for motor when moving</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>prev_ticks</td>
+<td>The last encoder position before the hard stop was hit</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">bump_hard_stop</span><span class="ss">(</span><span class="nv">ser</span>: <span class="nv">Serial</span>, <span class="nv">address</span>: <span class="nv">int</span>, <span class="nv">ticks</span>: <span class="nv">int</span>, <span class="nv">speed</span>: <span class="nv">int</span>, <span class="nv">hold_current</span><span class="o">=</span><span class="mi">50</span>, <span class="nv">move_current</span><span class="o">=</span><span class="mi">50</span><span class="ss">)</span>:
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">Run</span> <span class="nv">the</span> <span class="nv">motor</span> <span class="nv">backward</span> <span class="k">until</span> <span class="nv">it</span> <span class="nv">can</span><span class="s1">&#39;</span><span class="s">t anymore.</span>
 
     <span class="nv">Parameters</span>
 
-    <span class="s s-Atom">----------</span>
+    <span class="o">----------</span>
 
-    <span class="s s-Atom">steppers</span>
+    <span class="nv">ser</span>
 
-        <span class="s s-Atom">iterable</span> <span class="s s-Atom">of</span> <span class="mi">4</span><span class="s s-Atom">x</span> <span class="nv">Adafruit</span> <span class="nv">MotorKit</span> <span class="s s-Atom">stepper</span> <span class="nf">instances</span>
+        <span class="nv">pyserial</span> <span class="nv">instance</span>, <span class="nv">the</span> <span class="nv">port</span> <span class="nv">to</span> <span class="k">send</span> <span class="nv">bytes</span> <span class="nv">over</span> <span class="nv">from</span>
 
-        <span class="p">(</span><span class="o">not</span> <span class="s s-Atom">adafruit_motor</span><span class="p">.</span><span class="s s-Atom">stepper</span> <span class="s s-Atom">module</span><span class="p">)</span>
+    <span class="nv">address</span>
 
-    <span class="s s-Atom">radians</span>
+        <span class="nv">ezstepper</span> <span class="nv">selector</span> <span class="nv">switch</span> <span class="nv">number</span> <span class="nv">to</span> <span class="k">send</span> <span class="nv">command</span> <span class="nv">to</span>
 
-        <span class="s s-Atom">iterable</span> <span class="s s-Atom">of</span> <span class="s s-Atom">signed</span> <span class="s s-Atom">angle</span> <span class="s s-Atom">to</span> <span class="s s-Atom">move</span> <span class="s s-Atom">each</span> <span class="nf">stepper</span> <span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)</span>
+    <span class="nv">ticks</span>
+
+        <span class="nv">encoder</span> <span class="nv">ticks</span> <span class="nv">to</span> <span class="nv">move</span> <span class="nv">on</span> <span class="nv">each</span> <span class="nv">trial</span> <span class="k">while</span> <span class="nv">searching</span> <span class="k">for</span> <span class="nv">hard</span> <span class="nv">stop</span>
+
+    <span class="nv">speed</span>
+
+        <span class="nv">encoder</span> <span class="nv">ticks</span> <span class="nv">per</span> <span class="nv">second</span>
+
+    <span class="nv">hold_current</span> <span class="ss">(</span><span class="nv">optional</span><span class="ss">)</span>
+
+        <span class="nv">target</span> <span class="nv">current</span>, <span class="o">%</span> <span class="nv">of</span> <span class="mi">2</span> <span class="nv">A</span> <span class="nv">limit</span> <span class="k">for</span> <span class="nv">motor</span> <span class="nv">when</span> <span class="nv">stationary</span>
+
+    <span class="nv">move_current</span> <span class="ss">(</span><span class="nv">optional</span><span class="ss">)</span>
+
+        <span class="nv">target</span> <span class="nv">current</span>, <span class="o">%</span> <span class="nv">of</span> <span class="mi">2</span> <span class="nv">A</span> <span class="nv">limit</span> <span class="k">for</span> <span class="nv">motor</span> <span class="nv">when</span> <span class="nv">moving</span>
 
     <span class="nv">Returns</span>
 
-    <span class="s s-Atom">-------</span>
+    <span class="o">-------</span>
 
-    <span class="s s-Atom">steps_taken</span>
+    <span class="nv">prev_ticks</span>
 
-        <span class="s s-Atom">iterable</span> <span class="s s-Atom">of</span> <span class="s s-Atom">integers</span> <span class="s s-Atom">reporting</span> <span class="s s-Atom">the</span> <span class="s s-Atom">number</span> <span class="s s-Atom">of</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">taken</span> <span class="s s-Atom">by</span> <span class="s s-Atom">each</span>
+        <span class="nv">The</span> <span class="nv">last</span> <span class="nv">encoder</span> <span class="nv">position</span> <span class="nv">before</span> <span class="nv">the</span> <span class="nv">hard</span> <span class="nv">stop</span> <span class="nv">was</span> <span class="nv">hit</span>
 
-        <span class="s s-Atom">stepper</span>
+    <span class="s1">&#39;&#39;&#39;</span>
 
-    <span class="s s-Atom">&#39;&#39;</span><span class="err">&#39;</span>
+    <span class="nv">t_move</span> <span class="o">=</span> <span class="nv">ticks</span> <span class="o">/</span> <span class="nv">speed</span>
 
-    <span class="s s-Atom">style</span> <span class="o">=</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">STEPPER_STYLE</span>
+    <span class="nv">max_tries</span> <span class="o">=</span> <span class="mi">10000</span>
 
-    <span class="s s-Atom">directions</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">sign</span><span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)</span>
+    <span class="nv">tries</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="s s-Atom">#</span> <span class="nv">Perform</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">in</span> <span class="s s-Atom">an</span> <span class="s s-Atom">order</span> <span class="s s-Atom">that</span> <span class="s s-Atom">avoids</span> <span class="s s-Atom">over</span><span class="o">-</span><span class="s s-Atom">tension</span> <span class="s s-Atom">to</span> <span class="s s-Atom">mitigate</span> <span class="s s-Atom">skipping</span>
+    <span class="nv">prev_ticks</span> <span class="o">=</span> <span class="mi">800000</span>
 
-    <span class="s s-Atom">#</span> <span class="nn">steps</span><span class="p">:</span> <span class="s s-Atom">positive</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">first</span> <span class="s s-Atom">to</span> <span class="s s-Atom">unwind</span> <span class="s s-Atom">cable</span><span class="p">,</span> <span class="s s-Atom">then</span> <span class="s s-Atom">negative</span>
+    <span class="nv">curr_ticks</span> <span class="o">=</span> <span class="nv">prev_ticks</span> <span class="o">-</span> <span class="mi">1</span>
 
-    <span class="s s-Atom">order</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">argsort</span><span class="p">(</span><span class="s s-Atom">directions</span><span class="p">)[</span><span class="s s-Atom">::-</span><span class="mi">1</span><span class="p">].</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+    <span class="k">while</span> <span class="ss">((</span><span class="nv">curr_ticks</span> <span class="o">&lt;</span> <span class="nv">prev_ticks</span><span class="ss">)</span> <span class="nv">and</span> <span class="ss">(</span><span class="nv">tries</span> <span class="o">&lt;</span> <span class="nv">max_tries</span><span class="ss">))</span>:
 
-    <span class="s s-Atom">directions</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">directions</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
+        <span class="nv">prev_ticks</span> <span class="o">=</span> <span class="nv">curr_ticks</span>
 
-    <span class="s s-Atom">radians</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">radians</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
+        <span class="nv">resp</span> <span class="o">=</span> <span class="nv">ezstepper_write</span><span class="ss">(</span>
 
-    <span class="s s-Atom">steppers</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="s s-Atom">steppers</span><span class="p">)[</span><span class="s s-Atom">order</span><span class="p">]</span>
+            <span class="nv">ser</span>,
 
-    <span class="s s-Atom">steps_float</span> <span class="o">=</span> <span class="s s-Atom">radians</span> <span class="o">*</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_RAD</span> <span class="o">/</span> <span class="s s-Atom">const</span><span class="p">.</span><span class="nv">DEG_PER_STEP</span>
+            <span class="nv">address</span>,
 
-    <span class="s s-Atom">#</span> <span class="nv">We</span> <span class="s s-Atom">can</span> <span class="s s-Atom">detect</span> <span class="s s-Atom">and</span> <span class="s s-Atom">correct</span> <span class="s s-Atom">at</span> <span class="s s-Atom">the</span> <span class="s s-Atom">end</span> <span class="s s-Atom">of</span> <span class="s s-Atom">each</span> <span class="s s-Atom">move</span><span class="p">,</span> <span class="s s-Atom">using</span> <span class="s s-Atom">the</span> <span class="s s-Atom">accumulated</span>
+            <span class="ss">(</span>
 
-    <span class="s s-Atom">#</span> <span class="s s-Atom">rounding</span> <span class="s s-Atom">errors</span><span class="p">.</span>
+                <span class="nv">f</span><span class="s1">&#39;</span><span class="s">m{move_current}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="s s-Atom">steps_to_go</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">round</span><span class="p">(</span><span class="s s-Atom">steps_float</span><span class="p">).</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+                <span class="nv">f</span><span class="s1">&#39;</span><span class="s">h{hold_current}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="s s-Atom">err</span> <span class="o">=</span> <span class="s s-Atom">steps_float</span> <span class="o">-</span> <span class="s s-Atom">steps_to_go</span>
+                <span class="nv">f</span><span class="s1">&#39;</span><span class="s">V{speed}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="s s-Atom">steps_to_go</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="s s-Atom">steps_to_go</span><span class="p">)</span>
+                <span class="nv">f</span><span class="s1">&#39;</span><span class="s">D{ticks}</span><span class="s1">&#39;</span> <span class="o">+</span>
 
-    <span class="s s-Atom">stepper_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="s s-Atom">stepper</span><span class="p">.</span><span class="nv">FORWARD</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+                <span class="s1">&#39;</span><span class="s">R\r</span><span class="se">\n</span><span class="s1">&#39;</span>
 
-    <span class="s s-Atom">for</span> <span class="s s-Atom">i</span><span class="p">,</span> <span class="s s-Atom">direction</span> <span class="s s-Atom">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="s s-Atom">directions</span><span class="p">)</span><span class="s s-Atom">:</span>
+            <span class="ss">)</span>
 
-        <span class="s s-Atom">if</span> <span class="s s-Atom">direction</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="s s-Atom">:</span>
+        <span class="ss">)</span>
 
-            <span class="s s-Atom">stepper_dirs</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="o">=</span> <span class="s s-Atom">stepper</span><span class="p">.</span><span class="nv">BACKWARD</span>
+        <span class="nv">curr_ticks</span> <span class="o">=</span> <span class="nv">get_encoder_pos</span><span class="ss">(</span><span class="nv">ser</span>, <span class="nv">address</span><span class="ss">)</span>
 
-    <span class="s s-Atom">#</span> <span class="nv">Normalize</span> <span class="s s-Atom">the</span> <span class="s s-Atom">slopes</span> <span class="s s-Atom">of</span> <span class="s s-Atom">the</span> <span class="s s-Atom">lines</span> <span class="s s-Atom">by</span> <span class="s s-Atom">making</span> <span class="s s-Atom">the</span> <span class="s s-Atom">motor</span> <span class="s s-Atom">that</span> <span class="s s-Atom">must</span> <span class="s s-Atom">take</span>
+        <span class="nv">tries</span> <span class="o">+=</span> <span class="mi">1</span>
 
-    <span class="s s-Atom">#</span> <span class="s s-Atom">the</span> <span class="s s-Atom">most</span> <span class="s s-Atom">total</span> <span class="s s-Atom">steps</span> <span class="s s-Atom">have</span> <span class="s s-Atom">a</span> <span class="s s-Atom">slope</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="s s-Atom">or</span> <span class="mi">1</span> <span class="s s-Atom">step</span> <span class="s s-Atom">per</span> <span class="s s-Atom">loop</span> <span class="s s-Atom">cycle</span><span class="p">.</span>
+    <span class="k">return</span> <span class="nv">prev_ticks</span>
+</code></pre></div>
 
-    <span class="s s-Atom">dx</span> <span class="o">=</span> <span class="s s-Atom">np</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="s s-Atom">steps_to_go</span><span class="p">)</span>
+</details>
+<h3 id="ezstepper_check_ready">ezstepper_check_ready</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">ezstepper_check_ready</span><span class="p">(</span>
+    <span class="n">resp</span>
+<span class="p">)</span>
+</code></pre></div>
 
-    <span class="s s-Atom">dy</span> <span class="o">=</span> <span class="s s-Atom">steps_to_go</span>
+<p>The EZStepper is ready to accept a new command if the ready bit is set. </p>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">ezstepper_check_ready</span><span class="ss">(</span><span class="nv">resp</span><span class="ss">)</span>:
 
-    <span class="s s-Atom">steps_taken</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+    <span class="s1">&#39;&#39;&#39;</span>
 
-    <span class="s s-Atom">deltas</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dy</span> <span class="o">-</span> <span class="s s-Atom">dx</span> <span class="s s-Atom">#</span> <span class="mi">2</span><span class="s s-Atom">x</span> <span class="s s-Atom">to</span> <span class="s s-Atom">allow</span> <span class="s s-Atom">integer</span> <span class="s s-Atom">arithmetic</span>
+    <span class="nv">The</span> <span class="nv">EZStepper</span> <span class="nv">is</span> <span class="nv">ready</span> <span class="nv">to</span> <span class="nv">accept</span> <span class="nv">a</span> <span class="nv">new</span> <span class="nv">command</span> <span class="k">if</span> <span class="nv">the</span> <span class="nv">ready</span> <span class="nv">bit</span> <span class="nv">is</span> <span class="nv">set</span>.
 
-    <span class="s s-Atom">for</span> <span class="k">_</span> <span class="s s-Atom">in</span> <span class="nf">range</span><span class="p">(</span><span class="s s-Atom">dx</span><span class="p">)</span><span class="s s-Atom">:</span>
+    <span class="s1">&#39;&#39;&#39;</span>
 
-        <span class="s s-Atom">for</span> <span class="s s-Atom">i</span><span class="p">,</span> <span class="s s-Atom">stepper_n</span> <span class="s s-Atom">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="s s-Atom">steppers</span><span class="p">)</span><span class="s s-Atom">:</span>
+    <span class="k">return</span> <span class="nv">bool</span><span class="ss">(</span><span class="nv">resp</span>[<span class="mi">3</span>] <span class="o">&amp;</span> <span class="mi">0</span><span class="nv">b0100000</span><span class="ss">)</span>
+</code></pre></div>
 
-            <span class="s s-Atom">#</span> <span class="s s-Atom">decide</span> <span class="s s-Atom">whether</span> <span class="s s-Atom">to</span> <span class="s s-Atom">step</span> <span class="s s-Atom">or</span> <span class="o">not</span>
+</details>
+<h3 id="ezstepper_check_status">ezstepper_check_status</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">ezstepper_check_status</span><span class="p">(</span>
+    <span class="n">resp</span>
+<span class="p">)</span>
+</code></pre></div>
 
-            <span class="s s-Atom">if</span> <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="s s-Atom">:</span>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
 
-                <span class="s s-Atom">stepper_n</span><span class="p">.</span><span class="nf">onestep</span><span class="p">(</span><span class="s s-Atom">style</span><span class="o">=</span><span class="s s-Atom">style</span><span class="p">,</span> <span class="s s-Atom">direction</span><span class="o">=</span><span class="s s-Atom">stepper_dirs</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">])</span>
+    <span class="n">status_good</span> <span class="o">=</span> <span class="n">True</span>
 
-                <span class="s s-Atom">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="s s-Atom">const</span><span class="p">.</span><span class="nv">STEP_WAIT</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
 
-                <span class="s s-Atom">steps_taken</span><span class="p">[</span><span class="s s-Atom">order</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]]</span> <span class="s s-Atom">+=</span> <span class="s s-Atom">directions</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">].</span><span class="nf">astype</span><span class="p">(</span><span class="s s-Atom">int</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mi">0</span><span class="n">b0001111</span> <span class="c1"># bits 0-3 form an error code</span>
 
-                <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dx</span>
+    <span class="k">else</span><span class="p">:</span>
 
-            <span class="s s-Atom">deltas</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span> <span class="s s-Atom">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="s s-Atom">dy</span><span class="p">[</span><span class="s s-Atom">i</span><span class="p">]</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
 
-    <span class="s s-Atom">return</span> <span class="s s-Atom">order</span><span class="p">,</span> <span class="s s-Atom">steps_taken</span><span class="p">,</span> <span class="s s-Atom">err</span><span class="p">[</span><span class="s s-Atom">order</span><span class="p">]</span>
+        <span class="n">status_good</span> <span class="o">=</span> <span class="n">False</span>
+
+    <span class="k">if</span> <span class="mi">9</span> <span class="o">==</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Overload Error (Physical system could not keep up with commanded position)&#39;</span><span class="p">)</span>
+
+        <span class="n">status_good</span> <span class="o">=</span> <span class="n">False</span>
+
+    <span class="k">if</span> <span class="mi">15</span> <span class="o">==</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Command overflow (unit was already executing a command when another command was received)&#39;</span><span class="p">)</span>
+
+        <span class="n">status_good</span> <span class="o">=</span> <span class="n">False</span>
+
+    <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unrecognized error code {status}. Consult EZStepper documentation.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">status_good</span>
+</code></pre></div>
+
+</details>
+<h3 id="ezstepper_write">ezstepper_write</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">ezstepper_write</span><span class="p">(</span>
+    <span class="n">ser</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">hw_context</span><span class="o">.</span><span class="n">DummySerial</span><span class="p">,</span>
+    <span class="n">address</span><span class="p">,</span>
+    <span class="n">command_str</span><span class="p">:</span><span class="nb">str</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>ser</p>
+<p>pyserial instance, the port to send bytes over from
+address
+    str, address of ezstepper
+command_str
+    string, chars to send over EZStepper bus
+busy_timeout
+    float, stop trying to wait for busy ezstepper after this time</p>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">ser</span>: <span class="nv">Serial</span>, <span class="nv">address</span>, <span class="nv">command_str</span>: <span class="nv">str</span><span class="ss">)</span>:
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">ser</span>
+
+        <span class="nv">pyserial</span> <span class="nv">instance</span>, <span class="nv">the</span> <span class="nv">port</span> <span class="nv">to</span> <span class="k">send</span> <span class="nv">bytes</span> <span class="nv">over</span> <span class="nv">from</span>
+
+    <span class="nv">address</span>
+
+        <span class="nv">str</span>, <span class="nv">address</span> <span class="nv">of</span> <span class="nv">ezstepper</span>
+
+    <span class="nv">command_str</span>
+
+        <span class="nv">string</span>, <span class="nv">chars</span> <span class="nv">to</span> <span class="k">send</span> <span class="nv">over</span> <span class="nv">EZStepper</span> <span class="nv">bus</span>
+
+    <span class="nv">busy_timeout</span>
+
+        <span class="nv">float</span>, <span class="nv">stop</span> <span class="nv">trying</span> <span class="nv">to</span> <span class="k">wait</span> <span class="k">for</span> <span class="nv">busy</span> <span class="nv">ezstepper</span> <span class="nv">after</span> <span class="nv">this</span> <span class="nv">time</span>
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">wait_for_ready</span><span class="ss">(</span><span class="nv">ser</span>, <span class="nv">address</span><span class="ss">)</span>
+
+    <span class="nv">ser</span>.<span class="nv">write</span><span class="ss">((</span><span class="nv">f</span><span class="s1">&#39;</span><span class="s">/{address}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="nv">command_str</span><span class="ss">)</span>.<span class="nv">encode</span><span class="ss">())</span>
+
+    <span class="nv">logger</span>.<span class="nv">debug</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">EZStepper cmd: {}{}</span><span class="s1">&#39;</span>.<span class="nv">format</span><span class="ss">(</span><span class="nv">address</span>, <span class="nv">command_str</span>.<span class="nv">rstrip</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)))</span>
+
+    <span class="nv">resp</span> <span class="o">=</span> <span class="nv">ser</span>.<span class="nv">readline</span><span class="ss">()</span>
+
+    <span class="nv">status_good</span> <span class="o">=</span> <span class="nv">ezstepper_check_status</span><span class="ss">(</span><span class="nv">resp</span><span class="ss">)</span>
+
+    <span class="nv">logger</span>.<span class="nv">debug</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">EZStepper response: {}</span><span class="s1">&#39;</span>.<span class="nv">format</span><span class="ss">(</span><span class="nv">resp</span>.<span class="nv">rstrip</span><span class="ss">(</span><span class="nv">b</span><span class="s1">&#39;</span><span class="s">\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)))</span>
+
+    <span class="k">return</span> <span class="nv">resp</span>
+</code></pre></div>
+
+</details>
+<h3 id="get_encoder_pos">get_encoder_pos</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span>
+    <span class="n">ser</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">hw_context</span><span class="o">.</span><span class="n">DummySerial</span><span class="p">,</span>
+    <span class="n">address</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="s s-Atom">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span><span class="nn">ser</span><span class="p">:</span> <span class="nv">Serial</span><span class="p">,</span> <span class="s s-Atom">address</span><span class="p">)</span><span class="s s-Atom">:</span>
+
+    <span class="s s-Atom">resp</span> <span class="o">=</span> <span class="nf">ezstepper_write</span><span class="p">(</span><span class="s s-Atom">ser</span><span class="p">,</span> <span class="s s-Atom">address</span><span class="p">,</span> <span class="s s-Atom">&#39;?8R\r\n&#39;</span><span class="p">)</span>
+
+    <span class="s s-Atom">if</span> <span class="o">not</span> <span class="nf">ezstepper_check_status</span><span class="p">(</span><span class="s s-Atom">resp</span><span class="p">)</span><span class="s s-Atom">:</span>
+
+        <span class="s s-Atom">logger</span><span class="p">.</span><span class="nf">critical</span><span class="p">(</span><span class="s s-Atom">f&#39;Encoder {address} status bad: {resp}.&#39;</span><span class="p">)</span>
+
+        <span class="s s-Atom">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="nn">else</span><span class="p">:</span>
+
+        <span class="s s-Atom">payload</span> <span class="o">=</span> <span class="s s-Atom">resp</span><span class="p">[</span><span class="mi">4</span><span class="p">:-</span><span class="mi">3</span><span class="p">]</span>
+
+        <span class="s s-Atom">if</span> <span class="nn">payload</span><span class="p">:</span>
+
+            <span class="s s-Atom">ticks</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="s s-Atom">payload</span><span class="p">.</span><span class="nf">decode</span><span class="p">(</span><span class="s s-Atom">&#39;utf-8&#39;</span><span class="p">))</span>
+
+        <span class="nn">else</span><span class="p">:</span>
+
+            <span class="s s-Atom">logger</span><span class="p">.</span><span class="nf">critical</span><span class="p">(</span><span class="s s-Atom">f&#39;Encoder {address} didn\&#39;t</span> <span class="s s-Atom">respond</span><span class="p">.</span><span class="err">&#39;</span><span class="p">)</span>
+
+            <span class="s s-Atom">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="s s-Atom">return</span> <span class="s s-Atom">ticks</span>
 </code></pre></div>
 
 </details>
@@ -1521,6 +2191,46 @@ had reliable speed control anyway, because RPI Debian is not a RT OS.)</p>
             <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
 
     <span class="k">return</span> <span class="nv">name</span>
+</code></pre></div>
+
+</details>
+<h3 id="wait_for_ready">wait_for_ready</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span>
+    <span class="n">ser</span><span class="p">,</span>
+    <span class="n">address</span><span class="p">,</span>
+    <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=.</span><span class="mi">5</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="o">!=</span> <span class="n">address</span><span class="p">:</span>
+
+        <span class="c1"># only send a new command if ezstepper not busy</span>
+
+        <span class="n">start_busywait</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">ready</span> <span class="o">=</span> <span class="n">False</span>
+
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">ready</span> <span class="ow">and</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_busywait</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ready_timeout</span><span class="p">:</span>
+
+            <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="n">f</span><span class="s1">&#39;/{address}Q</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
+
+                <span class="n">ready</span> <span class="o">=</span> <span class="n">ezstepper_check_ready</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+
+        <span class="c1"># logger.debug(f&#39;Waited {time.time() - start_busywait:.2f} sec for ready signal&#39;)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ready</span><span class="p">:</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;EZStepper {address} was not ready in allotted time {ready_timeout} sec&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span>
 </code></pre></div>
 
 </details>

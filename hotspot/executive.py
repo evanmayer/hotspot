@@ -9,8 +9,7 @@ import sys
 import threading
 import time
 
-from hotspot.hw_context import MotorKit
-from hotspot.hw_context import stepper
+from hotspot.hw_context import serial_instance
 import hotspot.algorithm as alg
 import hotspot.constants as const
 import hotspot.hardware as hw
@@ -19,9 +18,9 @@ import hotspot.telemetry as tm
 
 logger = logging.getLogger(__name__)
 
-MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT', 'b': 'BLINK'}
+MODES = {'c': 'CAL_HOME', 'h': 'HOME', 'r': 'RUN', 's': 'SEL', 'w': 'WAIT', 'b': 'BLINK'}
 HR = '-' * 80
-MENU_STR = HR + f'\nListening for user input for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
+MENU_STR = HR + f'\nListening for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
 
 
 class Executive:
@@ -74,35 +73,42 @@ class Executive:
         raft = alg.Raft((0,0), w, h)
         self.robot = alg.Robot(surf, raft, self.tm_queue)
 
-        if const.STEPPER_STYLE in [stepper.SINGLE, stepper.DOUBLE]:
-            assert const.MICROSTEP_NUM == 1, 'const.MICROSTEP_NUM multiplier must be 1 for single- or double-stepping mode.'
-            kit0 = MotorKit(address=const.HAT_0_ADDR, pwm_frequency=const.PWM_FREQ)
-            kit1 = MotorKit(address=const.HAT_1_ADDR, pwm_frequency=const.PWM_FREQ)
-        else:
-            if const.STEPPER_STYLE == stepper.INTERLEAVE:
-                assert const.MICROSTEP_NUM == 2, 'const.MICROSTEP_NUM multiplier must be 2 for interleaved stepping mode.'
-            kit0 = MotorKit(address=const.HAT_0_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-            kit1 = MotorKit(address=const.HAT_1_ADDR, steppers_microsteps=const.MICROSTEP_NUM, pwm_frequency=const.PWM_FREQ)
-        # This mapping should match the physical setup. kit0 is closest to the
-        # parent board, kit1 is on top. stepper1 is terminals M1+M2, stepper2
-        # is terminals M3+M4
+        # Talk to EZSteppers over RS485.
+        self.ser = serial_instance
+        # This mapping should match the physical setup. Match the corner eyelet
+        # location to the address selector pot on the EZStepper driver board.
         self.steppers = {
-            'sw': kit1.stepper1,
-            'ne': kit0.stepper2,
-            'nw': kit0.stepper1,
-            'se': kit1.stepper2
+            'nw': 2,
+            'ne': 1,
+            'se': 4,
+            'sw': 3
         }
 
-        # Keep track of total steps taken post-homing. Closed loop paths
-        # should maintain ~0 net steps.
-        self.stepper_net_steps = np.array([0] * 4)
-        # Keep track of rounding errors in steps to correct them as they
-        # accumulate
-        self.net_step_error = np.array([0.] * 4)
+        # terminate all running commands
+        resp = hw.ezstepper_write(self.ser, '_', 'T\r\n')
+        for address in self.steppers.keys():
+            # initialize driver settings
+            resp = hw.ezstepper_write(
+                self.ser,
+                self.steppers[address],
+                (
+                    'n0' + # clear any special modes
+                    'm50' + # set move current limit to 50% = 1 A
+                    'h50' + # set hold current limit to 50% = 1 A
+                    'L250' + # acceleration factor
+                    'aC200' + # encoder coarse correction deadband, ticks
+                    'ac5' + # encoder fine correction deadband, ticks
+                    # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
+                    'aE1280' + # 1280 = 1000 * (256 * 200) / 40000
+                    'au1' + # number of retries allowed under stall condition
+                    'z400000' + # set encoder zero point
+                    'n8' + # enable encoder feedback mode
+                    'R\r\n'
+                )
+            )
 
         self.lj_instance = hw.try_open(hw.MODEL_NAME, hw.MODE)
         hw.spawn_all_threads_off(self.lj_instance)
-
         return
 
 
@@ -118,7 +124,7 @@ class Executive:
             switching
         '''
         while True:
-            queue.put(sys.stdin.read(1))
+            queue.put(input())
 
 
     def add_cmds(self, fname: str):
@@ -201,15 +207,15 @@ class Executive:
                     if 'c' == kbd_in:
                         logger.info('Home calibration requested.')
                         self.mode = 'CAL_HOME'
-                    elif 'i' == kbd_in:
-                        logger.info('Home position override requested.')
-                        self.mode = 'INPUT_HOME'
                     elif 'h' == kbd_in:
                         logger.info('Moving to home requested.')
                         self.mode = 'HOME'
-                    elif 's' == kbd_in:
+                    elif 'r' == kbd_in:
                         logger.info('Sequence run requested.')
-                        self.mode = 'SEQ'
+                        self.mode = 'RUN'
+                    elif 's' == kbd_in:
+                        logger.info('Select sequence requested.')
+                        self.mode = 'SEL'
                     elif 'w' == kbd_in:
                         logger.info('Wait mode requested.')
                         self.mode = 'WAIT'
@@ -220,10 +226,6 @@ class Executive:
                         continue
 
                 if self.mode == 'CAL_HOME':
-                    self.cal_home_auto()
-                    self.mode = 'WAIT'
-                    print(MENU_STR)
-                elif self.mode == 'INPUT_HOME':
                     self.cal_home()
                     self.mode = 'WAIT'
                     print(MENU_STR)
@@ -231,8 +233,12 @@ class Executive:
                     self.go_home()
                     self.mode = 'WAIT'
                     print(MENU_STR)
-                elif self.mode == 'SEQ':
+                elif self.mode == 'RUN':
                     self.sequence(fname)
+                elif self.mode == 'SEL':
+                    fname = self.get_new_sequence()
+                    self.mode = 'WAIT'
+                    print(MENU_STR)
                 elif self.mode == 'WAIT':
                     self.wait()
                 elif self.mode == 'BLINK':
@@ -247,104 +253,6 @@ class Executive:
                 print('\nCaught KeyboardInterrupt, shutting down.')
                 running = False
         self.close()
-        return
-
-
-    def cal_home(self):
-        '''
-        Ask the user to input the current position of the center of the raft to
-        store it as the home position.
-        '''
-        print('Where is home? Input the current position, in meters, of'
-            + ' the raft centroid relative to the mirror origin, then press'
-            + ' ENTER to store it as home.')
-        x = float(input('x-coord: '))
-        y = float(input('y-coord: '))
-        pos = (x, y)
-        self.robot.home = pos
-        self.robot.raft.position = pos
-        logger.info(f'Home position set: {self.robot.home}')
-        return
-
-
-    def cal_home_auto(self):
-        '''
-        Moves motors to limits to calibrate the stepper positions.
-
-        First moves to NW limit, then retracts cable from each other stepper
-        until we can be sure all lines are taut. Updates the raft centroid
-        position according to offsets in constants.py which depend on the
-        (repeatable) position the raft ends up in when it reaches the NW limit.
-
-        Assumptions:
-        - All cables are slack, but without excessive cable played out.
-        - Hawkeye signaling wires protrude from the S side of the raft,
-            preventing us from choosing SW or SE as limit finding locations.
-        - Corners form a rectangle.
-        - Stepper torque is sufficient to hold the raft once at NW while SW,
-            SE, NE retract.
-        '''
-        # All motors must be released before starting, to NE, SE, SW don't
-        # inhibit motion
-        [self.steppers[key].release() for key in self.steppers.keys()]
-
-        # The total available cable length should be sized so that the raft
-        # can just reach all corners of the workspace at the maximum eyelet
-        # separation of 0.6177 m (accommodates ~25.5" mirror K2).
-        max_length = np.linalg.norm(
-            [
-                self.robot.surf.sw + np.array([0., 0.715]), # meas. fully extended cable
-                self.robot.surf.se
-            ]
-        )
-        # Worst case, about how far would we have to move before hitting NW?
-        max_radians = max_length / const.PULLEY_RADIUS
-        # valid for single or double steps
-        max_steps = np.round(np.abs(max_radians) * const.DEG_PER_RAD / (360. / 200. / 1)).astype(int)
-        num_steps = max(1, max_steps // 2)
-        logger.info('Homing to NW')
-        report_interval = 100
-        i = num_steps
-        while i > 0:
-            self.steppers['nw'].onestep(style=stepper.DOUBLE, direction=stepper.BACKWARD)
-            time.sleep(const.STEP_WAIT)
-            i -= 1
-            if not i % report_interval:
-                progress = 100. * (num_steps - i) / num_steps
-                logger.info(f'Progress: {progress:.2f} %')
-
-        logger.info('Retracting cables to tension NE, SE, SW')
-        i = num_steps // 4
-        while i > 0:
-            self.steppers['ne'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            time.sleep(const.STEP_WAIT)
-            self.steppers['se'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            time.sleep(const.STEP_WAIT)
-            self.steppers['sw'].onestep(style=stepper.MICROSTEP, direction=stepper.BACKWARD)
-            time.sleep(const.STEP_WAIT)
-            i -= 1
-            if not i % report_interval:
-                progress = 100. * (num_steps - i) / num_steps
-                logger.info(f'Progress: {progress:.2f} %')
-
-        # Adjust home position
-        pos = self.robot.surf.nw + np.array((const.HOMING_OFFSET_X, const.HOMING_OFFSET_Y))
-        self.robot.raft.position = pos
-        self.robot.home = pos
-
-        logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
-        logger.warning('Verify that the raft has been driven to one of its limits and all cables are taut. If not, request CAL_HOME again.')
-
-        packet = {'algorithm':
-            {
-                'Local Time (s)': time.time(),
-                'Position Command (m)' : pos,
-                'Motor Delta Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
-                'Angle Correction Due to Spool Radius (rad)' : np.array([0.] * len(self.steppers.keys()))
-            }
-        }
-        self.tm_queue.put(packet)
-        self.router.process_tm(plot_enable=self.plot_enable)
         return
 
 
@@ -365,6 +273,117 @@ class Executive:
             logger.info(f'Home.')
         else:
             logger.info('Already home, nothing to do.')
+        return
+
+
+    def cal_home(self):
+        '''
+        Moves motors to limits to calibrate the stepper positions.
+
+        In turn, move each motor to its hard stop and record the encoder position.
+
+        Assumptions:
+        - All cables are slack, but without excessive cable played out.
+        - Corners form a rectangle.
+        '''
+         # ought to be smaller than distance stepper bounced back after hitting hard stop
+        coarse_ticks = 5000
+        coarse_homing_speed = 80000
+        fine_ticks = 500
+        fine_homing_speed = coarse_homing_speed
+        # sets the final zero-point length error for each axis
+        ultra_fine_ticks = 5
+        ultra_fine_homing_speed = coarse_homing_speed
+
+        # Home each axis
+        [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()]
+        axes = ['nw', 'ne', 'se', 'sw']
+        for current_axis in axes:
+            logger.info(f'Homing to {current_axis}')
+            # turn off current to axes not being homed
+            resp = hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
+            resp = hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
+
+            logger.info('Coarse homing against hard stop.')
+            hw.bump_hard_stop(
+                self.ser,
+                self.steppers[current_axis],
+                coarse_ticks,
+                coarse_homing_speed,
+                move_current=50,
+                hold_current=50
+            )
+            logger.info('Fine homing against hard stop.')
+            hw.bump_hard_stop(
+                self.ser,
+                self.steppers[current_axis],
+                fine_ticks,
+                fine_homing_speed,
+                move_current=50,
+                hold_current=10
+            )
+            logger.info('Ultra-fine homing against hard stop.')
+            hw.bump_hard_stop(
+                self.ser,
+                self.steppers[current_axis],
+                ultra_fine_ticks,
+                ultra_fine_homing_speed,
+                move_current=100,
+                hold_current=10
+            )
+
+            # run to position of hard stop
+            resp = hw.ezstepper_write(
+                self.ser,
+                self.steppers[current_axis],
+                (
+                    'm50' +
+                    'h50' +
+                    f'V{fine_homing_speed}' +
+                    f'D{fine_ticks}' +
+                    'R\r\n'
+                )
+            )
+            # set cable length zero point
+            time.sleep(1)
+            resp = hw.ezstepper_write(self.ser, self.steppers[current_axis], 'z0R\r\n')
+            time.sleep(1)
+            # Check to see that homing operation succeeeded.
+            if hw.get_encoder_pos(self.ser, self.steppers[current_axis]) > 20:
+                logger.critical('Encoder failed to set zero point during homing. Aborting.')
+                sys.exit(1)
+
+        resp = hw.ezstepper_write(self.ser, '_', 'm50R\r\n')
+        resp = hw.ezstepper_write(self.ser, '_', 'h50R\r\n')
+
+        # Update current encoder position (used for velocity calc in move to
+        # home pos)
+        for ax in axes:
+            address = self.steppers[ax]
+            actual_ticks = hw.get_encoder_pos(self.ser, address)
+            hw.ezstepper_write(self.ser, address, f'z{actual_ticks}R\r\n')
+            hw.ezstepper_write(self.ser, address, f'A{actual_ticks}R\r\n')
+
+        self.robot.raft.position = self.robot.surf.sw + np.array([0.1, 0.1])
+        home = (
+            np.mean([self.robot.surf.ne[0], self.robot.surf.sw[0]]),
+            np.mean([self.robot.surf.ne[1], self.robot.surf.sw[1]])
+        )
+        self.robot.home = home
+        self.go_home()
+
+        logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
+        logger.warning('Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.')
+
+        packet = {'algorithm':
+            {
+                'Local Time (s)': time.time(),
+                'Position Command (m)' : home,
+                'Motor Angle Command (rad)' : np.array([0.] * len(self.steppers.keys())),
+            }
+        }
+        self.tm_queue.put(packet)
+        self.router.process_tm(plot_enable=self.plot_enable)
         return
 
 
@@ -397,13 +416,42 @@ class Executive:
             cmd = self.cmd_queue.get()
 
         progress = 100. * (1 + self.sequence_len - num_remaining) / self.sequence_len
-        # Do motor tasks, then LJ tasks in serial, so IR source tasks happen at the end of each move.
+        # Do motor tasks, then LJ tasks, so IR source tasks happen at the end of each move.
         self.do_motor_tasks(cmd)
         self.do_labjack_tasks(cmd)
         logger.info(f'Raft centroid: {self.robot.raft.position}')
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
         self.router.process_tm(plot_enable=self.plot_enable)
         return
+
+
+    def get_new_sequence(self):
+        '''
+        Prompt the user to input the path to a sequence .csv file to run.
+
+        Returns
+        -------
+        fname (str) the filename of the new scan profile to run on next 'r' command
+        '''
+        profile_dir = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles')
+        print(
+            'Please input the path to a new profile .csv file to run. ' +
+            f'Profile sequence files are stored in {profile_dir}.\nHit Enter' +
+            ' for the prompt.'
+        )
+        input_str = input('Type a file path, or type \'l\' for a list: ')
+        if input_str == 'l':
+            print('Options are:')
+            [print(file) for file in os.listdir(profile_dir)]
+            fname = self.get_new_sequence()
+        else:
+            fname = os.path.abspath(os.path.join(profile_dir, input_str))
+            if not os.path.exists(fname):
+                print(f'File {fname} does not exist.')
+                fname = self.get_new_sequence()
+            else:
+                print(f'The next run command (r) will execute this profile: \n{fname}')
+        return fname
 
 
     def wait(self):
@@ -413,6 +461,9 @@ class Executive:
 
 
     def blink(self):
+        '''
+        Blink all sources.
+        '''
         cmd = {}
         cmd['flasher_cmds'] = 4 * [1] + 8 * [0]
         self.do_labjack_tasks(cmd)
@@ -421,7 +472,7 @@ class Executive:
         return
 
 
-    def do_motor_tasks(self, cmd: dict) -> list:
+    def do_motor_tasks(self, cmd: dict):
         '''
         Transform the move command into motor commands
 
@@ -431,44 +482,21 @@ class Executive:
             Command packet dictionary with keys for position commands to pass
             to control algorithm
         '''
-        def send_pos_cmd(cmd_tuple: tuple):
+        def send_pos_cmd(cmd_tuple: tuple, run=True):
             '''
             Helper to send position commands to control algorithm and collect
             results
             '''
-            motor_cmds = self.robot.process_input(cmd_tuple) 
+            motor_cmds = self.robot.process_input(cmd_tuple)
             # bootleg OrderedDict
             keys = ['sw', 'nw', 'ne', 'se']
             angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
-            order, steps_taken, err = hw.all_steppers([self.steppers[key] for key in keys], angs)
-            
-            # Perform corrections for rounding errors
-            self.stepper_net_steps += steps_taken
-            self.net_step_error += err
-            logger.debug(f'Net steps: {self.stepper_net_steps}')
-            logger.debug(f'Net step error incurred by rounding: {self.net_step_error}')
-            for i, step_err in enumerate(self.net_step_error):
-                # If off by more than a step, fix it.
-                if np.abs(step_err) >= 0.5:
-                    steps_to_go = np.round(step_err).astype(int)
-                    logger.debug(f'Correcting {steps_to_go} steps on {keys[i]}')
-                    # correct in the opposite direction of error
-                    self.stepper_net_steps[i] += -steps_to_go
-                    self.net_step_error[i] += -steps_to_go
-                    stepper_dir = stepper.BACKWARD
-                    direction = np.sign(steps_to_go)
-                    if direction == -1:
-                        stepper_dir = stepper.FORWARD
-                    for _ in range(abs(steps_to_go)):
-                        self.steppers[keys[i]].onestep(style=const.STEPPER_STYLE, direction=stepper_dir)
-                        time.sleep(const.STEP_WAIT)
+            ticks_to_go, err = hw.all_steppers_ez(self.ser, [self.steppers[key] for key in keys], angs, run=run)
 
-        # HACK: Linear approximation only holds for small distances, so
-        # chunk up big moves into tiny bits. ECM: This should really probably
-        # happen inside the control algorithm itself, or even better, ditch
-        # the linear approximation and do the math to find out how each motor
-        # should move at each point in the move.
-        MAX_DIST = .015
+        # Linear approximation only holds for small distances, so
+        # chunk up big moves into tiny bits. This ensures all cables stay taut,
+        # even when moving to opposite corners.
+        MAX_DIST = .03
         pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
         dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
@@ -481,16 +509,16 @@ class Executive:
             logger.debug(f'Direction vector: {v}, Unit vector: {u}')
             pos_cmd = pos_before + MAX_DIST * u
             logger.debug(f'Intermediate move: {pos_cmd}')
-            send_pos_cmd(pos_cmd) # alg updates raft position
+            send_pos_cmd(pos_cmd, run=False) # alg updates raft position
             # calculate new dist to go
             pos_before = self.robot.raft.position
             dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        # Signal ezsteppers to run once we've sent all commands for this move
         logger.debug(f'Final move: {pos_after}')
-        send_pos_cmd(pos_after)
+        send_pos_cmd(pos_after, run=True)
 
-        # logger.debug(f'Move cmd: {cmd}')
-        # pos_after = cmd['pos_cmd']
-        # send_pos_cmd(pos_after)
+        # comment above block, uncomment below to not do "chunking" algorithm
+        # send_pos_cmd(cmd['pos_cmd']) 
 
         return
 
@@ -523,5 +551,12 @@ class Executive:
 
 
     def close(self):
-        [self.steppers[key].release() for key in self.steppers.keys()]
+        # Terminate all running commands
+        time.sleep(.1)
+        hw.ezstepper_write(self.ser, '_', 'TR\r\n')
+        # Release torque
+        time.sleep(.1)
+        hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
+        hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
+        self.ser.close()
         return
