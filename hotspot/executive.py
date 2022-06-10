@@ -4,6 +4,7 @@
 import logging
 import multiprocessing as mp
 import numpy as np
+import os
 import sys
 import threading
 import time
@@ -17,9 +18,9 @@ import hotspot.telemetry as tm
 
 logger = logging.getLogger(__name__)
 
-MODES = {'c': 'CAL_HOME', 'h': 'HOME', 's': 'SEQ', 'w': 'WAIT', 'b': 'BLINK'}
+MODES = {'c': 'CAL_HOME', 'h': 'HOME', 'r': 'RUN', 's': 'SEL', 'w': 'WAIT', 'b': 'BLINK'}
 HR = '-' * 80
-MENU_STR = HR + f'\nListening for user input for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
+MENU_STR = HR + f'\nListening for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
 
 
 class Executive:
@@ -94,6 +95,7 @@ class Executive:
                     'n0' + # clear any special modes
                     'm50' + # set move current limit to 50% = 1 A
                     'h50' + # set hold current limit to 50% = 1 A
+                    'L250' + # acceleration factor
                     'aC200' + # encoder coarse correction deadband, ticks
                     'ac5' + # encoder fine correction deadband, ticks
                     # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
@@ -122,7 +124,7 @@ class Executive:
             switching
         '''
         while True:
-            queue.put(sys.stdin.read(1))
+            queue.put(input())
 
 
     def add_cmds(self, fname: str):
@@ -205,15 +207,15 @@ class Executive:
                     if 'c' == kbd_in:
                         logger.info('Home calibration requested.')
                         self.mode = 'CAL_HOME'
-                    elif 'i' == kbd_in:
-                        logger.info('Home position override requested.')
-                        self.mode = 'INPUT_HOME'
                     elif 'h' == kbd_in:
                         logger.info('Moving to home requested.')
                         self.mode = 'HOME'
-                    elif 's' == kbd_in:
+                    elif 'r' == kbd_in:
                         logger.info('Sequence run requested.')
-                        self.mode = 'SEQ'
+                        self.mode = 'RUN'
+                    elif 's' == kbd_in:
+                        logger.info('Select sequence requested.')
+                        self.mode = 'SEL'
                     elif 'w' == kbd_in:
                         logger.info('Wait mode requested.')
                         self.mode = 'WAIT'
@@ -227,16 +229,16 @@ class Executive:
                     self.cal_home()
                     self.mode = 'WAIT'
                     print(MENU_STR)
-                elif self.mode == 'INPUT_HOME':
-                    self.cal_home_manual()
-                    self.mode = 'WAIT'
-                    print(MENU_STR)
                 elif self.mode == 'HOME':
                     self.go_home()
                     self.mode = 'WAIT'
                     print(MENU_STR)
-                elif self.mode == 'SEQ':
+                elif self.mode == 'RUN':
                     self.sequence(fname)
+                elif self.mode == 'SEL':
+                    fname = self.get_new_sequence()
+                    self.mode = 'WAIT'
+                    print(MENU_STR)
                 elif self.mode == 'WAIT':
                     self.wait()
                 elif self.mode == 'BLINK':
@@ -274,23 +276,6 @@ class Executive:
         return
 
 
-    def cal_home_manual(self):
-        '''
-        Ask the user to input the current position of the center of the raft to
-        store it as the home position.
-        '''
-        print('Where is home? Input the current position, in meters, of'
-            + ' the raft centroid relative to the mirror origin, then press'
-            + ' ENTER to store it as home.')
-        x = float(input('x-coord: '))
-        y = float(input('y-coord: '))
-        pos = (x, y)
-        self.robot.home = pos
-        self.robot.raft.position = pos
-        logger.info(f'Home position set: {self.robot.home}')
-        return
-
-
     def cal_home(self):
         '''
         Moves motors to limits to calibrate the stepper positions.
@@ -319,6 +304,7 @@ class Executive:
             resp = hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
             resp = hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
 
+            logger.info('Coarse homing against hard stop.')
             hw.bump_hard_stop(
                 self.ser,
                 self.steppers[current_axis],
@@ -327,6 +313,7 @@ class Executive:
                 move_current=50,
                 hold_current=50
             )
+            logger.info('Fine homing against hard stop.')
             hw.bump_hard_stop(
                 self.ser,
                 self.steppers[current_axis],
@@ -335,6 +322,7 @@ class Executive:
                 move_current=50,
                 hold_current=10
             )
+            logger.info('Ultra-fine homing against hard stop.')
             hw.bump_hard_stop(
                 self.ser,
                 self.steppers[current_axis],
@@ -384,7 +372,6 @@ class Executive:
         self.robot.home = home
         self.go_home()
 
-        print('Achieved encoder pos:', [hw.get_encoder_pos(self.ser, self.steppers[address]) for address in self.steppers.keys()])
         logger.info(f'Raft is homed with centroid position {self.robot.raft.position}')
         logger.warning('Verify that the raft has been driven to the center of the workspace and all cables are taut. If not, request CAL_HOME again.')
 
@@ -438,6 +425,35 @@ class Executive:
         return
 
 
+    def get_new_sequence(self):
+        '''
+        Prompt the user to input the path to a sequence .csv file to run.
+
+        Returns
+        -------
+        fname (str) the filename of the new scan profile to run on next 'r' command
+        '''
+        profile_dir = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles')
+        print(
+            'Please input the path to a new profile .csv file to run. ' +
+            f'Profile sequence files are stored in {profile_dir}.\nHit Enter' +
+            ' for the prompt.'
+        )
+        input_str = input('Type a file path, or type \'l\' for a list: ')
+        if input_str == 'l':
+            print('Options are:')
+            [print(file) for file in os.listdir(profile_dir)]
+            fname = self.get_new_sequence()
+        else:
+            fname = os.path.abspath(os.path.join(profile_dir, input_str))
+            if not os.path.exists(fname):
+                print(f'File {fname} does not exist.')
+                fname = self.get_new_sequence()
+            else:
+                print(f'The next run command (r) will execute this profile: \n{fname}')
+        return fname
+
+
     def wait(self):
         if self.plot_enable:
             self.router.run_gui_event_loop()
@@ -466,7 +482,7 @@ class Executive:
             Command packet dictionary with keys for position commands to pass
             to control algorithm
         '''
-        def send_pos_cmd(cmd_tuple: tuple):
+        def send_pos_cmd(cmd_tuple: tuple, run=True):
             '''
             Helper to send position commands to control algorithm and collect
             results
@@ -475,12 +491,12 @@ class Executive:
             # bootleg OrderedDict
             keys = ['sw', 'nw', 'ne', 'se']
             angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
-            ticks_to_go, err = hw.all_steppers_ez(self.ser, [self.steppers[key] for key in keys], angs)
+            ticks_to_go, err = hw.all_steppers_ez(self.ser, [self.steppers[key] for key in keys], angs, run=run)
 
         # Linear approximation only holds for small distances, so
         # chunk up big moves into tiny bits. This ensures all cables stay taut,
         # even when moving to opposite corners.
-        MAX_DIST = .02
+        MAX_DIST = .03
         pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
         dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
@@ -493,12 +509,13 @@ class Executive:
             logger.debug(f'Direction vector: {v}, Unit vector: {u}')
             pos_cmd = pos_before + MAX_DIST * u
             logger.debug(f'Intermediate move: {pos_cmd}')
-            send_pos_cmd(pos_cmd) # alg updates raft position
+            send_pos_cmd(pos_cmd, run=False) # alg updates raft position
             # calculate new dist to go
             pos_before = self.robot.raft.position
             dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        # Signal ezsteppers to run once we've sent all commands for this move
         logger.debug(f'Final move: {pos_after}')
-        send_pos_cmd(pos_after)
+        send_pos_cmd(pos_after, run=True)
 
         # comment above block, uncomment below to not do "chunking" algorithm
         # send_pos_cmd(cmd['pos_cmd']) 
@@ -536,9 +553,10 @@ class Executive:
     def close(self):
         # Terminate all running commands
         time.sleep(.1)
-        hw.ezstepper_write(self.ser, '_', 'm0h0TR\r\n')
+        hw.ezstepper_write(self.ser, '_', 'TR\r\n')
         # Release torque
-        # hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
-        # hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
+        time.sleep(.1)
+        hw.ezstepper_write(self.ser, '_', 'm0R\r\n')
+        hw.ezstepper_write(self.ser, '_', 'h0R\r\n')
         self.ser.close()
         return

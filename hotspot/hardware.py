@@ -57,7 +57,7 @@ def ezstepper_check_ready(resp):
     return bool(resp[3] & 0b0100000)
 
 
-def wait_for_ready(ser, address, ready_timeout=1):
+def wait_for_ready(ser, address, ready_timeout=.5):
     if '_' != address:
         # only send a new command if ezstepper not busy
         start_busywait = time.time()
@@ -158,7 +158,7 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
     return prev_ticks
 
 
-def all_steppers_ez(ser: Serial, addresses, radians: list):
+def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
     '''
     Send serial commands to AllMotion EZHR17EN driver boards.
     Driver boards should already be in position-correction mode, so will take
@@ -175,6 +175,8 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
         iterable of addresses e.g. [1,2,3,4] to route commands to
     radians
         iterable of signed angle to move each stepper to (radians)
+    run (optional)
+        If True, execute EZStepper command queue. If False, add to it.
 
     Returns
     -------
@@ -224,7 +226,8 @@ def all_steppers_ez(ser: Serial, addresses, radians: list):
                 )
             )
     # Execute buffered move commands for all addresses
-    ezstepper_write(ser, '_', 'R\r\n')
+    if run:
+        ezstepper_write(ser, '_', 'R\r\n')
 
     return ticks_to_go, err
 

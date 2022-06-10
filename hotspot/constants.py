@@ -21,7 +21,7 @@ DEG_PER_RAD = 180. / np.pi
 STEP_PER_TICK = 200. * MICROSTEP_NUM / ENCODER_TICKS_PER_REV
 # ticks / sec, experimentally determined. EZStepper driver takes 10-40V
 # more PSU volts = faster current rise time = faster max speed.
-MAX_SPEED_TICKS = 300000
+MAX_SPEED_TICKS = 100000
 # Default for EZSteppers
 SERIAL_BAUD = 9600
 # if you get garbage replies from stepper drivers, increase this timeout.

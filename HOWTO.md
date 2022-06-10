@@ -388,7 +388,7 @@ When a surface geometry file has been created and the profile for the given shap
 
 Generated without motors or LabJack attached, so this does not include overhead of those libraries, but the control flow is the same.
 
-![callgraph](docs/img/pycallgraph.png)
+![callgraph](docs/img/pycallgraph.png "callgraph")
 
 ## Module Flow Charts
 
