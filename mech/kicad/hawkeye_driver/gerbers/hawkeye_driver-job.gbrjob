@@ -5,7 +5,7 @@
       "Application": "Pcbnew",
       "Version": "(6.0.5)"
     },
-    "CreationDate": "2022-05-16T17:43:26-07:00"
+    "CreationDate": "2022-06-04T20:53:52-07:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
@@ -41,16 +41,6 @@
     {
       "Path": "hawkeye_driver-B_Cu.gbr",
       "FileFunction": "Copper,L2,Bot",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "hawkeye_driver-F_Paste.gbr",
-      "FileFunction": "SolderPaste,Top",
-      "FilePolarity": "Positive"
-    },
-    {
-      "Path": "hawkeye_driver-B_Paste.gbr",
-      "FileFunction": "SolderPaste,Bot",
       "FilePolarity": "Positive"
     },
     {
