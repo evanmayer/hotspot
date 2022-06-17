@@ -25,7 +25,7 @@ void loop() {
   SPI.transfer(0);
   digitalWrite(latchPin, HIGH);
   delay(250);
-  
+
   digitalWrite(latchPin, LOW);
   SPI.transfer(7);
   digitalWrite(latchPin, HIGH);

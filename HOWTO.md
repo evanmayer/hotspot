@@ -86,10 +86,11 @@ Each motor is controlled by an [AllMotion EZStepper EZHR17EN](https://www.americ
 ![photo of EZStepper board](docs/img/ezstepper.jpg)
 
 Configure a constant-voltage DC power supply to provide:
+
 * 24 V
 * 4 A
 
-The EZStepper drivers are configured in software to draw 50% of the rated 2 A current, 1 A each, for a total of 4 A.
+The EZStepper drivers are configured in software to draw 50% of the rated 2 A current = 1 A each, for a total of 4 A.
 
 > **Note:** See the AllMotion/American Control Electronics wiring diagram to identify the Vin and GND inputs.
 
@@ -141,6 +142,8 @@ The control computer needs either a 9-pin serial output port, or a USB-to-RS485 
 
 The motor drivers must have power and ground (via the 24 VDC power supply) to receive commands.
 
+> **NOTE:** RS-485 Connections ought to have a ground wire, although you don't see one pictured here. This is to ensure the differential signal at each receiver is biased correctly. If you experience communication issues on the RS-485 bus, ensure proper grounding.
+
 #### Can the motor drivers command the motors?
 
 > **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the motor winding connections are correct.
@@ -171,8 +174,6 @@ The stepper motors drive winch-like drums directly, to change the length of the 
 
 ![photo of drum with cable extended, at shorter rotational limit](docs/img/spool_full.jpg)
 
-> **NOTE:** Since helical threads change the position along the drum that the cable exits as a function of motor position, this imparts a difference in cable length change as a function of motor position if not mitigated. To mitigate this, we route the cable from each drum to a distant eyelet, a distance much greater than the height of the drum helix, on the opposite E-W side of the frame. Then we can leverage a small angle approximation to assert that the error is negligible (<< 1 mm).
-
 If they are not already attached, the cable drums should be fixed to the 5 mm stepper motor shaft via one M3 setscrew.
 
 The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.
@@ -180,6 +181,10 @@ The fishing line is affixed to the each spool by wrapping it around the setscrew
 ![photo of cable in screw](docs/img/cable_fixture.jpg)
 
 > **NOTE:** Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
+
+Since helical threads change the position along the drum $y$ that the cable exits as a function of motor position, the actual length of the cable at any given rotational position is given by $z$. If not mitigated, this imparts an error in actual cable length at any given position of $z - x$. To mitigate this, we route the cable from each drum a distance $x$ much greater than the height of the drum helix $y$, to the opposite E-W side of the frame. Then we can leverage a small angle approximation to assert that the error in position imparted by the extra length $z - x$ is negligible (<< 1 mm).
+
+![Drum rationale](docs/img/spool_rationale.jpg)
 
 After attaching the cables to the spools, the other end should be threaded through the ~.9mm hole in the motor mount bracket on the opposite E-W side of the frame.
 
