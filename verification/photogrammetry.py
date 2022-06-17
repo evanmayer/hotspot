@@ -294,12 +294,22 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     xfound, yfound
         Pixel coordinates of the center of the template, as found in `im_warped`
     '''
+    if 'pcb' in template_filename:
+        w = 0.07112
+        h = 0.05461
+        TARGET_W_AS_PRINTED = w
+    
     im_tmp = np.rot90(cv2.imread(template_filename), k=IMG_ROT_NUM)
     # number of pixels in a shape with some real size in meters:
     target_px = TARGET_W_AS_PRINTED * avg_px_per_m
     tmp_px = im_tmp.shape[0]
     # zoom the template to the right size in pixels
     tmp = ndimage.zoom(im_tmp, target_px / tmp_px)
+
+    f = plt.figure()
+    ax = plt.axes()
+    ax.imshow(tmp)
+
     a = xcorr_prep(im_warped[::stride,::stride])
     b = xcorr_prep(tmp[::stride,::stride])
     xcorr = signal.fftconvolve(
