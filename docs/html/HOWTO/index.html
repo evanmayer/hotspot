@@ -1481,7 +1481,7 @@
 <p>The Hawkeye IR-50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in <code>pdf</code> dir). The design target temperature is 750 C, requiring a voltage of 6.7V and a current of ~134mA per source, for a total current draw of ~1.74A when all sources are turned on. In practice, Hawkeye sources have not drawn quite this much current.</p>
 <p>There will be some voltage drop at the screw terminal; this is normal. If one source is powered, the voltage drop is negligible, but if all 13 sources are powered, the voltage drop is approximately .22 V. Do not attempt to compensate for this at the power supply! If you turn up the supply voltage to 6.9 V to get 6.7 V under a 13 source load, a load of a single source will see 6.9 V, drastically reducing its lifetime.</p>
 <h3 id="hawkeye-microcontroller">Hawkeye Microcontroller</h3>
-<p>The Hawkeye sources turned on and off by an Adafruit Trinket M0 microcontroller. It gets 5V power via a micro USB cable.</p>
+<p>The Hawkeye sources are turned on and off by an Adafruit Trinket M0 microcontroller. It gets 5V power via a micro USB cable.</p>
 <h4 id="does-the-microcontroller-have-power">Does the microcontroller have power?</h4>
 <p>The Trinket M0's power LED will illuminate when it is connected to the USB port. The Trinket GND pin should be connected to the Hawkeye power supply's ground terminal.</p>
 <h2 id="frame">Frame</h2>
@@ -1570,13 +1570,14 @@
 </ul>
 </li>
 </ul>
+<p><img alt="photo of Trinket M0" src="photo of trinket M0" /></p>
 <p>The Trinket M0 receives a byte from the control computer over a USB serial connection and forwards it to the shift register over SPI.</p>
 <table>
 <thead>
 <tr>
 <th>Profile Input File .csv: <code>flasher_cmds</code> value</th>
 <th>Trinket M0 SPI Output</th>
-<th>Bit Representation</th>
+<th>Bit Representation (Shift Register Outputs)</th>
 <th>Trinket M0 RGB LED Color</th>
 <th>Hawkeyes On</th>
 </tr>

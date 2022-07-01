@@ -101,7 +101,7 @@ There will be some voltage drop at the screw terminal; this is normal. If one so
 
 ### Hawkeye Microcontroller
 
-The Hawkeye sources turned on and off by an Adafruit Trinket M0 microcontroller. It gets 5V power via a micro USB cable.
+The Hawkeye sources are turned on and off by an Adafruit Trinket M0 microcontroller. It gets 5V power via a micro USB cable.
 
 #### Does the microcontroller have power?
 
@@ -218,18 +218,20 @@ The data connection pinout from the Trinket M0 to the ribbon cable connector is 
 * Trinket M0 5 → PICO (peripheral input, controller output)
     * This pin goes low or high during an SPI transfer to send bits to the shift register.
 
+![photo of Trinket M0](photo of trinket M0)
+
 The Trinket M0 receives a byte from the control computer over a USB serial connection and forwards it to the shift register over SPI.
 
-| Profile Input File .csv: `flasher_cmds` value | Trinket M0 SPI Output | Bit Representation | Trinket M0 RGB LED Color | Hawkeyes On          |
-|-----------------------------------------------|-----------------------|--------------------|--------------------------|----------------------|
-| 0                                             | 0                     | 0000000            | (Dimmed)                 | None                 |
-| 1                                             | 1                     | 0000001            | Red                      | Center               |
-| 2                                             | 2                     | 0000010            | Green                    | Inner                |
-| 3                                             | 3                     | 0000011            | Yellow                   | Center, Inner        |
-| 4                                             | 4                     | 0000100            | Blue                     | Outer                |
-| 5                                             | 5                     | 0000101            | Purple                   | Center, Outer        |
-| 6                                             | 6                     | 0000110            | Cyan                     | Inner, Outer         |
-| 7                                             | 7                     | 0000111            | White                    | Center, Inner, Outer |
+| Profile Input File .csv: `flasher_cmds` value | Trinket M0 SPI Output | Bit Representation (Shift Register Outputs) | Trinket M0 RGB LED Color | Hawkeyes On          |
+|-----------------------------------------------|-----------------------|---------------------------------------------|--------------------------|----------------------|
+| 0                                             | 0                     | 0000000                                     | (Dimmed)                 | None                 |
+| 1                                             | 1                     | 0000001                                     | Red                      | Center               |
+| 2                                             | 2                     | 0000010                                     | Green                    | Inner                |
+| 3                                             | 3                     | 0000011                                     | Yellow                   | Center, Inner        |
+| 4                                             | 4                     | 0000100                                     | Blue                     | Outer                |
+| 5                                             | 5                     | 0000101                                     | Purple                   | Center, Outer        |
+| 6                                             | 6                     | 0000110                                     | Cyan                     | Inner, Outer         |
+| 7                                             | 7                     | 0000111                                     | White                    | Center, Inner, Outer |
 
 The control computer will flash whichever group of Hawkeyes is specified by the input profile .csv file at 5 Hz.
 
