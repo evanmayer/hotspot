@@ -1707,6 +1707,10 @@
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
+        <span class="c1"># ensure all hawkeyes are left in off state</span>
+
+        <span class="n">hw</span><span class="o">.</span><span class="n">send_hawkeye_byte</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hawkeye_ser</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">hawkeye_ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="c1"># Terminate all running commands</span>
@@ -2723,6 +2727,10 @@
 
     <span class="n">def</span> <span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
+        <span class="c1"># ensure all hawkeyes are left in off state</span>
+
+        <span class="n">hw</span><span class="o">.</span><span class="n">send_hawkeye_byte</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hawkeye_ser</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">hawkeye_ser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="c1"># Terminate all running commands</span>
@@ -3094,6 +3102,10 @@
 <summary>View Source</summary>
 <div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">close</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
 
+        # <span class="nv">ensure</span> <span class="nv">all</span> <span class="nv">hawkeyes</span> <span class="nv">are</span> <span class="nv">left</span> <span class="nv">in</span> <span class="nv">off</span> <span class="nv">state</span>
+
+        <span class="nv">hw</span>.<span class="nv">send_hawkeye_byte</span><span class="ss">(</span><span class="nv">self</span>.<span class="nv">hawkeye_ser</span>, <span class="mi">0</span><span class="ss">)</span>
+
         <span class="nv">self</span>.<span class="nv">hawkeye_ser</span>.<span class="nv">close</span><span class="ss">()</span>
 
         # <span class="nv">Terminate</span> <span class="nv">all</span> <span class="nv">running</span> <span class="nv">commands</span>
@@ -3303,7 +3315,7 @@
 <h4 id="empty_queue">empty_queue</h4>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">empty_queue</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f365d38b908</span><span class="o">&gt;&gt;</span>
+    <span class="n">queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f128c3cb908</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 

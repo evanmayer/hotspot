@@ -61,7 +61,7 @@ void loop()
         else
         {
           digitalWrite(ledPin, LOW);
-          onBoard.setBrightness(25);
+          onBoard.setBrightness(10);
           onBoard.show();
         }
     }

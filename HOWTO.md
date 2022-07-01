@@ -4,7 +4,7 @@ This doc contains instructions for various tasks related to setting up and runni
 
 #### What is `hotspot`?
 
-![hotspot packed for Kitt Peak](docs/img/allup.jpeg)
+![entire system](image of entire system)
 
 `hotspot` is a planar cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources by changing the length of cables attached to it. The cables are fixed to an adjustable frame. The frame can clamp to any rectangular surface, but it was designed to clamp to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response.
 
@@ -16,7 +16,7 @@ It is organized in order of information flow: from the operator (you!) logging i
 
 ## Using the control computer
 
-The mapper is controlled by running the `main.py` application on a computer with a [USB-to-RS485 adapter](https://www.uotek.com/pro_view-122.html). You should check out the `hotspot` repo if you wish to run the mapper or [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
+The mapper motors are controlled by running the `main.py` application on a computer with a [USB-to-RS485 adapter](https://www.uotek.com/pro_view-122.html). The IR sources are controlled via a USB cable connected to a microcontroller. You should check out the `hotspot` repo if you wish to run the mapper or [generate new input files](#ok-but-is-there-an-easy-way-to-make-a-new-one).
 
 ## Setting Up the Environment
 
@@ -44,18 +44,6 @@ conda env create -f hotspot.yml
 ```
 
 It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as the `pyserial` library for driving the steppers, and the `labjack-ljm` library for controlling the Hawkeye IR sources via the LabJack. There are also packages for documentation.
-
-#### Is the LabJack library installed?
-
-> **NOTE:** Driving Hawkeye sources with LabJack Python modules requires both the system libraries and the Python interface to be installed.
-
-[Download and install](https://labjack.com/support/software/installers/ljm) the LJM libraries from LabJack.
-
-Once that is done, activate the env with 
-
-```bash
-conda activate hotspot
-```
 
 ### Keeping things up to date
 
@@ -90,29 +78,34 @@ Configure a constant-voltage DC power supply to provide:
 * 24 V
 * 4 A
 
-The EZStepper drivers are configured in software to draw 50% of the rated 2 A current = 1 A each, for a total of 4 A.
+The EZStepper drivers are configured in software to draw 50% of the rated 2 A current = 1 A each, for a total of 4 A. In use, the motors may draw somewhat less current.
 
 > **Note:** See the AllMotion/American Control Electronics wiring diagram to identify the Vin and GND inputs.
 
-### LabJack
+### Hawkeyes
 
-#### Do the Hawkeyes have power via the LabJack?
+#### Do the Hawkeyes have power?
 
-The LabJack T7 with PS12DC power switching board also needs its own power supply.
+The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and negative terminals are labeled.
 
-A tunable lab power supply is attached to one of the screw terminals labeled "VS#," for "voltage source #," where # is one of the channels, 1-6. 
+![photo of screw terminal](photo of screw terminal)
+
+Requirements:
+
+* 6.7 V (constant voltage)
+* ≥ 2 A
 
 The Hawkeye IR-50 source temperature depends on the voltage applied, and the current draw depends on the voltage (see datasheet in `pdf` dir). The design target temperature is 750 C, requiring a voltage of 6.7V and a current of ~134mA per source, for a total current draw of ~1.74A when all sources are turned on. In practice, Hawkeye sources have not drawn quite this much current.
 
-Connect the power supply and Hawkeye source wires to the LabJack as shown:
+There will be some voltage drop at the screw terminal; this is normal. If one source is powered, the voltage drop is negligible, but if all 13 sources are powered, the voltage drop is approximately .22 V. Do not attempt to compensate for this at the power supply! If you turn up the supply voltage to 6.9 V to get 6.7 V under a 13 source load, a load of a single source will see 6.9 V, drastically reducing its lifetime.
 
-![LabJack Wiring](docs/img/labjack_wiring.jpeg)
+### Hawkeye Microcontroller
 
-Finally, ensure the LabJack T7 is plugged into the Raspberry Pi's USB port.
+The Hawkeye sources turned on and off by an Adafruit Trinket M0 microcontroller. It gets 5V power via a micro USB cable.
 
-##### Optional: MCE CLK Sync
+#### Does the microcontroller have power?
 
-It may be desirable to supply the same chopped signal the Hawkeyes see, but at 5V, to the MCE CLK card via a BNC cable. If this is desired, use another power supply channel set to 5V, and attach to +5V and GND to the terminal labeled S4.
+The Trinket M0's power LED will illuminate when it is connected to the USB port. The Trinket GND pin should be connected to the Hawkeye power supply's ground terminal.
 
 ## Frame
 
@@ -190,29 +183,55 @@ After attaching the cables to the spools, the other end should be threaded throu
 
 > **NOTE:** All cables should be cut long enough to permit the raft to visit each corner of the frame, even when the frame is as far apart as it can be (~25.5").
 
-Finally, excess cable should be wound onto the drum by hand, under tension, to avoid trapping excess cable underneath as the cable is wound on.
+Finally, excess cable should be wound onto the drum by hand, under tension, to ensure the cable is seated in the drum's grooves.
 
-## Raft
+## Radiation Outputs
 
 #### Will moving the cables move the Hawkeyes?
 
-The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a specific sequence of flashes using a number of the emitters to enhance the detectability of the signal in the IR receiver output data.
+The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a sequence of flashes using a number of the emitters to enhance the detectability of the signal in the IR receiver output data.
 
 [photo of raft]
 
-If the raft is not already attached to the cables, the raft cap with the Hawkeye emitters must be removed to access the screws to fix the affix the lines.
+Pass the cables that emerge from the corner eyelets to the closest eyelets on the raft. Wrap the ends of the fishing line around the screws in each corner of the raft, and screw them down.
 
-Simply pass them through the raft's eyelets, wrapping the ends of the fishing line around the screws in each corner of the raft, and screwing them down.
+#### Can the computer command the Hawkeyes?
 
-#### Will the detectors see the Hawkeyes?
+The Hawkeye IR sources are arranged in roughly 3 concentric circles. Each circle is a separately controllable group of sources, which can be turned on and off by the control software. The first group is a single center source. The second group is the inner ring of six sources surrounding the center. The third group is the outer ring of six sources. Turning on more sources increases the intensity that the TIME receiver sees; this may be necessary for mapping optics where the beam is less concentrated.
 
-After configuring the Hawkeye power supply, verify with a multimeter that the Hawkeyes are receiving 6.7 V by probing the screw terminal on the Hawkeye raft. Some voltage drop may occur from the power supply to the raft, so the power supply should be set such that the Hawkeyes receive no more or less than 6.7 V.
+Each group is turned on and off by a MOSFET on the raft. The MOSFET gates are controlled by the outputs of a [shift register](https://en.wikipedia.org/wiki/Shift_register) chip. The shift register multiplexes 8 bits (a byte) received at its input to its 8 output pins. Only 3 of the 8 are connected to MOSFETs.
 
-[photo of screw terminal]
+The shift register receives a byte from an Adafruit Trinket M0 microcontroller over [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) via the black silicone ribbon cable, which should be hooked up to the grey connector on the raft. The connector pinout is on the back of the PCB. The other end of the cable is soldered to the Trinket M0 pins.
 
-This procedure ensures that the Hawkeyes are operating at the correct voltage, so they are bright enough in the relevant wavelengths.
+![photo of Hawkeye data connector](photo of Hawkeye data connector)
 
-Less than 6.7 V drops the temperature of the Hawkeyes. Greater than 6.7 V shortens their lifespan by excess heating.
+The data connection pinout from the Trinket M0 to the ribbon cable connector is as follows:
+
+* Trinket M0 GND → GND
+    * The shift register GND must be the same as the microcontroller ground. This should be grounded to the Hawkeye power ground as well.
+* Trinket M0 BAT → 5 V
+    * 5 V from the USB connector appears here. This powers the shift register.
+* Trinket M0 2 → LATCH
+    * This pin goes low when an SPI transfer is started
+* Trinket M0 4 → CLK
+    * This pin pulses during an SPI transfer to delineate bits to the shift register.
+* Trinket M0 5 → PICO (peripheral input, controller output)
+    * This pin goes low or high during an SPI transfer to send bits to the shift register.
+
+The Trinket M0 receives a byte from the control computer over a USB serial connection and forwards it to the shift register over SPI.
+
+| Profile Input File .csv: `flasher_cmds` value | Trinket M0 SPI Output | Bit Representation | Trinket M0 RGB LED Color | Hawkeyes On          |
+|-----------------------------------------------|-----------------------|--------------------|--------------------------|----------------------|
+| 0                                             | 0                     | 0000000            | (Dimmed)                 | None                 |
+| 1                                             | 1                     | 0000001            | Red                      | Center               |
+| 2                                             | 2                     | 0000010            | Green                    | Inner                |
+| 3                                             | 3                     | 0000011            | Yellow                   | Center, Inner        |
+| 4                                             | 4                     | 0000100            | Blue                     | Outer                |
+| 5                                             | 5                     | 0000101            | Purple                   | Center, Outer        |
+| 6                                             | 6                     | 0000110            | Cyan                     | Inner, Outer         |
+| 7                                             | 7                     | 0000111            | White                    | Center, Inner, Outer |
+
+The control computer will flash whichever group of Hawkeyes is specified by the input profile .csv file at 5 Hz.
 
 ### Cable Maintenance
 
@@ -267,37 +286,31 @@ Each corner point is the location of an **eyelet** through which the cable passe
 
 ### Profile
 
-Profile files are multi-line .csv files in `data/input/profiles`. Each line defines a new position to which the robot should move, in the coordinate system defined above.
+Profile files are multi-line .csv files in `data/input/profiles`. Each line defines a new position to which the robot should move, in the coordinate system defined above, and which group of Hawkeye sources should be flashed.
 
 `profiles/create_profile.ipynb` is provided to script the creation of profiles.
 
 ![profile](docs/img/profile.png)
 
-Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 5 Hz). Which group of sources is enabled is configurable with the `flasher_cmds` column in the profile .csv. Each 0 or 1, space-separated, in the first column, corresponds to one of twelve addressable solid state switchable voltage sources on the LabJack PS12DC Power Switching Board. The index-to-address mapping is defined in the dictionary at the top of `hardware.py`. Since there are 3 groups of Hawkeye sources, there are more addressable relays than strictly necessary.
+Upon reaching each location in the profile, the robot is programmed to flash Hawkeye sources on and off (default: 10 "on" states, 50% duty cycle, 5 Hz). Which group of sources is enabled is configurable with the `flasher_cmds` column in the profile .csv. See the table in the previous section. Some examples follow.
 
-For example, to move to a single coordinate and flash all addresses:
+For example, to move to a single coordinate and flash all three groups of Hawkeyes:
 
-| flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
-|:-----------------------:|:----------:|:----------:|
-| 1 1 1 1 1 1 1 1 1 1 1 1 | .5         | .5         |
+| flasher_cmds | pos_cmd_0s | pos_cmd_1s |
+|:------------:|:----------:|:----------:|
+| 7            | .5         | .5         |
 
 to move to a single coordinate and flash only the center Hawkeye:
 
-| flasher_cmds  | pos_cmd_0s | pos_cmd_1s |
-|:-------------:|:----------:|:----------:|
-| 1 0 0 0 0 0 0 0 0 0 0 0 | .5         | .5         |
+| flasher_cmds | pos_cmd_0s | pos_cmd_1s |
+|:------------:|:----------:|:----------:|
+| 1            | .5         | .5         |
 
 to move to a single coordinate and flash the center and inner ring Hawkeyes:
 
-| flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
-|:-----------------------:|:----------:|:----------:|
-| 1 1 0 0 0 0 0 0 0 0 0 0 | .5         | .5         |
-
-to move to a single coordinate and flash all Hawkeyes (center, inner ring, outer ring):
-
-| flasher_cmds            | pos_cmd_0s | pos_cmd_1s |
-|:-----------------------:|:----------:|:----------:|
-| 1 1 1 0 0 0 0 0 0 0 0 0 | .5         | .5         |
+| flasher_cmds | pos_cmd_0s | pos_cmd_1s |
+|:------------:|:----------:|:----------:|
+| 2            | .5         | .5         |
 
 Building up a sequence of these moves allows a shape to be scanned.
 
@@ -372,26 +385,24 @@ When a surface geometry file has been created and the profile for the given shap
 3. Make sure the power supply output is on.
 4. Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.
 5. Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion.
-6. Ensure the Hawkeye source signal lines won't interfere with mapper operation.
+6. Ensure the Hawkeye source power and data cables lines won't interfere with mapper operation.
 7. Ensure the `hotspot` `conda` env is active: `conda activate hotspot`.
 
 ### Mapping
 
 1. Start the program with `python main.py ./data/input/geometry/<geometry.csv> ./data/input/profiles/<profile.csv>`
 2. Perform a homing calibration: `c`, `RETURN` key. 
-3. The NW motor will drive the raft to the NW corner while the NE, SW, SE axes go slack, and NW should begin skipping steps after reaching the limit. This (and some noise) is normal. The other axes then tension automatically.
-4. Verify that the raft reached its home against the NW corner, and that the other axes achieved tension. If not, GOTO 2.
-5. Perform a mapping sequence: `s`, `RETURN` key. 
-6. The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Observe the mapper, ensuring the Hawkeye signal cable does not interfere with the mapper.
+3. The motors will drive to each corner in turn, bumping the hard stop three times in order to measure the encoder position where 0 mm of cable is played out. When complete, it will move to the center of the workspace.
+4. Verify that the raft reached its home position in the center of the workspace, and that the other axes achieved tension. If not, GOTO 2. If homing succeeded without incident and cables are not taut, check the measurements of the corner eyelets and the raft dimensions provided in the geometry input .csv file.
+6. Perform a mapping sequence: `s`, `RETURN` key. 
+7. The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Observe the mapper, ensuring the Hawkeye signal cable does not interfere with the mapper.
     1. You may request a mode change at any time. Mode changes are processed at the end of each move.
     2. You may abort the program with `Ctrl+C`.
-7. Upon completing a sequence, it may be repeated by requesting the sequence mode again.
+8. Upon completing a sequence, it may be repeated by requesting the sequence mode again.
 
 ## Other Documentation
 
 ### Example Call Graph
-
-Generated without motors or LabJack attached, so this does not include overhead of those libraries, but the control flow is the same.
 
 ![callgraph](docs/img/pycallgraph.png "callgraph")
 
@@ -416,4 +427,4 @@ To re-generate the call graph image, run
 ```bash
 pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=docs/img/pycallgraph.png -- main.py data/input/geometry/test_surface.csv data/input/profiles/box_frame.csv
 ```
-You must have `graphviz` installed using your operating system's package manager. For most accurate graph and timing information, do this with all peripheral hardware attached, so the call graphs include interfacing with the motor drivers and LabJack.
+You must have `graphviz` installed using your operating system's package manager.
