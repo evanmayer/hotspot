@@ -16,7 +16,7 @@ Adafruit_DotStar onBoard = Adafruit_DotStar(1, INTERNAL_DS_DATA, INTERNAL_DS_CLK
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     SPI.begin();
     settings = SPISettings(1500000, MSBFIRST, SPI_MODE0);
@@ -44,24 +44,24 @@ void loop()
     while (Serial.available() > 0)
     {
         // No timeout; intentionally hangs until next byte comes in.
-        data = (char)Serial.parseInt();
+        data = Serial.parseInt();
         writeByteSPI(data);
-        if (data > 0L)
+        if (data > 0)
         {
             digitalWrite(ledPin, HIGH);
-            // interpret the 3 bits of the 8-bit char as channels in RGB.
+            // interpret 3 bits of the 8-bit char as channels in RGB.
             onBoard.setPixelColor(0, \
                 (data & 0b001) * 255,\
                 (data & 0b010) * 255,\
                 (data & 0b100) * 255\
             );
-            onBoard.setBrightness(100);
+            onBoard.setBrightness(75);
             onBoard.show();
         }
         else
         {
           digitalWrite(ledPin, LOW);
-          onBoard.setBrightness(50);
+          onBoard.setBrightness(25);
           onBoard.show();
         }
     }

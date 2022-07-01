@@ -559,3 +559,23 @@ class Executive:
         hw.ezstepper_write(self.stepper_ser, '_', 'h0R\r\n')
         self.stepper_ser.close()
         return
+
+
+if __name__ == '__main__':
+    ex = Executive('data/input/geometry/24in_breadboard.csv')
+
+    while(True):
+        cmd = {'flasher_cmds' : 1}
+        ex.do_hawkeye_tasks(cmd)
+        cmd = {'flasher_cmds' : 2}
+        ex.do_hawkeye_tasks(cmd)
+        cmd = {'flasher_cmds' : 3}
+        ex.do_hawkeye_tasks(cmd)
+        cmd = {'flasher_cmds' : 4}
+        ex.do_hawkeye_tasks(cmd)
+        cmd = {'flasher_cmds' : 5}
+        ex.do_hawkeye_tasks(cmd)
+        cmd = {'flasher_cmds' : 6}
+        ex.do_hawkeye_tasks(cmd)
+        cmd = {'flasher_cmds' : 7}
+        ex.do_hawkeye_tasks(cmd)

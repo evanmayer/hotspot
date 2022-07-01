@@ -54,7 +54,7 @@ if sys.platform.startswith('win'):
     HAWKEYE_SERIAL_PORT = 'COM8'
     STEPPER_SERIAL_PORT = 'COM9'
 else:
-    HAWKEYE_SERIAL_PORT = '/dev/ttyUSB0'
-    STEPPER_SERIAL_PORT = '/dev/ttyUSB1'
+    HAWKEYE_SERIAL_PORT = '/dev/ttyACM0'
+    STEPPER_SERIAL_PORT = '/dev/ttyUSB0'
 # Helps with file input/outputs
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))

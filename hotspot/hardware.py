@@ -251,7 +251,7 @@ def send_hawkeye_byte(ser: Serial, data):
         data = 255
     if data < 0:
         data = 0
-    
-    ser.write(f'{data}'.encode())
+
+    ser.write(f'{data}\n'.encode())
 
     return
