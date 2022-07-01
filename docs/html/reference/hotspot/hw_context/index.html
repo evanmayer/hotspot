@@ -392,47 +392,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#functions" class="md-nav__link">
-    Functions
-  </a>
-  
-    <nav class="md-nav" aria-label="Functions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dummyewriteaddress" class="md-nav__link">
-    dummyEwriteAddress
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dummyopens" class="md-nav__link">
-    dummyOpenS
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ewriteaddress" class="md-nav__link">
-    eWriteAddress
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#opens" class="md-nav__link">
-    openS
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#classes" class="md-nav__link">
     Classes
   </a>
@@ -610,47 +569,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#functions" class="md-nav__link">
-    Functions
-  </a>
-  
-    <nav class="md-nav" aria-label="Functions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dummyewriteaddress" class="md-nav__link">
-    dummyEwriteAddress
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dummyopens" class="md-nav__link">
-    dummyOpenS
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ewriteaddress" class="md-nav__link">
-    eWriteAddress
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#opens" class="md-nav__link">
-    openS
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#classes" class="md-nav__link">
     Classes
   </a>
@@ -773,43 +691,13 @@
 
 <span class="c1"># attached.</span>
 
-<span class="kn">from</span> <span class="nn">labjack</span> <span class="kn">import</span> <span class="n">ljm</span>
-
 <span class="kn">import</span> <span class="nn">serial</span>
 
 <span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
 
 <span class="k">try</span><span class="p">:</span>
 
-    <span class="n">name</span> <span class="o">=</span> <span class="n">ljm</span><span class="o">.</span><span class="n">openS</span><span class="p">(</span><span class="s1">&#39;T7&#39;</span><span class="p">,</span> <span class="s1">&#39;USB&#39;</span><span class="p">)</span>
-
-    <span class="n">eWriteAddress</span> <span class="o">=</span> <span class="n">ljm</span><span class="o">.</span><span class="n">eWriteAddress</span>
-
-    <span class="n">openS</span> <span class="o">=</span> <span class="n">ljm</span><span class="o">.</span><span class="n">openS</span>
-
-<span class="k">except</span> <span class="n">ljm</span><span class="o">.</span><span class="n">LJMError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No LabJack modules found at import. Falling back to dummy class for simulation support.&#39;</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">dummyEwriteAddress</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-
-        <span class="k">return</span>
-
-    <span class="k">def</span> <span class="nf">dummyOpenS</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="c1"># Overwrite</span>
-
-    <span class="n">eWriteAddress</span> <span class="o">=</span> <span class="n">dummyEwriteAddress</span>
-
-    <span class="n">openS</span> <span class="o">=</span> <span class="n">dummyOpenS</span>
-
-<span class="k">try</span><span class="p">:</span>
-
-    <span class="n">serial_instance</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_TIMEOUT</span><span class="p">)</span>
+    <span class="n">stepper_serial_instance</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEPPER_SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_TIMEOUT</span><span class="p">)</span>
 
     <span class="n">Serial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
 
@@ -817,9 +705,9 @@
 
     <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Open constants.py and try another SERIAL_PORT, or connect a device&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Open constants.py and try another STEPPER_SERIAL_PORT, or connect&#39;</span>
 
-        <span class="o">+</span> <span class="s1">&#39; to the serial port.&#39;</span><span class="p">)</span>
+        <span class="o">+</span> <span class="s1">&#39; a device to the serial port.&#39;</span><span class="p">)</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Continuing with dummy serial port.&#39;</span><span class="p">)</span>
 
@@ -841,81 +729,57 @@
 
             <span class="k">pass</span>
 
-    <span class="n">serial_instance</span> <span class="o">=</span> <span class="n">DummySerial</span><span class="p">()</span>
+    <span class="n">stepper_serial_instance</span> <span class="o">=</span> <span class="n">DummySerial</span><span class="p">()</span>
+
+    <span class="n">Serial</span> <span class="o">=</span> <span class="n">DummySerial</span>
+
+<span class="k">try</span><span class="p">:</span>
+
+    <span class="n">hawkeye_serial_instance</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">HAWKEYE_SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_TIMEOUT</span><span class="p">)</span>
+
+    <span class="n">Serial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
+
+<span class="k">except</span> <span class="n">serial</span><span class="o">.</span><span class="n">serialutil</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Open constants.py and try another HAWKEYE_SERIAL_PORT, or connect&#39;</span>
+
+        <span class="o">+</span> <span class="s1">&#39; a device to the serial port.&#39;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Continuing with dummy serial port.&#39;</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">DummySerial</span><span class="p">:</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="k">pass</span>
+
+        <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+
+            <span class="k">pass</span>
+
+        <span class="k">def</span> <span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+
+        <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="k">pass</span>
+
+    <span class="n">hawkeye_serial_instance</span> <span class="o">=</span> <span class="n">DummySerial</span><span class="p">()</span>
 
     <span class="n">Serial</span> <span class="o">=</span> <span class="n">DummySerial</span>
 </code></pre></div>
 
 </details>
 <h2 id="variables">Variables</h2>
-<div class="codehilite"><pre><span></span><code><span class="n">serial_instance</span>
+<div class="codehilite"><pre><span></span><code><span class="n">hawkeye_serial_instance</span>
 </code></pre></div>
 
-<h2 id="functions">Functions</h2>
-<h3 id="dummyewriteaddress">dummyEwriteAddress</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">dummyEwriteAddress</span><span class="p">(</span>
-    <span class="n">handle</span><span class="p">,</span>
-    <span class="n">addr</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">,</span>
-    <span class="n">value</span>
-<span class="p">)</span>
+<div class="codehilite"><pre><span></span><code><span class="n">stepper_serial_instance</span>
 </code></pre></div>
 
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">dummyEwriteAddress</span><span class="ss">(</span><span class="nv">handle</span>, <span class="nv">addr</span>, <span class="nv">mode</span>, <span class="nv">value</span><span class="ss">)</span>:
-
-        <span class="k">return</span>
-</code></pre></div>
-
-</details>
-<h3 id="dummyopens">dummyOpenS</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">dummyOpenS</span><span class="p">(</span>
-    <span class="n">model</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">:</span><span class="nb">str</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">dummyOpenS</span><span class="ss">(</span><span class="nv">model</span>: <span class="nv">str</span>, <span class="nv">mode</span>: <span class="nv">str</span><span class="ss">)</span>:
-
-        <span class="k">return</span> <span class="nv">None</span>
-</code></pre></div>
-
-</details>
-<h3 id="ewriteaddress">eWriteAddress</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">eWriteAddress</span><span class="p">(</span>
-    <span class="n">handle</span><span class="p">,</span>
-    <span class="n">addr</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">,</span>
-    <span class="n">value</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">dummyEwriteAddress</span><span class="ss">(</span><span class="nv">handle</span>, <span class="nv">addr</span>, <span class="nv">mode</span>, <span class="nv">value</span><span class="ss">)</span>:
-
-        <span class="k">return</span>
-</code></pre></div>
-
-</details>
-<h3 id="opens">openS</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">openS</span><span class="p">(</span>
-    <span class="n">model</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">:</span><span class="nb">str</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<details class="example">
-<summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">dummyOpenS</span><span class="ss">(</span><span class="nv">model</span>: <span class="nv">str</span>, <span class="nv">mode</span>: <span class="nv">str</span><span class="ss">)</span>:
-
-        <span class="k">return</span> <span class="nv">None</span>
-</code></pre></div>
-
-</details>
 <h2 id="classes">Classes</h2>
 <h3 id="dummyserial">DummySerial</h3>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">DummySerial</span><span class="p">(</span>

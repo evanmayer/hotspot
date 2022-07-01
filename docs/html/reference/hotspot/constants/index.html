@@ -585,15 +585,21 @@
 
 <span class="n">MAX_QLEN</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">16</span>
 
-<span class="c1"># If the serial-RS485 converter is not found, change this accordingly</span>
+<span class="c1"># Change these accordingly to point to the serial ports of the microcontroller</span>
+
+<span class="c1"># for the Hawkeyes and and serial-RS485 converter for the steppers.</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
 
-    <span class="n">SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;COM8&#39;</span>
+    <span class="n">HAWKEYE_SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;COM8&#39;</span>
+
+    <span class="n">STEPPER_SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;COM9&#39;</span>
 
 <span class="k">else</span><span class="p">:</span>
 
-    <span class="n">SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;/dev/ttyUSB0&#39;</span>
+    <span class="n">HAWKEYE_SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;/dev/ttyUSB0&#39;</span>
+
+    <span class="n">STEPPER_SERIAL_PORT</span> <span class="o">=</span> <span class="s1">&#39;/dev/ttyUSB1&#39;</span>
 
 <span class="c1"># Helps with file input/outputs</span>
 
@@ -612,6 +618,9 @@
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">ENCODER_TICKS_PER_REV</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">HAWKEYE_SERIAL_PORT</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">HOMING_OFFSET_X</span>
@@ -635,10 +644,10 @@
 <div class="codehilite"><pre><span></span><code><span class="n">SERIAL_BAUD</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_PORT</span>
+<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_TIMEOUT</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_TIMEOUT</span>
+<div class="codehilite"><pre><span></span><code><span class="n">STEPPER_SERIAL_PORT</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">STEP_PER_TICK</span>
