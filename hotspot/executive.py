@@ -95,7 +95,7 @@ class Executive:
                     'n0' + # clear any special modes
                     'm50' + # set move current limit to 50% = 1 A
                     'h50' + # set hold current limit to 50% = 1 A
-                    'L250' + # acceleration factor
+                    # 'L150' + # acceleration factor
                     'aC200' + # encoder coarse correction deadband, ticks
                     'ac5' + # encoder fine correction deadband, ticks
                     # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
