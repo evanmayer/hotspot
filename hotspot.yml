@@ -11,8 +11,6 @@ dependencies:
   - pySerial
   - pip
   - pip:
-    - labjack-ljm
     - pycallgraph2
     - portray
     - prompt-toolkit<=2.0.0
-#prefix: /home/pi/miniconda3/envs/hotspot

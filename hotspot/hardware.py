@@ -3,13 +3,12 @@
 import logging
 import numpy as np
 import sys
-import threading
 import time
 
-from labjack import ljm
-
 import hotspot.constants as const
-from hotspot.hw_context import Serial, openS, eWriteAddress
+from hotspot.hw_context import Serial
+
+logger = logging.getLogger(__name__)
 
 
 # Conventions:
@@ -18,16 +17,6 @@ from hotspot.hw_context import Serial, openS, eWriteAddress
 # - negative steps/angular rates spin the motor shaft counterclockwise (CCW)
 #   when viewed from the rear.
 
-logger = logging.getLogger(__name__)
-
-# Map relay number to modbus register on the LJ
-RELAY_DICT = {
-    '1': 2008,'2': 2009,'3': 2010,'4': 2011,'5': 2012,'6': 2013,
-    '7': 2014,'8': 2015,'9': 2016,'10': 2017,'11': 2018,'12': 2019
-}
-# Needed to open connection to labjack board
-MODEL_NAME = 'T7'
-MODE = 'USB'
 
 # -----------------------------------------------------------------------------
 # Stepper functions
@@ -106,7 +95,6 @@ def get_encoder_pos(ser: Serial, address):
             logger.critical(f'Encoder {address} didn\'t respond.')
             sys.exit(1)
         return ticks
-        
 
 
 def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_current=50, move_current=50):
@@ -233,139 +221,37 @@ def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
 
 
 # -----------------------------------------------------------------------------
-# LabJack Functions
+# Hawkeye functions
 # -----------------------------------------------------------------------------
-def try_open(model: str, mode: str, retry=True):
+def send_hawkeye_byte(ser: Serial, data):
     '''
-    Try and open a connection to a LabJack.
+    Control three groups of Hawkeye IR sources on the raft. Each of the first
+    three bits of the `data` byte turns on one of the three available groups of
+    Hawkeyes on the raft: center, inner ring, and outer ring.
+    The byte is sent over serial to a microcontroller, which forwards the byte
+    to a shift register on the raft via SPI. 
+
+    For example:
+    - data = 1 -> 001 -> center Hawkeye only
+    - data = 2 -> 010 -> inner ring only
+    - data = 3 -> 011 -> center and inner
+    - data = 7 -> 111 -> center, inner, outer
 
     Parameters
     ----------
-    model
-        LabJack board model name, typ. 'T7'
-    mode
-        LabJack communication mode, typ. 'USB'
-
-    Returns
-    -------
-    name
-        handle to opened LabJack board instance
+    ser
+        pyserial instance, the port to send byte over from
+    data (int)
+        integer whose binary representation will appear at the shift register
+        outputs on the raft
     '''
-    try:
-        name = openS(model, mode)
-    except ljm.LJMError as err:
-        print('Error opening LJ connection')
-        print(err)
-        if retry:
-            time.sleep(1)
-            print('Trying again in 1s.')
-            name = try_open(model, mode, retry=False)
-        else:
-            return -1
-            
-    return name
 
-
-def write_value(handle, addr: int, value=0):
-    '''
-    Write a value to a LabJack, catching errors.
+    assert isinstance(data, int)
+    if data > 255:
+        data = 255
+    if data < 0:
+        data = 0
     
-    Parameters
-    ----------
-    handle
-        LabJack board model handle from `try_open`
-    addr
-        LabJack relay address integer
-
-    Kwargs
-    ------
-    value: int
-        value to write to LabJack relay
-
-    Returns
-    -------
-    bool
-        True if successful, False if not
-    '''
-    try:
-        eWriteAddress(handle, addr, 0, value)
-    except ljm.LJMError as err:
-        print("Error in write to LJ, specific error is:")
-        print(err)
-        return False
-    return True
-
-
-def threaded_write(handle, target: int, value: int):
-    '''
-    Wrapper around `write_value` for use in threaded calls.
-    
-    Parameters
-    ----------
-    handle
-        LabJack board model handle from `try_open`
-    target
-        LabJack relay address integer
-    '''
-    written = False
-    while(1):
-        try:
-            if written == False:
-                written = write_value(handle, target, value=value)
-                if written == False:
-                    time.sleep(1)
-                else:
-                    break
-            else:
-                break
-        except KeyboardInterrupt:
-            answer = input('Do you want to interrupt? y/n')
-            if answer.lower() == 'y':
-                break
-    return
-
-
-def spawn_all_threads(handle, states: list):
-    '''
-    Spawns threads and passes the states each relay will need to have
-    
-    Parameters
-    ----------
-    handle
-        LabJack board model handle from `try_open`
-    states
-        iterable of integers describing the states each relay should take
-    '''
-    for key in RELAY_DICT.keys():
-        thread = threading.Thread(
-            target=threaded_write,
-            args=(handle, RELAY_DICT[key],
-            states[int(key) - 1]),
-            daemon=True
-        )
-        thread.start()
+    ser.write(f'{data}'.encode())
 
     return
-
-
-def spawn_all_threads_off(handle):
-    '''
-    Spawns threads and sets all relay states off.
-    
-    Parameters
-    ----------
-    handle
-        LabJack board model handle from `try_open`
-    '''
-    for key in RELAY_DICT.keys():
-        thread = threading.Thread(
-            target=threaded_write,
-            args=(handle,RELAY_DICT[key], 0),
-            daemon=True
-        )
-        thread.start()
-    return
-
-
-if __name__ == '__main__':
-    pass

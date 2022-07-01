@@ -48,10 +48,13 @@ HOMING_OFFSET_Y = -0.0252
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
 MAX_QLEN = 2**16
-# If the serial-RS485 converter is not found, change this accordingly
+# Change these accordingly to point to the serial ports of the microcontroller
+# for the Hawkeyes and and serial-RS485 converter for the steppers. 
 if sys.platform.startswith('win'):
-    SERIAL_PORT = 'COM8'
+    HAWKEYE_SERIAL_PORT = 'COM8'
+    STEPPER_SERIAL_PORT = 'COM9'
 else:
-    SERIAL_PORT = '/dev/ttyUSB0'
+    HAWKEYE_SERIAL_PORT = '/dev/ttyUSB0'
+    STEPPER_SERIAL_PORT = '/dev/ttyUSB1'
 # Helps with file input/outputs
 TOPLEVEL_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
