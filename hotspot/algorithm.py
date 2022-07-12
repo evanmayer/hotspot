@@ -32,6 +32,7 @@ class TestSurface:
         self.se = self.corners[1,0]
         self.nw = self.corners[0,1]
         self.ne = self.corners[1,1]
+        return
 
 
     def is_inbounds(self, pos: tuple):
@@ -72,7 +73,6 @@ class TestSurface:
 
         if reason:
             logger.debug(f'Bounds check failed: {reason}')
-
         return result
 
 
@@ -100,6 +100,7 @@ class Raft:
         self.se = self.corners[1,0]
         self.nw = self.corners[0,1]
         self.ne = self.corners[1,1]
+        return
 
 
     @property
@@ -119,7 +120,7 @@ class Raft:
         self.nw = self.corners[0,1]
         self.ne = self.corners[1,1]
         self._position = new_pos
-
+        return
 
 
 class Robot:
@@ -133,7 +134,6 @@ class Robot:
         # Geometry
         self.surf = surf
         self.raft = raft
-
         # Keep track of net rotation of each spool in order to compensate for
         # cable thickness.
         # Define 0 radians as the point at which each spool has no cable on it.
@@ -141,15 +141,14 @@ class Robot:
             [[0., 0.],
              [0., 0.]]
         )
-
         # Init home to an invalid position until we are homed
         self._home = (-np.inf, -np.inf)
         # Start off pos_cmd in an error state, hoping an error will occur
         # If we attempt to move before issuing a real pos_cmd
         self._pos_cmd = self._home
-
         # A handle to the queue for outputting TM packets for vis and logging
         self.tm_queue = tm_queue
+        return
 
 
     @property
@@ -209,7 +208,6 @@ class Robot:
             'ne': 0.,
             'se': 0.
         }
-
         # Input checking, this is just in case of malformed inputs.
         eps = np.finfo(float).eps
         distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
@@ -256,5 +254,4 @@ class Robot:
             }
         }
         self.tm_queue.put(packet)
-
         return motor_cmds

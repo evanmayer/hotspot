@@ -85,6 +85,7 @@ class DataRouter:
         self.fname = os.path.join(self.output_dir, 'hotspot' + self.time_str + '.hdf5')
         self.tm_queue = tm_queue
         self.visualizers = {}
+        return
 
 
     def process_packet(self, packet: dict):
@@ -132,6 +133,7 @@ class DataRouter:
             self.process_packet(self.tm_queue.get())
             if plot_enable:
                 self.update_display()
+        return
 
 
     def run_gui_event_loop(self):

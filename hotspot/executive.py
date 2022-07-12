@@ -108,7 +108,6 @@ class Executive:
                     'R\r\n'
                 )
             )
-
         return
 
 
@@ -489,23 +488,31 @@ class Executive:
             # bootleg OrderedDict
             keys = ['sw', 'nw', 'ne', 'se']
             angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
-            ticks_to_go, err = hw.all_steppers_ez(self.stepper_ser, [self.steppers[key] for key in keys], angs, run=run)
+            ticks_to_go, err = hw.all_steppers_ez(
+                self.stepper_ser,
+                [self.steppers[key] for key in keys],
+                angs,
+                run=run
+            )
 
         # Linear approximation only holds for small distances, so
         # chunk up big moves into tiny bits. This ensures all cables stay taut,
         # even when moving to opposite corners.
-        MAX_DIST = .03
+        # CHUNK_DIST is a trade-off between smoothly approximating the needed
+        # stepping profiles and the time taken to send many commands over
+        # serial before starting the move.
+        CHUNK_DIST = .03
         pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
         dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
-        while dist_to_go > MAX_DIST:
+        while dist_to_go > CHUNK_DIST:
             logger.debug(f'Dist. to go in this move: {dist_to_go}')
-            # determine a position MAX_DIST away from the starting pos along
-            # the line of travel
+            # determine a position CHUNK_DIST away from the starting pos along
+            # the direction of travel
             v = np.array(pos_after) - np.array(pos_before)
             u = v / np.linalg.norm(v) # the unit vector pointing along the line
             logger.debug(f'Direction vector: {v}, Unit vector: {u}')
-            pos_cmd = pos_before + MAX_DIST * u
+            pos_cmd = pos_before + CHUNK_DIST * u
             logger.debug(f'Intermediate move: {pos_cmd}')
             send_pos_cmd(pos_cmd, run=False) # alg updates raft position
             # calculate new dist to go
@@ -514,10 +521,6 @@ class Executive:
         # Signal ezsteppers to run once we've sent all commands for this move
         logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after, run=True)
-
-        # comment above block, uncomment below to not do "chunking" algorithm
-        # send_pos_cmd(cmd['pos_cmd']) 
-
         return
 
 
@@ -544,7 +547,6 @@ class Executive:
             # sleep off remaining time to fudge actions at frequency freq
             time.sleep((1. / freq) - (time.time() - start_time))
         hw.send_hawkeye_byte(self.hawkeye_ser, 0)
-
         return
 
 

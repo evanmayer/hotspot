@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 # - negative steps/angular rates spin the motor shaft counterclockwise (CCW)
 #   when viewed from the rear.
 
-
 # -----------------------------------------------------------------------------
 # Stepper functions
 # -----------------------------------------------------------------------------
 def ezstepper_check_status(resp):
     status_good = True
     if resp:
-        status = resp[3] & 0b0001111 # bits 0-3 form an error code
+        # bits 0-3 form an error code: see EZStepper docs
+        status = resp[3] & 0b0001111
     else:
         status = b''
         status_good = False
@@ -122,9 +122,9 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
         The last encoder position before the hard stop was hit
     '''
     t_move = ticks / speed
-    max_tries = 10000
+    max_tries = 10000 # may take several moves to hit a hard stop
     tries = 0
-    prev_ticks = 800000
+    prev_ticks = 800000 # more ticks than we have total available cable
     curr_ticks = prev_ticks - 1
 
     while ((curr_ticks < prev_ticks) and (tries < max_tries)):
@@ -142,7 +142,6 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
         )
         curr_ticks = get_encoder_pos(ser, address)
         tries += 1
-
     return prev_ticks
 
 
@@ -164,7 +163,7 @@ def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
     radians
         iterable of signed angle to move each stepper to (radians)
     run (optional)
-        If True, execute EZStepper command queue. If False, add to it.
+        If True, execute EZStepper command queue after adding to it.
 
     Returns
     -------
@@ -216,7 +215,6 @@ def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
     # Execute buffered move commands for all addresses
     if run:
         ezstepper_write(ser, '_', 'R\r\n')
-
     return ticks_to_go, err
 
 
@@ -229,7 +227,7 @@ def send_hawkeye_byte(ser: Serial, data):
     three bits of the `data` byte turns on one of the three available groups of
     Hawkeyes on the raft: center, inner ring, and outer ring.
     The byte is sent over serial to a microcontroller, which forwards the byte
-    to a shift register on the raft via SPI. 
+    to a shift register on the raft via SPI.
 
     For example:
     - data = 1 -> 001 -> center Hawkeye only
@@ -253,5 +251,4 @@ def send_hawkeye_byte(ser: Serial, data):
         data = 0
 
     ser.write(f'{data}\n'.encode())
-
     return
