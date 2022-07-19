@@ -19,8 +19,21 @@ import hotspot.telemetry as tm
 logger = logging.getLogger(__name__)
 
 MODES = {'c': 'CAL_HOME', 'h': 'HOME', 'r': 'RUN', 's': 'SEL', 'w': 'WAIT', 'b': 'BLINK'}
+MODES_VERBOSE = {
+    'c': 'Calibrate axes',
+    'h': 'Home goto',
+    'r': 'Run profile',
+    's': 'Select profile',
+    'w': 'Wait',
+    'b': 'Blink all Hawkeyes'
+}
 HR = '-' * 80
-MENU_STR = HR + f'\nListening for mode changes. Type a mode char and press enter:\n{MODES}\n' + HR
+MENU_STR = (
+    HR +
+    f'\nListening for mode changes. Type a mode char and press enter:\n' +
+    f'{MODES_VERBOSE}\n' +
+    HR
+)
 
 
 class Executive:
@@ -62,7 +75,7 @@ class Executive:
             dtype=float,
             delimiter=',',
             skiprows=1,
-            )
+        )
 
         sw = (sw_0,sw_1)
         nw = (nw_0,nw_1)
@@ -403,9 +416,10 @@ class Executive:
             logger.info('Beginning command sequence.')
             self.empty_queue(self.cmd_queue)
             self.add_cmds(fname)
+            # Make a new timestamped logfile
+            self.router = tm.DataRouter(self.tm_queue)
 
         num_remaining = self.cmd_queue.qsize()
-
         if num_remaining < 1:
             self.mode = 'WAIT'
             return

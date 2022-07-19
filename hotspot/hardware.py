@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 # Stepper functions
 # -----------------------------------------------------------------------------
 def ezstepper_check_status(resp):
+    '''
+    Compare the response bytes from the EZStepper to some common error codes.
+
+    Parameters
+    ----------
+    resp
+        bytes, EZStepper response, straight out of serial
+
+    Returns
+    -------
+    status_good
+        bool, True if response is nonempty and no unusual status byte patterns found
+    '''
     status_good = True
     if resp:
         # bits 0-3 form an error code: see EZStepper docs
@@ -42,11 +55,31 @@ def ezstepper_check_status(resp):
 def ezstepper_check_ready(resp):
     '''
     The EZStepper is ready to accept a new command if the ready bit is set. 
+    
+    Parameters
+    ----------
+    resp
+        bytes, EZStepper response, straight out of serial
+
+    Returns
+    -------
+    bool
+        True if ready bit is set
     '''
     return bool(resp[3] & 0b0100000)
 
 
 def wait_for_ready(ser, address, ready_timeout=.5):
+    '''
+    Parameters
+    ----------
+    ser
+        pyserial instance, the port to send bytes over from
+    address
+        str, address of ezstepper
+    ready_timeout (optional)
+        float, time in seconds before deciding the stepper is unresponsive
+    '''
     if '_' != address:
         # only send a new command if ezstepper not busy
         start_busywait = time.time()
@@ -64,14 +97,30 @@ def wait_for_ready(ser, address, ready_timeout=.5):
 
 def ezstepper_write(ser: Serial, address, command_str: str):
     '''
+    Builds a serial command to send to EZStepper(s), checks status bytes in
+    response, and returns response bytes.
+
+    Parameters
+    ----------
     ser
         pyserial instance, the port to send bytes over from
     address
         str, address of ezstepper
     command_str
         string, chars to send over EZStepper bus
-    busy_timeout
-        float, stop trying to wait for busy ezstepper after this time
+
+    Returns
+    -------
+    resp
+        bytes, serial response from EZStepper
+
+    Example:
+
+    ```
+    ezstepper.write(ser, 1, 'A1000R\r\n')
+    ezstepper.write(ser, '_', 'A12000\r\n')
+    ezstepper.write(ser, '_', 'R\r\n')
+    ```
     '''
     wait_for_ready(ser, address)
     ser.write((f'/{address}' + command_str).encode())
@@ -83,9 +132,28 @@ def ezstepper_write(ser: Serial, address, command_str: str):
 
 
 def get_encoder_pos(ser: Serial, address):
+    '''
+    Gets EZStepper's encoder counts in terms of ticks. It is critical for
+    accurate operation that this call succeeds, so the program will exit
+    if it fails.
+
+    Parameters
+    ----------
+    ser
+        pyserial instance, the port to send bytes over from
+    address
+        str, address of ezstepper
+
+    Returns
+    -------
+    ticks
+        Number of encoder ticks counted by encoder. A 10000 line encoder
+        has 4 * 10000 = 40000 lines per revolution.
+    '''
+    ticks = 0
     resp = ezstepper_write(ser, address, '?8R\r\n')
     if not ezstepper_check_status(resp):
-        logger.critical(f'Encoder {address} status bad: {resp}.')
+        logger.critical(f'Encoder {address} status bad: {resp}. Is EZStepper/encoder connected?')
         sys.exit(1)
     else:
         payload = resp[4:-3]
@@ -121,7 +189,6 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
     prev_ticks
         The last encoder position before the hard stop was hit
     '''
-    t_move = ticks / speed
     max_tries = 10000 # may take several moves to hit a hard stop
     tries = 0
     prev_ticks = 800000 # more ticks than we have total available cable
@@ -163,7 +230,7 @@ def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
     radians
         iterable of signed angle to move each stepper to (radians)
     run (optional)
-        If True, execute EZStepper command queue after adding to it.
+        If True, execute EZStepper command buffer after adding to it.
 
     Returns
     -------
@@ -250,5 +317,5 @@ def send_hawkeye_byte(ser: Serial, data):
     if data < 0:
         data = 0
 
-    ser.write(f'{data}\n'.encode())
+    ser.write(f'{data}\r\n'.encode())
     return
