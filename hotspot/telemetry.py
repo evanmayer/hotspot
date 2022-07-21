@@ -43,8 +43,8 @@ class Visualizer:
             ax.set_title(varname)
             ax.grid(True)
         
-        time = file_handle[self.source]['Local Time (s)']
-        data = file_handle[self.source][varname]
+        time = np.atleast_1d(file_handle[self.source]['Local Time (s)'])
+        data = np.atleast_1d(file_handle[self.source][varname])
         dim = len(data.shape)
         if dim < 2: # 1D data
             if first_time:

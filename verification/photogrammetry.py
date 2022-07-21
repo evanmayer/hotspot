@@ -1,5 +1,6 @@
 # Great Value photogrammetry package with OpenCV.
 
+from cmath import isnan
 import concurrent
 import cv2
 import glob
@@ -296,22 +297,12 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     xfound, yfound
         Pixel coordinates of the center of the template, as found in `im_warped`
     '''
-    if 'pcb' in template_filename:
-        w = 0.07112
-        h = 0.05461
-        TARGET_W_AS_PRINTED = w
-    
     im_tmp = np.rot90(cv2.imread(template_filename), k=IMG_ROT_NUM)
+    tmp_px = im_tmp.shape[0]
     # number of pixels in a shape with some real size in meters:
     target_px = TARGET_W_AS_PRINTED * avg_px_per_m
-    tmp_px = im_tmp.shape[0]
     # zoom the template to the right size in pixels
     tmp = ndimage.zoom(im_tmp, target_px / tmp_px)
-
-    f = plt.figure()
-    ax = plt.axes()
-    ax.imshow(tmp)
-
     a = xcorr_prep(im_warped[::stride,::stride])
     b = xcorr_prep(tmp[::stride,::stride])
     xcorr = signal.fftconvolve(
@@ -324,7 +315,7 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     yfound = y + b.shape[1] / 2
 
     if ax:
-        ax.imshow(a, cmap='Greys_r')
+        ax.imshow(xcorr, cmap='Greys_r')
         ax.scatter(xfound, yfound, s=80, color='w')
         ax.scatter(xfound, yfound, label=template_filename)
 
@@ -394,12 +385,12 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
                 (-1,-1),
                 CORNER_TERM_CRIT
             )
-            undistorted_image_corners = cv2.drawChessboardCorners(
-                gray,
-                BOARD_VERT_SHAPE,
-                corners2,
-                ret
-            )
+            # undistorted_image_corners = cv2.drawChessboardCorners(
+            #     gray,
+            #     BOARD_VERT_SHAPE,
+            #     corners2,
+            #     ret
+            # )
         else:
             return
 
@@ -435,7 +426,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
             plt.figure()
             # plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
             ax = plt.axes()
-            ax.imshow(im_warped)
+            ax.imshow(cv2.cvtColor(im_warped, cv2.COLOR_BGR2GRAY))
             # ax = None
         else:
             ax = None
@@ -480,7 +471,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
     assert files, 'No image files found when searching for images for target measurement.'
-    # files = files[:2]
+    # files = files[:1]
     image_data = {}
     px_per_ms = []
     # dicts are kinda thread-safe
@@ -576,6 +567,11 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
     '''
+    # func for natsort
+    # https://stackoverflow.com/a/16090640
+    import re
+    nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
+
     # Reshape command profile assuming a square box is scanned.
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
     assert np.round(np.sqrt(commanded_pts_flat.shape[0])) == np.sqrt(commanded_pts_flat.shape[0]), 'Command profile shape not square. Rewrite alg to handle non-square shapes.'
@@ -608,7 +604,8 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
     residuals = np.zeros_like(commanded_pts)
     for i, target in enumerate(targets):
         # Get the per-image data out of the image_data dict
-        img_keys = [img for img in sorted(list(image_data.keys())) if os.path.exists(img)]
+        # natural sort image data to align with command sequence
+        img_keys = [img for img in sorted(list(image_data.keys()), key=nsort) if os.path.exists(img)]
         imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
         for j in range(imgs.shape[0]):
             for k in range(imgs.shape[1]):
@@ -620,7 +617,7 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
                         np.array(image_data[imgs[j][k]]['target_locs'][target]) -
                         np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
                     )
-                else: # reference measurements to first point
+                else: # reference measurements to SW point in pttern
                     query = (
                         np.array(image_data[imgs[j][k]]['target_locs'][target]) -
                         np.array(image_data[imgs[0][0]]['target_locs'][target])
@@ -635,16 +632,27 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
                 queries[j][k][0] = query[0]
                 queries[j][k][1] = query[1]
 
-        ax.scatter(queries[:,:,0], queries[:,:,1], facecolor=colors[i], label=f'{target} Measured Pos.')
         if target == 'raft_target':
             ax.scatter(
                 commanded_pts[:,:,0],
                 commanded_pts[:,:,1],
                 facecolor='none',
                 color='k',
-                label=f'{target} Commanded Pos.'
+                label=f'{target} Commanded Pos.',
+                zorder=1
             )
             residuals = queries - commanded_pts
+
+            # error check: ignore ridiculous residuals
+            sig3 = 3. * np.sqrt(np.mean(residuals ** 2.))
+            bad_x = np.where(residuals[:,:,0] > sig3)
+            bad_y = np.where(residuals[:,:,1] > sig3)
+            queries[bad_x] = commanded_pts[bad_x]
+            queries[bad_y] = commanded_pts[bad_y]
+            print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
+            print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
+            residuals = queries - commanded_pts
+
             ax.quiver(
                 queries[:,:,0],
                 queries[:,:,1],
@@ -659,9 +667,12 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
                 headlength=4,
                 edgecolors='k',
                 linewidth=.5,
-                width=4e-3
+                width=4e-3,
+                zorder=2
             )
-        
+        ax.scatter(queries[:,:,0], queries[:,:,1], facecolor=colors[i], label=f'{target} Measured Pos.', zorder=1)
+        ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='r', label=f'{target} Ignored\n(Error >3RMSEs)', zorder=1)
+        ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='r', label=f'_{target} Ignored\n(Error >3RMSEs)')
         ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
         plt.tight_layout()
 
