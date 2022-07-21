@@ -3,6 +3,9 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - ipympl
+  - ipython
+  - jupyterlab
   - python=3.6
   - numpy
   - pytest
