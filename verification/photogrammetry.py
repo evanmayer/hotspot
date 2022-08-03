@@ -182,7 +182,7 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
         )
 
     # do camera calibration from chessboard images
-    with concurrent.futures.ThreadPoolExecutor() as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
         if method == 'charuco':
             future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
         else:
@@ -428,7 +428,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
 
         # if necessary, try rotation for better fit
         # https://scipython.com/book/chapter-6-numpy/examples/creating-a-rotation-matrix-in-numpy/
-        theta = .5 * (np.pi / 180.)
+        theta = 1 * (np.pi / 180.)
         c, s = np.cos(theta), np.sin(theta)
         R = np.array(((c, -s), (s, c)))
         try:
@@ -499,11 +499,11 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
     assert files, 'No image files found when searching for images for target measurement.'
-    # files = files[:2]
+    # files = files[-2:]
     image_data = {}
     px_per_ms = []
     # dicts are kinda thread-safe
-    with concurrent.futures.ThreadPoolExecutor() as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
         future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix), **{'stride' : stride, 'plot' : plot}) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
@@ -527,67 +527,6 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
     image_data['avg_px_per_m'] = avg_px_per_m
 
     return image_data
-
-
-def post_process_many_to_one(image_data: dict):
-    '''
-    Assume the target images are all of the raft in the same location.
-    Average the results to get some decent precision on the
-    localization of that raft.
-    '''
-    # Ignore target loc solutions with distances from SW target significantly 
-    # different from the median
-    outlier_thresh = 0.01
-
-    # independently meas dist from SW corner to each target
-    actuals = {
-        'raft_target': 0.61198125
-    }
-
-    for target in ['raft_target',]: #, 'SE_target', 'NW_target', 'NE_target']:
-        query_meas = []
-        for img in image_data.keys():
-            if not isinstance(image_data[img], dict):
-                continue
-            query_raft = np.linalg.norm(
-                np.array(image_data[img]['target_locs'][target]) - 
-                np.array(image_data[img]['target_locs']['SW_target'])
-            ) / image_data['avg_px_per_m']
-            query_meas.append(query_raft)
-
-        # clean data
-        query_meas = [item for item in query_meas if np.median(query_meas) - item < outlier_thresh]
-        
-        query_meas = np.array(query_meas)
-        query_raft_mean = query_meas.mean()
-        mean_inch = query_raft_mean / METERS_PER_INCH
-        mean_inch_frac = (mean_inch - np.floor(mean_inch)) / (1./32.)
-        query_raft_std = query_meas.std()
-        
-        logger.info(
-            f'dist of {target} from SW\n' + \
-            f'\tmean {query_raft_mean}\n' + \
-            f'\tstd {query_raft_std}\n' + \
-            f'\tstd (mm) {query_raft_std * 1000}\n' + \
-            f'\t% err {100. * query_raft_std / query_raft_mean} %'
-        )
-        logger.info(f'{np.floor(mean_inch):.0f} + {mean_inch_frac:.2f}/32\"')
-        
-        plt.figure()
-        ax = plt.axes()
-        ax.set_title(f'{target} distance from SW target (L2 norm) (m)\nN={len(query_meas)}')
-        sns.kdeplot(query_meas, shade=True, color='k', label='Kernel Density Estimate')
-        sns.rugplot(query_meas, color='k')
-        ax.axvline(query_raft_mean, color='k', label=f'Mean ~{query_raft_mean:.4f} m')
-        ax.axvline(query_raft_mean - query_raft_std, color='k', linestyle='--')
-        ax.axvline(query_raft_mean + query_raft_std, color='k', linestyle='--', label=f'1 std. dev. ~{query_raft_std * 1000:.1f} mm')
-        if target in actuals.keys():
-            ax.axvline(actuals[target], color='r', label=f'Actual (1/16" graduated tape measure): {actuals[target]:.4f} m')
-        ax.grid(True)
-        ax.legend(loc='best')
-        ax.set_xlabel('Distance (m)')
-        ax.set_ylabel('Probability Density')
-    return
 
 
 def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_offset=None):
@@ -673,13 +612,14 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
 
             # error check: ignore ridiculous residuals
             if residuals.size > 16: # need good stats
-                sig3 = 3. * np.sqrt(np.mean(residuals ** 2.))
-                bad_x = np.where(np.abs(residuals[:,:,0]) > sig3)
-                bad_y = np.where(np.abs(residuals[:,:,1]) > sig3)
+                print('RMSE:', np.sqrt(np.mean(residuals ** 2.)))
+                sig_thresh = 3. * np.sqrt(np.mean(residuals ** 2.))
+                bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
+                bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
                 queries[bad_x] = commanded_pts[bad_x]
                 queries[bad_y] = commanded_pts[bad_y]
-                print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
-                print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
+                print(f'{len(bad_x[0])} x-measurements with >6x RMSE ignored (highlighted red).')
+                print(f'{len(bad_y[0])} y-measurements with >6x RMSE ignored (highlighted red).')
                 residuals = queries - commanded_pts
             else:
                 bad_x = None
@@ -719,6 +659,7 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
         ax.set_xlabel('X-dir Residuals (mm)')
         ax.set_ylabel('Y-dir Residuals (mm)')
         ax.grid(True)
+        ax.set_aspect('equal')
         # ax.set_xlim(-8,8)
         # ax.set_ylim(-8,8)
 
