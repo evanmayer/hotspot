@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - ipympl
+  - ipykernel
   - ipython
   - jupyterlab
   - python=3.6
@@ -13,6 +14,8 @@ dependencies:
   - h5py
   - pySerial
   - pip
+  - numba
+  - seaborn
   - pip:
     - pycallgraph2
     - portray
