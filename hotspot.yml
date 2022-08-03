@@ -17,6 +17,7 @@ dependencies:
   - numba
   - seaborn
   - pip:
+    - opencv-contrib-python
     - pycallgraph2
     - portray
     - prompt-toolkit<=2.0.0
