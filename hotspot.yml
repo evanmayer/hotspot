@@ -7,7 +7,7 @@ dependencies:
   - ipykernel
   - ipython
   - jupyterlab
-  - python=3.6
+  - python=3.9
   - numpy
   - pytest
   - matplotlib

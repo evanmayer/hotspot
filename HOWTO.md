@@ -121,6 +121,24 @@ Two aluminum registration tabs are screwed into the end of each frame piece oppo
 
 Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, threads in the aluminum extrusion provide clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. Care should be exercised with this slide-adjust nut, as pressing the button will release any tension on the threaded rod.
 
+## Serial Communications
+
+We will be talking to devices over serial. 
+
+### Windows
+
+Windows users may need to open `hotspot/constants.py` and edit the `COM` values to match the COM ports assigned to the Hawkeye microcontroller and USB-to-RS485 converter by the OS.
+
+### Ubuntu
+
+On Ubuntu, our user must be a part of a special group to talk to devices over serial. To see the groups your user is a part of, type `groups` in a command prompt.
+
+Add yourself to the `tty` and `dialout` groups, then log out and back in to have the changes take effect:
+
+`sudo usermod -a -G tty $USER`
+
+`sudo usermod -a -G dialout $USER`
+
 ## Motion Outputs
 
 ### Motors

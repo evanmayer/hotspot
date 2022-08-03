@@ -5,6 +5,7 @@ import logging
 import multiprocessing as mp
 import numpy as np
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -60,6 +61,7 @@ class Executive:
         self.cmd_queue = mp.Queue(const.MAX_QLEN)
         self.tm_queue = mp.Queue(const.MAX_QLEN)
         self.sequence_len = 0.
+        self.positions_visited = 0
 
         # Handle telemetry output
         self.router = tm.DataRouter(self.tm_queue)
@@ -120,7 +122,7 @@ class Executive:
                     'n8' + # enable encoder feedback mode
                     'R\r\n'
                 )
-            )
+            )        
         return
 
 
@@ -416,6 +418,7 @@ class Executive:
             logger.info('Beginning command sequence.')
             self.empty_queue(self.cmd_queue)
             self.add_cmds(fname)
+            self.positions_visited = 0
             # Make a new timestamped logfile
             self.router = tm.DataRouter(self.tm_queue)
 
@@ -538,6 +541,21 @@ class Executive:
         return
 
 
+    def take_image(self):
+        time.sleep(1)
+        self.positions_visited += 1
+        cmd = ['bash', '-c', f'. takeimg.sh {self.positions_visited}']
+        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if ret.returncode == 0:
+            print(ret.stdout.decode())
+        else:
+            if ret.stdout:
+                print(ret.stdout.decode())
+            if ret.stderr:
+                print(ret.stderr.decode())
+        return
+
+
     def do_hawkeye_tasks(self, cmd: dict):
         packet = {'Hawkeye Cmd':
             {
@@ -546,9 +564,11 @@ class Executive:
             }
         }
         self.tm_queue.put(packet)
-        
+
+        self.take_image()
+
         freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 10
+        num_blinks = 11
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
