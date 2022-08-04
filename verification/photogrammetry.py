@@ -13,7 +13,6 @@ import numpy as np
 import os
 import pickle
 import seaborn as sns
-from scipy import spatial
 from scipy import signal
 from scipy import ndimage
 
@@ -182,7 +181,7 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
         )
 
     # do camera calibration from chessboard images
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+    with concurrent.futures.ProcessPoolExecutor() as pool:
         if method == 'charuco':
             future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
         else:
@@ -321,6 +320,148 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
     return xfound * stride, yfound * stride
 
 
+def find_target(file, target_dir, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
+    '''
+    See docstring of `find_targets`.
+    '''
+    # use camera cal matrix to de-distort all images
+    im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
+    im = np.rot90(im, k=IMG_ROT_NUM)
+    undistorted_image = cv2.undistort(
+        im,
+        mtx,
+        dist,
+        None, 
+        optimal_camera_matrix
+    )
+    # re-find chessboard corners in undistorted image
+    gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
+    
+    # ret, corners = cv2.findChessboardCorners(
+    #     gray,
+    #     BOARD_VERT_SHAPE,
+    #     cv2.CALIB_CB_ADAPTIVE_THRESH + \
+    #     cv2.CALIB_CB_FAST_CHECK + \
+    #     cv2.CALIB_CB_NORMALIZE_IMAGE
+    # )
+
+    dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+    board = cv2.aruco.CharucoBoard_create(
+        BOARD_VERT_SHAPE[0]+1,
+        BOARD_VERT_SHAPE[1]+1,
+        .010, # size of checkerboard square
+        .008, # size of charuco target square
+        dictionary
+    )
+    corners_pre, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary)
+    res2 = cv2.aruco.interpolateCornersCharuco(
+                        corners_pre,
+                        ids,
+                        gray,
+                        board
+                    )
+    corners = res2[1]
+    if len(corners) > 0:
+        ret = True
+    else:
+        ret = False
+    
+    logger.info(f'Corner detection after de-distortion in {file}: {ret}')
+    if ret == True:
+        corners2 = cv2.cornerSubPix(
+            gray,
+            corners,
+            (5,5),
+            (-1,-1),
+            CORNER_TERM_CRIT
+        )
+        # undistorted_image_corners = cv2.drawChessboardCorners(
+        #     gray,
+        #     BOARD_VERT_SHAPE,
+        #     corners2,
+        #     ret
+        # )
+    else:
+        return
+
+    # find the homographic transform that undistorts the found chessboard
+    # corners into the rectified, "bird's eye" view of the chessboard.
+
+    # magic number: homographic transform for de-projection sometimes makes
+    # resulting image really tiny for some reason. if we didn't scale it 
+    # back up, we'd have only a few pixels across each chessboard
+    # intersection, degrading the quality of the subpixel refinement and 
+    # eventually the template location xcorr too.
+    sf = 4250.
+
+    # if necessary, try rotation for better fit
+    # https://scipython.com/book/chapter-6-numpy/examples/creating-a-rotation-matrix-in-numpy/
+    theta = 0 * (np.pi / 180.)
+    c, s = np.cos(theta), np.sin(theta)
+    R = np.array(((c, -s), (s, c)))
+    try:
+        h, status = cv2.findHomography(
+            corners2[:,0,:],
+            np.dot(BOARD_CORNER_LOCS[0,:,:2], R) * sf + corners2[0][0]
+        )
+    except:
+        return {'raft_target':(0,0), 'SW_target': (0,0)}, 1
+    # deproject chessboard points
+    corners_warped = cv2.perspectiveTransform(
+        corners2,
+        h
+    )
+    im_warped = cv2.warpPerspective(
+        undistorted_image,
+        h,
+        (undistorted_image.shape[1], undistorted_image.shape[0])
+    )
+    im_warped = np.flipud(im_warped) # order of charuco vs. checkerboard corners don't agree?
+
+    if plot:
+        plt.figure()
+        # plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
+        ax = plt.axes()
+        ax.imshow(cv2.cvtColor(im_warped, cv2.COLOR_BGR2GRAY))
+        # ax = None
+    else:
+        ax = None
+
+    # calc pixel scale: get pairs of euclidean distances along each axis.
+    # this leaves some information on the table (e.g. expected distance
+    # info of non-adjacent pairs), but is simple and there are enough
+    # pairs that the average should be good to submm precision across ~1 m
+    found_corners = corners_warped[:,0,:].reshape((BOARD_VERT_SHAPE[1], BOARD_VERT_SHAPE[0], 2))
+    dists0 = np.array([])
+    for i in range(found_corners.shape[0]):
+        d = np.diff(found_corners[i,:,:], axis=0)
+        dists0 = np.concatenate([dists0, np.sqrt((d ** 2).sum(axis=1))])
+    dists1 = np.array([])
+    for j in range(found_corners.shape[1]):
+        d = np.diff(found_corners[:,j,:], axis=0)
+        dists1 = np.concatenate([dists1, np.sqrt((d ** 2).sum(axis=1))])
+    dists = np.concatenate([dists0, dists1])
+    # print('dists0', dists0.mean(), 'dists1', dists1.mean(), 'discrepancy', dists0.mean() - dists1.mean())
+    avg_spacing = np.mean(np.abs(dists))
+    px_per_m = avg_spacing / BOARD_SQUARE_SIZE
+
+    target_locs = {}
+    targets = ['raft_target', 'SW_target']#, 'SE_target', 'NW_target', 'NE_target']
+    for target in targets:
+        x,y = find_template(
+            os.path.join(target_dir, target + '.png'),
+            im_warped,
+            px_per_m,
+            stride=stride,
+            ax=ax)
+        target_locs[target] = (x,y)
+    if plot:
+        ax.legend(loc='best')
+        ax.set_title('Targets found')
+        # plt.savefig(f'found_{os.path.basename(file)}.png')
+    return target_locs, px_per_m
+
+
 def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
     '''
     Uses an OpenCV camera matrix to undo distortion in all test images, then
@@ -352,159 +493,17 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
         Dictionary full of key, value pairs describing the results of target
         finding and px-to-meter calculation.
     '''
-    def find_target(file, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
-        '''
-        See docstring of `find_targets`.
-        '''
-        # use camera cal matrix to de-distort all images
-        im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
-        im = np.rot90(im, k=IMG_ROT_NUM)
-        undistorted_image = cv2.undistort(
-            im,
-            mtx,
-            dist,
-            None, 
-            optimal_camera_matrix
-        )
-        # re-find chessboard corners in undistorted image
-        gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
-        
-        # ret, corners = cv2.findChessboardCorners(
-        #     gray,
-        #     BOARD_VERT_SHAPE,
-        #     cv2.CALIB_CB_ADAPTIVE_THRESH + \
-        #     cv2.CALIB_CB_FAST_CHECK + \
-        #     cv2.CALIB_CB_NORMALIZE_IMAGE
-        # )
-
-        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-        board = cv2.aruco.CharucoBoard_create(
-            BOARD_VERT_SHAPE[0]+1,
-            BOARD_VERT_SHAPE[1]+1,
-            .010, # size of checkerboard square
-            .008, # size of charuco target square
-            dictionary
-        )
-        corners_pre, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary)
-        res2 = cv2.aruco.interpolateCornersCharuco(
-                            corners_pre,
-                            ids,
-                            gray,
-                            board
-                        )
-        corners = res2[1]
-        if len(corners) > 0:
-            ret = True
-        else:
-            ret = False
-        
-        logger.info(f'Corner detection after de-distortion in {file}: {ret}')
-        if ret == True:
-            corners2 = cv2.cornerSubPix(
-                gray,
-                corners,
-                (5,5),
-                (-1,-1),
-                CORNER_TERM_CRIT
-            )
-            # undistorted_image_corners = cv2.drawChessboardCorners(
-            #     gray,
-            #     BOARD_VERT_SHAPE,
-            #     corners2,
-            #     ret
-            # )
-        else:
-            return
-
-        # find the homographic transform that undistorts the found chessboard
-        # corners into the rectified, "bird's eye" view of the chessboard.
-
-        # magic number: homographic transform for de-projection sometimes makes
-        # resulting image really tiny for some reason. if we didn't scale it 
-        # back up, we'd have only a few pixels across each chessboard
-        # intersection, degrading the quality of the subpixel refinement and 
-        # eventually the template location xcorr too.
-        sf = 4250.
-
-        # if necessary, try rotation for better fit
-        # https://scipython.com/book/chapter-6-numpy/examples/creating-a-rotation-matrix-in-numpy/
-        theta = 1 * (np.pi / 180.)
-        c, s = np.cos(theta), np.sin(theta)
-        R = np.array(((c, -s), (s, c)))
-        try:
-            h, status = cv2.findHomography(
-                corners2[:,0,:],
-                np.dot(BOARD_CORNER_LOCS[0,:,:2], R) * sf + corners2[0][0]
-            )
-        except:
-            return {'raft_target':(0,0), 'SW_target': (0,0)}, 1
-        # deproject chessboard points
-        corners_warped = cv2.perspectiveTransform(
-            corners2,
-            h
-        )
-        im_warped = cv2.warpPerspective(
-            undistorted_image,
-            h,
-            (undistorted_image.shape[1], undistorted_image.shape[0])
-        )
-        im_warped = np.flipud(im_warped) # order of charuco vs. checkerboard corners don't agree?
-
-        if plot:
-            plt.figure()
-            # plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
-            ax = plt.axes()
-            ax.imshow(cv2.cvtColor(im_warped, cv2.COLOR_BGR2GRAY))
-            # ax = None
-        else:
-            ax = None
-
-        # calc pixel scale: get pairs of euclidean distances along each axis.
-        # this leaves some information on the table (e.g. expected distance
-        # info of non-adjacent pairs), but is simple and there are enough
-        # pairs that the average should be good to submm precision across ~1 m
-        found_corners = corners_warped[:,0,:].reshape((BOARD_VERT_SHAPE[1], BOARD_VERT_SHAPE[0], 2))
-        dists0 = np.array([])
-        for i in range(found_corners.shape[0]):
-            d = np.diff(found_corners[i,:,:], axis=0)
-            dists0 = np.concatenate([dists0, np.sqrt((d ** 2).sum(axis=1))])
-        dists1 = np.array([])
-        for j in range(found_corners.shape[1]):
-            d = np.diff(found_corners[:,j,:], axis=0)
-            dists1 = np.concatenate([dists1, np.sqrt((d ** 2).sum(axis=1))])
-        dists = np.concatenate([dists0, dists1])
-        # print('dists0', dists0.mean(), 'dists1', dists1.mean(), 'discrepancy', dists0.mean() - dists1.mean())
-        avg_spacing = np.mean(np.abs(dists))
-        px_per_m = avg_spacing / BOARD_SQUARE_SIZE
-
-        target_locs = {}
-        targets = ['raft_target', 'SW_target']#, 'SE_target', 'NW_target', 'NE_target']
-        for target in targets:
-            x,y = find_template(
-                os.path.join(target_dir, target + '.png'),
-                im_warped,
-                px_per_m,
-                stride=stride,
-                ax=ax)
-            target_locs[target] = (x,y)
-        if plot:
-            ax.legend(loc='best')
-            ax.set_title('Targets found')
-            # plt.savefig(f'found_{os.path.basename(file)}.png')
-        return target_locs, px_per_m
-
-
     extensions = ['.jpeg', '.jpg', '.JPG']
     files = []
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
     assert files, 'No image files found when searching for images for target measurement.'
-    # files = files[-2:]
+    # files = files[:2]
     image_data = {}
     px_per_ms = []
     # dicts are kinda thread-safe
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-        future_to_file = {pool.submit(find_target, *(file, mtx, dist, optimal_camera_matrix), **{'stride' : stride, 'plot' : plot}) : file for file in files}
+    with concurrent.futures.ProcessPoolExecutor() as pool:
+        future_to_file = {pool.submit(find_target, *(file, target_dir, mtx, dist, optimal_camera_matrix), **{'stride' : stride, 'plot' : plot}) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
             try:
@@ -555,15 +554,6 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
     plt.figure()
     plt.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax = plt.axes()
-    # ax.set_xticks(xs)
-    plt.xticks(rotation=45)
-    # ax.set_yticks(ys)
-    ax.set_title(command_file + '\n' + image_data['source dir'])
-    ax.set_xlabel('x-distance from SW corner (m)')
-    ax.set_ylabel('y-distance from SW corner (m)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    ax.set_facecolor('gainsboro')
 
     colors = ['k', 'g', 'b', 'm', 'r']
     targets = ['raft_target']#, 'SW_target', 'SE_target', 'NW_target', 'NE_target']
@@ -611,9 +601,11 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
             residuals = queries - commanded_pts
 
             # error check: ignore ridiculous residuals
+            rmse = None
             if residuals.size > 16: # need good stats
-                print('RMSE:', np.sqrt(np.mean(residuals ** 2.)))
-                sig_thresh = 3. * np.sqrt(np.mean(residuals ** 2.))
+                rmse = np.sqrt(np.mean(residuals ** 2.))
+                print('RMSE:', rmse)
+                sig_thresh = 3. * rmse
                 bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
                 bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
                 queries[bad_x] = commanded_pts[bad_x]
@@ -647,8 +639,21 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
             ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='r', label=f'{target} Ignored\n(Error >3RMSEs)', zorder=1)
         if bad_y:
             ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='r', label=f'_{target} Ignored\n(Error >3RMSEs)')
+        
+        plt.xticks(rotation=45)
+        if rmse:
+            ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']) + '\n' + f'RMSE: {rmse * 1000.:.2f} mm')
+        else:
+            ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']))
+        ax.set_xlabel('x-distance from SW corner (m)')
+        ax.set_ylabel('y-distance from SW corner (m)')
+        ax.grid(True)
+        ax.set_aspect('equal')
+        ax.set_facecolor('gainsboro')
         ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+        plt.subplots_adjust(top=0.9)
         plt.tight_layout()
+        plt.savefig(os.path.join(image_data['source dir'], 'quiver.png'), facecolor='white', transparent=False)
 
         plt.figure()
         ax = plt.axes()
@@ -656,12 +661,14 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
         residuals_mm = np.array(residuals) * 1000.
         sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), shade=True, ax=ax)
         ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.5)
+        ax.set_xlim(-7.5, 7.5)
+        ax.set_ylim(-7.5, 7.5)
         ax.set_xlabel('X-dir Residuals (mm)')
         ax.set_ylabel('Y-dir Residuals (mm)')
         ax.grid(True)
         ax.set_aspect('equal')
-        # ax.set_xlim(-8,8)
-        # ax.set_ylim(-8,8)
+        plt.savefig(os.path.join(image_data['source dir'], 'residuals.png'), facecolor='white', transparent=False)
+
 
         plt.figure()
         ax = plt.axes()
@@ -669,8 +676,10 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
         residuals_mag_mm = np.linalg.norm(residuals, axis=-1) * 1000.
         levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .5, .5)
         X,Y = np.meshgrid(xs, ys)
-        im = ax.contourf(X, Y, residuals_mag_mm, levels=levels)
-        cbar = plt.colorbar(im, label='Magnitude (mm)')
+        vmin = 0
+        vmax = 10
+        im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, vmin=0, vmax=7.5)
+        cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='Magnitude (mm)')
         ax.set_xticks(xs)
         plt.xticks(rotation=45)
         ax.set_yticks(ys)
@@ -678,6 +687,21 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
         ax.set_ylabel('Y-dir Position (m)')
         ax.grid(True)
         plt.tight_layout()
+        plt.savefig(os.path.join(image_data['source dir'], 'magnitudes.png'), facecolor='white', transparent=False)
+
+
+        plt.figure()
+        ax = plt.axes()
+        ax.set_title('Residuals vs. Position Num.')
+        residuals_ordered_mm = np.ravel(residuals_mag_mm)
+        ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+        ax.set_ylim(0, 7.5)
+        ax.set_xlabel('Scan Order')
+        ax.set_ylabel('Position Error Magnitude (mm)')
+        ax.grid(True)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.85)
+        plt.savefig(os.path.join(image_data['source dir'], 'error_vs_time.png'), facecolor='white', transparent=False)
     return
 
 

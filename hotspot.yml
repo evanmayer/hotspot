@@ -6,8 +6,9 @@ dependencies:
   - ipympl
   - ipykernel
   - ipython
+  - jupyterconsole
   - jupyterlab
-  - python=3.9
+  - python>=3
   - numpy
   - pytest
   - matplotlib
@@ -17,7 +18,7 @@ dependencies:
   - numba
   - seaborn
   - pip:
-    - opencv-contrib-python
+    - opencv-contrib-python==4.5.5.*
     - pycallgraph2
     - portray
     - prompt-toolkit<=2.0.0

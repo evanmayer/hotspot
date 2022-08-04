@@ -122,7 +122,7 @@ class Executive:
                     'n8' + # enable encoder feedback mode
                     'R\r\n'
                 )
-            )        
+            )
         return
 
 
@@ -568,7 +568,7 @@ class Executive:
         self.take_image()
 
         freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 11
+        num_blinks = 1
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
