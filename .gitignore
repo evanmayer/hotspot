@@ -135,7 +135,8 @@ dmypy.json
 *.hdf5
 
 # image files from photogrammetry
-verification/img/
+verification/**/input/**
+verification/**/output/**
 .pickle
 
 # kicad files
