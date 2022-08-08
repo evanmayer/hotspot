@@ -182,7 +182,7 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
         )
 
     # do camera calibration from chessboard images
-    with concurrent.futures.ProcessPoolExecutor() as pool:
+    with concurrent.futures.ThreadPoolExecutor() as pool:
         if method == 'charuco':
             future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
         else:
