@@ -543,6 +543,7 @@ def post_process_SW_reference(image_data: dict, out_dir):
         loc[1] *= -1
         loc = loc / image_data['avg_px_per_m']
         locs[i] = loc
+
     mean_pos = np.mean(locs, axis=0)
     print(mean_pos)
 
@@ -552,8 +553,8 @@ def post_process_SW_reference(image_data: dict, out_dir):
     residuals_mm = np.array(locs - mean_pos) * 1000.
     sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), shade=True, ax=ax)
     ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
-    ax.set_xlim(-1, 1)
-    ax.set_ylim(-1, 1)
+    # ax.set_xlim(-5, 5)
+    # ax.set_ylim(-5, 5)
     ax.set_xlabel('X-dir Jitter (mm)')
     ax.set_ylabel('Y-dir Jitter (mm)')
     ax.grid(True)
@@ -653,9 +654,10 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
         bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
         queries[bad_x] = commanded_pts[bad_x]
         queries[bad_y] = commanded_pts[bad_y]
-        print(f'{len(bad_x[0])} x-measurements with >6x RMSE ignored (highlighted red).')
-        print(f'{len(bad_y[0])} y-measurements with >6x RMSE ignored (highlighted red).')
+        print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
+        print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
         residuals = queries - commanded_pts
+        rmse = np.sqrt(np.mean(residuals ** 2.))
     else:
         bad_x = None
         bad_y = None
@@ -721,8 +723,8 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
     residuals_mm = np.array(residuals) * 1000.
     sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), shade=True, ax=ax)
     ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    ax.set_xlim(-10, 10)
-    ax.set_ylim(-10, 10)
+    # ax.set_xlim(-10, 10)
+    # ax.set_ylim(-10, 10)
     ax.set_xlabel('X-dir Residuals (mm)')
     ax.set_ylabel('Y-dir Residuals (mm)')
     ax.grid(True)
