@@ -12,6 +12,7 @@ import numba
 import numpy as np
 import os
 import pickle
+import re
 import seaborn as sns
 from scipy import signal
 from scipy import ndimage
@@ -181,7 +182,7 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
         )
 
     # do camera calibration from chessboard images
-    with concurrent.futures.ProcessPoolExecutor() as pool:
+    with concurrent.futures.ThreadPoolExecutor() as pool:
         if method == 'charuco':
             future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
         else:
@@ -317,7 +318,7 @@ def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: f
         ax.scatter(xfound, yfound, s=80, color='w')
         ax.scatter(xfound, yfound, label=template_filename)
 
-    return xfound * stride, yfound * stride
+    return int(xfound * stride), int(yfound * stride)
 
 
 def find_target(file, target_dir, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
@@ -515,12 +516,6 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
                 image_data[file] = {}
                 image_data[file]['px_per_m'] = px_per_m
                 image_data[file]['target_locs'] = target_locs
-    # for file in files:
-    #     target_locs, px_per_m = find_target(file, mtx, dist, optimal_camera_matrix)
-    #     px_per_ms.append(px_per_m)
-    #     image_data[file] = {}
-    #     image_data[file]['px_per_m'] = px_per_m
-    #     image_data[file]['target_locs'] = target_locs
     avg_px_per_m = np.mean(px_per_ms)
     image_data['source dir'] = os.path.abspath(image_dir)
     image_data['avg_px_per_m'] = avg_px_per_m
@@ -528,14 +523,66 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
     return image_data
 
 
-def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_offset=None):
+def post_process_SW_reference(image_data: dict, out_dir):
+    '''
+    Calculate the jitter in mm of the target used as the reference point for 
+    all raft positions. Jitter is calculated about the mean position.
+    '''
+    # https://stackoverflow.com/a/16090640
+    nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
+    # Get the per-image data out of the image_data dict
+    # natural sort image data to align with command sequence
+    img_keys = [img for img in sorted(list(image_data.keys()), key=nsort) if os.path.exists(img)]
+    locs = np.zeros((len(img_keys), 2))
+    for i, img in enumerate(img_keys):
+        if not isinstance(image_data[img], dict):
+            continue
+        # image space to mapper space transform
+        # SW position is absolute reference, so we may only quantify the jitter of it.
+        loc = np.array(image_data[img]['target_locs']['SW_target'])
+        loc[1] *= -1
+        loc = loc / image_data['avg_px_per_m']
+        locs[i] = loc
+
+    mean_pos = np.mean(locs, axis=0)
+    print(mean_pos)
+
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('SW reference point jitter about mean')
+    residuals_mm = np.array(locs - mean_pos) * 1000.
+    sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), shade=True, ax=ax)
+    ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
+    # ax.set_xlim(-5, 5)
+    # ax.set_ylim(-5, 5)
+    ax.set_xlabel('X-dir Jitter (mm)')
+    ax.set_ylabel('Y-dir Jitter (mm)')
+    ax.grid(True)
+    ax.set_aspect('equal')
+    plt.savefig(os.path.join(out_dir, 'reference_residuals.png'), facecolor='white', transparent=False)
+    return locs
+
+
+def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_offset=None):
     '''
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
+
+    Parameters
+    ----------
+    image_data: dict
+        Return dict of `find_targets`.
+    out_dir: str
+        Location to save plots
+    command_file: str
+        .csv file that was used to run the scan. Should be from the
+        hotspot/data/input/profiles dir.
+    SW_offset (optional): tuple
+        If provided, will calculate positions relative to a target with a known
+        position offset from the mapper frame origin.
     '''
     # func for natsort
     # https://stackoverflow.com/a/16090640
-    import re
     nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
 
     # Reshape command profile assuming a square box is scanned.
@@ -555,194 +602,190 @@ def post_process_many_to_many(image_data: dict, command_file: str, ref=None, SW_
     plt.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax = plt.axes()
 
-    colors = ['k', 'g', 'b', 'm', 'r']
-    targets = ['raft_target']#, 'SW_target', 'SE_target', 'NW_target', 'NE_target']
     queries = np.zeros_like(commanded_pts)
     residuals = np.zeros_like(commanded_pts)
-    for i, target in enumerate(targets):
-        # Get the per-image data out of the image_data dict
-        # natural sort image data to align with command sequence
-        img_keys = [img for img in sorted(list(image_data.keys()), key=nsort) if os.path.exists(img)]
-        imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
-        for j in range(imgs.shape[0]):
-            for k in range(imgs.shape[1]):
-                if not isinstance(image_data[imgs[j][k]], dict):
-                    continue
-                # image space to mapper space transform
-                if ref == 'SW':
-                    query = (
-                        np.array(image_data[imgs[j][k]]['target_locs'][target]) -
-                        np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
-                    )
-                else: # reference measurements to SW point in pattern
-                    query = (
-                        np.array(image_data[imgs[j][k]]['target_locs'][target]) -
-                        np.array(image_data[imgs[0][0]]['target_locs'][target])
-                    )
-                query[1] *= -1
-                query = query / image_data['avg_px_per_m']
-                if ref != 'SW': # assume first position is perfect and calc errors relative to that
-                    query += commanded_pts[0,0,:]
-                # If the position of the SW target is offset from the mapper frame origin, take into account
-                if SW_offset:
-                    query += np.array(SW_offset)
-                queries[j][k][0] = query[0]
-                queries[j][k][1] = query[1]
-
-        if target == 'raft_target':
-            ax.scatter(
-                commanded_pts[:,:,0],
-                commanded_pts[:,:,1],
-                facecolor='none',
-                color='k',
-                label=f'{target} Commanded Pos.',
-                zorder=1
-            )
-            residuals = queries - commanded_pts
-
-            # error check: ignore ridiculous residuals
-            rmse = None
-            if residuals.size > 16: # need good stats
-                rmse = np.sqrt(np.mean(residuals ** 2.))
-                print('RMSE:', rmse)
-                sig_thresh = 3. * rmse
-                bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
-                bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
-                queries[bad_x] = commanded_pts[bad_x]
-                queries[bad_y] = commanded_pts[bad_y]
-                print(f'{len(bad_x[0])} x-measurements with >6x RMSE ignored (highlighted red).')
-                print(f'{len(bad_y[0])} y-measurements with >6x RMSE ignored (highlighted red).')
-                residuals = queries - commanded_pts
+    # Get the per-image data out of the image_data dict
+    # natural sort image data to align with command sequence
+    img_keys = [img for img in sorted(list(image_data.keys()), key=nsort) if os.path.exists(img)]
+    imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
+    for j in range(imgs.shape[0]):
+        for k in range(imgs.shape[1]):
+            if not isinstance(image_data[imgs[j][k]], dict):
+                continue
+            # image space to mapper space transform
+            # If the position of the SW target is offset from the mapper frame origin, take into account
+            if SW_offset:
+                query = (
+                    np.array(image_data[imgs[j][k]]['target_locs']['raft_target']) -
+                    np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
+                )
+            # assume first position is perfect and calc errors relative to that
             else:
-                bad_x = None
-                bad_y = None
+                query = (
+                    np.array(image_data[imgs[j][k]]['target_locs']['raft_target']) -
+                    np.array(image_data[imgs[0][0]]['target_locs']['raft_target'])
+                )
+            query[1] *= -1
+            query = query / image_data['avg_px_per_m']
+            if SW_offset:
+                query += np.array(SW_offset)
+            else:
+                query += commanded_pts[0,0,:]
+            queries[j][k][0] = query[0]
+            queries[j][k][1] = query[1]
 
-            ax.quiver(
-                queries[:,:,0],
-                queries[:,:,1],
-                residuals[:,:,0],
-                residuals[:,:,1],
-                np.linalg.norm(residuals, axis=-1),
-                pivot='tip',
-                angles='xy',
-                scale_units='xy',
-                scale=1,
-                headwidth=2.5,
-                headlength=4,
-                edgecolors='k',
-                linewidth=.5,
-                width=4e-3,
-                zorder=2
-            )
-        ax.scatter(queries[:,:,0], queries[:,:,1], facecolor=colors[i], label=f'{target} Measured Pos.', zorder=1)
-        if bad_x:
-            ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='r', label=f'{target} Ignored\n(Error >3RMSEs)', zorder=1)
-        if bad_y:
-            ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='r', label=f'_{target} Ignored\n(Error >3RMSEs)')
-        
-        plt.xticks(rotation=45)
-        if rmse:
-            ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']) + '\n' + f'RMSE: {rmse * 1000.:.2f} mm')
-        else:
-            ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']))
-        ax.set_xlabel('x-distance from SW corner (m)')
-        ax.set_ylabel('y-distance from SW corner (m)')
-        ax.grid(True)
-        ax.set_aspect('equal')
-        ax.set_facecolor('gainsboro')
-        ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-        plt.subplots_adjust(top=0.9)
-        plt.tight_layout()
-        plt.savefig(os.path.join(image_data['source dir'], 'quiver.png'), facecolor='white', transparent=False)
+    ax.scatter(
+        commanded_pts[:,:,0],
+        commanded_pts[:,:,1],
+        facecolor='none',
+        color='k',
+        label=f'Raft Commanded Pos.',
+        zorder=1
+    )
+    residuals = queries - commanded_pts
 
-        plt.figure()
-        ax = plt.axes()
-        ax.set_title('Residuals: Commanded - Measured')
-        residuals_mm = np.array(residuals) * 1000.
-        sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), shade=True, ax=ax)
-        ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.5)
-        ax.set_xlim(-7.5, 7.5)
-        ax.set_ylim(-7.5, 7.5)
-        ax.set_xlabel('X-dir Residuals (mm)')
-        ax.set_ylabel('Y-dir Residuals (mm)')
-        ax.grid(True)
-        ax.set_aspect('equal')
-        plt.savefig(os.path.join(image_data['source dir'], 'residuals.png'), facecolor='white', transparent=False)
+    # error check: ignore ridiculous residuals
+    rmse = None
+    if residuals.size > 16: # need good stats
+        rmse = np.sqrt(np.mean(residuals ** 2.))
+        print('RMSE:', rmse)
+        sig_thresh = 3. * rmse
+        bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
+        bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
+        queries[bad_x] = commanded_pts[bad_x]
+        queries[bad_y] = commanded_pts[bad_y]
+        print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
+        print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
+        residuals = queries - commanded_pts
+        rmse = np.sqrt(np.mean(residuals ** 2.))
+    else:
+        bad_x = None
+        bad_y = None
 
+    ax.quiver(
+        queries[:,:,0],
+        queries[:,:,1],
+        residuals[:,:,0],
+        residuals[:,:,1],
+        np.linalg.norm(residuals, axis=-1),
+        pivot='tip',
+        angles='xy',
+        scale_units='xy',
+        scale=1,
+        headwidth=2.5,
+        headlength=4,
+        edgecolors='k',
+        linewidth=.5,
+        width=4e-3,
+        zorder=2
+    )
+    ax.scatter(queries[:,:,0], queries[:,:,1], facecolor='k', label='Raft Measured Pos.', zorder=1)
+    if any(bad_x):
+        ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+    if any(bad_y):
+        ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+    
+    plt.xticks(rotation=45)
+    if rmse:
+        ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']) + '\n' + f'RMSE: {rmse * 1000.:.2f} mm')
+    else:
+        ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']))
+    ax.set_xlabel('x-distance from SW corner (m)')
+    ax.set_ylabel('y-distance from SW corner (m)')
+    ax.grid(True)
+    ax.set_aspect('equal')
+    ax.set_facecolor('gainsboro')
+    ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.subplots_adjust(top=0.9)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'quiver.png'), facecolor='white', transparent=False)
 
-        plt.figure()
-        ax = plt.axes()
-        ax.set_title('Residual Magnitude: Commanded - Measured')
-        residuals_mag_mm = np.linalg.norm(residuals, axis=-1) * 1000.
-        levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .5, .5)
-        X,Y = np.meshgrid(xs, ys)
-        vmin = 0
-        vmax = 10
-        im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, vmin=0, vmax=7.5)
-        cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='Magnitude (mm)')
-        ax.set_xticks(xs)
-        plt.xticks(rotation=45)
-        ax.set_yticks(ys)
-        ax.set_xlabel('X-dir Position (m)')
-        ax.set_ylabel('Y-dir Position (m)')
-        ax.grid(True)
-        plt.tight_layout()
-        plt.savefig(os.path.join(image_data['source dir'], 'magnitudes.png'), facecolor='white', transparent=False)
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Residual Magnitude: Commanded - Measured')
+    residuals_mag_mm = np.linalg.norm(residuals, axis=-1) * 1000.
+    levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .5, .5)
+    X,Y = np.meshgrid(xs, ys)
+    im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, vmin=0, vmax=10)
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='Magnitude (mm)')
+    ax.set_xticks(xs)
+    plt.xticks(rotation=45)
+    ax.set_yticks(ys)
+    ax.set_xlabel('X-dir Position (m)')
+    ax.set_ylabel('Y-dir Position (m)')
+    ax.grid(True)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'magnitudes.png'), facecolor='white', transparent=False)
 
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Residuals: Commanded - Measured')
+    residuals_mm = np.array(residuals) * 1000.
+    sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), shade=True, ax=ax)
+    ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
+    # ax.set_xlim(-10, 10)
+    # ax.set_ylim(-10, 10)
+    ax.set_xlabel('X-dir Residuals (mm)')
+    ax.set_ylabel('Y-dir Residuals (mm)')
+    ax.grid(True)
+    ax.set_aspect('equal')
+    plt.savefig(os.path.join(out_dir, 'residuals.png'), facecolor='white', transparent=False)
 
-        plt.figure()
-        ax = plt.axes()
-        ax.set_title('Residuals vs. Position Num.')
-        residuals_ordered_mm = np.ravel(residuals_mag_mm)
-        ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-        ax.set_ylim(0, 7.5)
-        ax.set_xlabel('Scan Order')
-        ax.set_ylabel('Position Error Magnitude (mm)')
-        ax.grid(True)
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.85)
-        plt.savefig(os.path.join(image_data['source dir'], 'error_vs_time.png'), facecolor='white', transparent=False)
-    return
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Residuals vs. Position Num.')
+    residuals_ordered_mm = np.ravel(residuals_mag_mm)
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+    ax.set_ylim(0, 10)
+    ax.set_xlabel('Scan Order')
+    ax.set_ylabel('Position Error Magnitude (mm)')
+    ax.grid(True)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    plt.savefig(os.path.join(out_dir, 'error_vs_time.png'), facecolor='white', transparent=False)
+
+    return commanded_pts, queries, residuals
 
 
 if __name__ == '__main__':
-    plt.ion()
-    # check for pickled camera matrices to avoid expensive recalibration
-    if not (
-        os.path.exists('camera_cal_mtx.pickle') and
-        os.path.exists('camera_cal_dist.pickle') and
-        os.path.exists('camera_cal_optimal_camera_matrix.pickle')
-    ):
-        logger.info('No pickled camera calibration found. Recalibrating...')
-        # calibrate the camera for distortion
-        mtx, dist, optimal_camera_matrix, roi = calibrate_camera(
-            os.path.join('input', 'camera_cal'),
-            plot=False
-        )
-        with open('camera_cal_mtx.pickle', 'wb') as f:
-            pickle.dump(mtx, f, protocol=pickle.HIGHEST_PROTOCOL)
-        with open('camera_cal_dist.pickle', 'wb') as f:
-            pickle.dump(dist, f, protocol=pickle.HIGHEST_PROTOCOL)
-        with open('camera_cal_optimal_camera_matrix.pickle', 'wb') as f:
-            pickle.dump(optimal_camera_matrix, f, protocol=pickle.HIGHEST_PROTOCOL)
-    else:
-        logger.info('Found pickled camera calibration. Skipping camera calibration.')
-        with open('camera_cal_mtx.pickle', 'rb') as f:
-            mtx = pickle.load(f)
-        with open('camera_cal_dist.pickle', 'rb') as f:
-            dist = pickle.load(f)
-        with open('camera_cal_optimal_camera_matrix.pickle', 'rb') as f:
-            optimal_camera_matrix = pickle.load(f)
-    logger.info('Finding photogrammetry targets in images.')
-    image_data = find_targets(
-        os.path.join('input', 'meas', 'try1'),
-        os.path.join('input', 'targets'),
-        mtx,
-        dist,
-        optimal_camera_matrix,
-        plot=False
-    )
-    logger.info('Post-processing found targets.')
-    command_file = os.path.join('..', 'data', 'input', 'profiles', '24in_breadboard_raster_9x9_.2x.2.csv')
-    post_process_many_to_many(image_data, command_file)
-    plt.show(block=True)
+    # plt.ion()
+    # # check for pickled camera matrices to avoid expensive recalibration
+    # if not (
+    #     os.path.exists('camera_cal_mtx.pickle') and
+    #     os.path.exists('camera_cal_dist.pickle') and
+    #     os.path.exists('camera_cal_optimal_camera_matrix.pickle')
+    # ):
+    #     logger.info('No pickled camera calibration found. Recalibrating...')
+    #     # calibrate the camera for distortion
+    #     mtx, dist, optimal_camera_matrix, roi = calibrate_camera(
+    #         os.path.join('input', 'camera_cal'),
+    #         plot=False
+    #     )
+    #     with open('camera_cal_mtx.pickle', 'wb') as f:
+    #         pickle.dump(mtx, f, protocol=pickle.HIGHEST_PROTOCOL)
+    #     with open('camera_cal_dist.pickle', 'wb') as f:
+    #         pickle.dump(dist, f, protocol=pickle.HIGHEST_PROTOCOL)
+    #     with open('camera_cal_optimal_camera_matrix.pickle', 'wb') as f:
+    #         pickle.dump(optimal_camera_matrix, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # else:
+    #     logger.info('Found pickled camera calibration. Skipping camera calibration.')
+    #     with open('camera_cal_mtx.pickle', 'rb') as f:
+    #         mtx = pickle.load(f)
+    #     with open('camera_cal_dist.pickle', 'rb') as f:
+    #         dist = pickle.load(f)
+    #     with open('camera_cal_optimal_camera_matrix.pickle', 'rb') as f:
+    #         optimal_camera_matrix = pickle.load(f)
+    # logger.info('Finding photogrammetry targets in images.')
+    # image_data = find_targets(
+    #     os.path.join('input', 'meas', 'try1'),
+    #     os.path.join('targets'),
+    #     mtx,
+    #     dist,
+    #     optimal_camera_matrix,
+    #     plot=False
+    # )
+    # logger.info('Post-processing found targets.')
+    # command_file = os.path.join('..', 'data', 'input', 'profiles', '24in_breadboard_raster_9x9_.2x.2.csv')
+    # post_process_scan(image_data, command_file)
+    # plt.show(block=True)
+    pass
