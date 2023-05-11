@@ -24,8 +24,11 @@ logger = logging.getLogger(__name__)
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
-BOARD_VERT_SHAPE = (10,7)
-BOARD_SQUARE_SIZE = 0.021004444 # m
+BOARD_VERT_SHAPE = (10,7) # this was the shape of the board that is in Dan's lab
+# BOARD_VERT_SHAPE = (18,11) # this was the shape of the finer board printed on sticker paper
+BOARD_SQUARE_SIZE = 0.021004444 # m, this was the size of the board that is in Dan's lab
+# BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
+# BOARD_SQUARE_SIZE = 13.091e-3 # m, this was the size of the finer board printed on sticker paper
 CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
@@ -115,7 +118,9 @@ def find_corners_charuco(file: str, dictionary: dict):
     im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
     im = np.rot90(im, k=IMG_ROT_NUM) # may not need this, depending on source of images.
     gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary)
+    parameters = cv2.aruco.DetectorParameters()
+    detector = cv2.aruco.ArucoDetector(dictionary, parameters)
+    corners, ids, rejectedImgPoints = detector.detectMarkers(gray)#, dictionary)
     if len(corners) > 0:
         ret = True
     else:
@@ -163,26 +168,29 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
         Region of interest, may be used for cropping out blank pixels after
         distortion removal
     '''
-    extensions = ['.jpeg', '.jpg', '.JPG']
+    extensions = ['.jpeg', '.jpg', '.JPG', '.tiff', '.TIFF']
     files = []
     for ext in extensions:
         files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
     assert files, 'No image files found when searching for images for camera calibration.'
+    files = files[:40]
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
     if method == 'charuco':
         ids_q = mp.Queue()
         dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-        board = cv2.aruco.CharucoBoard_create(
-            BOARD_VERT_SHAPE[0]+1,
-            BOARD_VERT_SHAPE[1]+1,
+        board = cv2.aruco.CharucoBoard(
+            (BOARD_VERT_SHAPE[0]+1,
+            BOARD_VERT_SHAPE[1]+1),
             .010, # size of checkerboard square
+            # .015,
             .008, # size of charuco target square
+            # .012,
             dictionary
         )
 
     # do camera calibration from chessboard images
-    with concurrent.futures.ThreadPoolExecutor() as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         if method == 'charuco':
             future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
         else:
@@ -221,7 +229,7 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
                         imgpoints_q.put(corners2)
                 if plot:
                     plt.figure()
-                    plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
+                    # plt.get_current_fig_manager().window.setGeometry(400,300,1000,800)
                     plt.imshow(im)
                     ax = plt.gca()
                     ax.set_aspect('equal')
@@ -347,14 +355,14 @@ def find_target(file, target_dir, mtx, dist, optimal_camera_matrix, stride=2, pl
     # )
 
     dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-    board = cv2.aruco.CharucoBoard_create(
-        BOARD_VERT_SHAPE[0]+1,
-        BOARD_VERT_SHAPE[1]+1,
+    board = cv2.aruco.CharucoBoard(
+        (BOARD_VERT_SHAPE[0]+1,
+        BOARD_VERT_SHAPE[1]+1),
         .010, # size of checkerboard square
         .008, # size of charuco target square
         dictionary
     )
-    corners_pre, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary)
+    corners_pre, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray)#, dictionary)
     res2 = cv2.aruco.interpolateCornersCharuco(
                         corners_pre,
                         ids,
@@ -503,7 +511,7 @@ def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride
     image_data = {}
     px_per_ms = []
     # dicts are kinda thread-safe
-    with concurrent.futures.ProcessPoolExecutor() as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as pool:
         future_to_file = {pool.submit(find_target, *(file, target_dir, mtx, dist, optimal_camera_matrix), **{'stride' : stride, 'plot' : plot}) : file for file in files}
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]

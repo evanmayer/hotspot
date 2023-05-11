@@ -37,7 +37,7 @@ def ezstepper_check_status(resp):
     status_good = True
     if resp:
         # bits 0-3 form an error code: see EZStepper docs
-        status = resp[3] & 0b0001111
+        status = resp[3] & 0b00001111
     else:
         status = b''
         status_good = False

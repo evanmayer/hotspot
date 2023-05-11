@@ -435,7 +435,7 @@ class Executive:
         self.do_hawkeye_tasks(cmd)
         logger.info(f'Raft centroid: {self.robot.raft.position}')
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
-        self.router.process_tm(plot_enable=self.plot_enable)
+        # self.router.process_tm(plot_enable=self.plot_enable)
         return
 
 
