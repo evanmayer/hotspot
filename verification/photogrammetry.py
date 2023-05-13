@@ -2,135 +2,137 @@
 
 import concurrent
 import cv2
-import glob
 import logging
 import matplotlib.pyplot as plt
-from matplotlib import image
-from matplotlib.patches import Circle, Rectangle
 import multiprocessing as mp
-import numba
 import numpy as np
 import os
-import pickle
 import re
+from scipy.spatial.transform import Rotation as R
 import seaborn as sns
-from scipy import signal
-from scipy import ndimage
 
 
 logging.basicConfig(level='INFO')
 logger = logging.getLogger(__name__)
+
+# natsort, from https://stackoverflow.com/a/16090640
+nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
 
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
 BOARD_VERT_SHAPE = (10,7) # this was the shape of the board that is in Dan's lab
 # BOARD_VERT_SHAPE = (18,11) # this was the shape of the finer board printed on sticker paper
-BOARD_SQUARE_SIZE = 0.021004444 # m, this was the size of the board that is in Dan's lab
+BOARD_SQUARE_SIZE = 0.020 # m, this was the size of the board that is in Dan's lab
 # BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
 # BOARD_SQUARE_SIZE = 13.091e-3 # m, this was the size of the finer board printed on sticker paper
+BOARD_ARUCO_SIZE = 0.015
+DEFAULT_TARGET_SIZE = 0.025 # m
+DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
+
 CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
 BOARD_CORNER_LOCS[0,:,:2] = np.mgrid[0:BOARD_VERT_SHAPE[0], 0:BOARD_VERT_SHAPE[1]].T.reshape(-1, 2) * BOARD_SQUARE_SIZE
-# BOARD_CORNER_LOCS = np.fliplr(BOARD_CORNER_LOCS)
-# This may change if your printed targets are a different size
-TARGET_W_AS_PRINTED = 0.03987 # m
 # Number of 90deg rotations to apply to images before corner finding. Use 0 if
 # your images show chessboards of 6 cols by 9 rows, otherwise -1 or 1.
 IMG_ROT_NUM = 0
 
 
-def gen_target(w: float, h: float, dpi: int, loc: str, plot=False):
+def load_to_gray(file, camera_matrix=None, camera_dist=None):
     '''
-    Generate an image of a photogrammetry target.
-
-    Parameters
-    ----------
-    w
-        total image width, m
-    h
-        total image height, m
-    dpi
-        output image dpi, converts between matrix coordinates and real width
-    loc
-        [SW, NW, SE, NE, raft] generates a different pattern for each loc
-    '''
-    w_in = w / METERS_PER_INCH
-    h_in = h / METERS_PER_INCH
-    w_px = np.round(w_in * dpi).astype(int)
-    h_px = np.round(h_in * dpi).astype(int)
-
-    fig, ax = plt.subplots()
-    fig.set_size_inches(w_in, h_in)
-    fig.tight_layout()
-    fig.subplots_adjust(left=0., right=1., top=1., bottom=0.)
-
-    pattern_size = 8
-    pattern = np.random.choice([0.05,0.95], size=(pattern_size,pattern_size))
-    pattern[0][0] = 0
-    pattern[pattern_size - 1][pattern_size - 1] = 1
-    ax.imshow(ndimage.zoom(pattern, h_px / pattern_size, order=0), cmap='Greys')
-
-    # center cross
-    c_size = dpi * 0.01 / METERS_PER_INCH # 10 cm
-    c_thick = dpi * 0.001 / METERS_PER_INCH # 1 mm
-
-    ax.add_patch(Rectangle((w_px / 2 - c_size / 2, h_px / 2 - c_thick / 2), c_size, c_thick, color='silver')) # horz
-    ax.add_patch(Rectangle((w_px / 2 - c_thick / 2, h_px / 2 - c_size / 2), c_thick, c_size, color='silver')) # vert
-    ax.add_patch(Rectangle((w_px / 2 - c_size / 2, h_px / 2 - c_thick / 4), c_size, c_thick / 2, color='k')) # horz
-    ax.add_patch(Rectangle((w_px / 2 - c_thick / 4, h_px / 2 - c_size / 2), c_thick / 2, c_size, color='k')) # vert
-
-    ax.set_aspect('equal')
-    ax.set_xlim([0, w_px])
-    ax.set_ylim([0, h_px])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    fig.savefig(f'{loc}_target.png')
-    if not plot:
-        plt.close()
-    return
-
-
-def find_corners(file: str):
-    '''
-    Thin wrapper for OpenCV findChessboardCorners
+    Load the image `file` and convert to gray, applying de-distortion if
+    camera parameters provided
     '''
     im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
     im = np.rot90(im, k=IMG_ROT_NUM) # may not need this, depending on source of images.
     gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    ret, corners = cv2.findChessboardCorners(
-        gray,
-        BOARD_VERT_SHAPE,
-        cv2.CALIB_CB_ADAPTIVE_THRESH + \
-        cv2.CALIB_CB_FAST_CHECK + \
-        cv2.CALIB_CB_NORMALIZE_IMAGE
-    )
-    logger.info(f'Camera calibration corner finding in {file}: {ret}')
-    return ret, corners, im, gray
+    if (camera_matrix is not None) and (camera_dist is not None):
+        gray = cv2.undistort(
+            gray,
+            camera_matrix,
+            camera_dist,
+        )
+    return gray
 
 
-
-def find_corners_charuco(file: str, dictionary: dict):
+def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, valid_ids=[], camera_matrix=None, camera_dist=None):
     '''
     Thin wrapper for OpenCV detectMarkers
     '''
-    im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
-    im = np.rot90(im, k=IMG_ROT_NUM) # may not need this, depending on source of images.
-    gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    gray = load_to_gray(file, camera_matrix=camera_matrix, camera_dist=camera_dist)
+
+    dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     parameters = cv2.aruco.DetectorParameters()
     detector = cv2.aruco.ArucoDetector(dictionary, parameters)
-    corners, ids, rejectedImgPoints = detector.detectMarkers(gray)#, dictionary)
-    if len(corners) > 0:
-        ret = True
+    corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
+
+    if (ids is not None):
+        found = True
+        mask = range(len(ids))
     else:
-        ret = False
+        found = False
+        mask = []
+
+    if valid_ids:
+        mask = []
+        for valid_id in valid_ids:
+            if valid_id in ids:
+                mask.append(list(ids).index(valid_id))
+
+    logger.info(f'ArUco finding in {file}: {found}')
     logger.info(f'ID\'d {len(corners)} targets.')
-    logger.info(f'Camera calibration charuco finding in {file}: {ret}')
-    return ret, corners, ids, im, gray
+    return found, np.array([corners[i] for i in mask]), np.array([ids[i][0] for i in mask]), gray
 
 
-def calibrate_camera(image_dir: str, method='chessboard', plot=False):
+def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, plot=False):
+    rvec, tvec, obj_points = cv2.aruco.estimatePoseSingleMarkers(corners, aruco_size, camera_matrix, camera_dist)
+    if plot:
+        gray = load_to_gray(file, camera_matrix=camera_matrix, camera_dist=camera_dist)
+        im_with_axes = cv2.drawFrameAxes(gray, camera_matrix, camera_dist, rvec, tvec, 0.075)
+        fig, ax = plt.subplots()
+        ax.imshow(im_with_axes)
+    return rvec, tvec, obj_points
+
+
+def generate_charuco_board(square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DICT, gen_png=False):
+    dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
+    board = cv2.aruco.CharucoBoard(
+        (BOARD_VERT_SHAPE[1]+1,
+        BOARD_VERT_SHAPE[0]+1),
+        square_size,
+        aruco_size,
+        dictionary
+    )
+    if gen_png:
+        dpi = 300
+        img = board.generateImage((int(8.5 * dpi), int(11 * dpi)), marginSize=int(dpi * square_size / METERS_PER_INCH))
+        cv2.imwrite(f'{BOARD_VERT_SHAPE[1]+1}x{BOARD_VERT_SHAPE[0]+1}_square_{square_size}m_aruco_{aruco_size}m_charuco_dict_{DEFAULT_ARUCO_DICT}.png', img)
+
+    return board, dictionary
+
+
+def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, plot=False):
+    '''
+    Thin wrapper for OpenCV aruco detectBoard
+    '''
+    board, _ = generate_charuco_board(square_size, aruco_size, aruco_dict=aruco_dict)
+    gray = load_to_gray(file, camera_matrix=camera_matrix, camera_dist=camera_dist)
+
+    detector = cv2.aruco.CharucoDetector(board)
+    aruco_corners, aruco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
+    charuco_ret, aruco_corners, aruco_ids = cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, gray, board)
+    ret, rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(aruco_corners, aruco_ids, board, camera_matrix, camera_dist, None, None)
+
+    if plot:
+        im_with_charuco_board = cv2.drawFrameAxes(gray, camera_matrix, camera_dist, rvec, tvec, 0.075)
+        fig, ax = plt.subplots()
+        ax.imshow(im_with_charuco_board)
+
+    return rvec, tvec
+
+
+def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, plot=False):
     '''
     The general idea is to take a set of test images with a chessboard pattern
     (6x9, i.e. 5x8 intersections) to calculate the distortion parameters of the
@@ -147,11 +149,12 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
 
     Parameters
     ----------
-    image_dir
-        path to directory containing ~30-60 images of a 6x9 square chessboard
-    method (optional)
-        'chessboard' works with plain chessboard patterns. 'charuco' works
-        with ChArUco patterns.
+    image_files
+        list of images of a chessboard or charuco board
+    square_size : float (optional)
+        size of chessboard square, m
+    aruco_size : float (optional)
+        size of ArUco square, m
     plot (optional)
         Draw a figure for each image analyzed.
     
@@ -168,74 +171,59 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
         Region of interest, may be used for cropping out blank pixels after
         distortion removal
     '''
-    extensions = ['.jpeg', '.jpg', '.JPG', '.tiff', '.TIFF']
-    files = []
-    for ext in extensions:
-        files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
-    assert files, 'No image files found when searching for images for camera calibration.'
-    files = files[:40]
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
-    if method == 'charuco':
-        ids_q = mp.Queue()
-        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-        board = cv2.aruco.CharucoBoard(
-            (BOARD_VERT_SHAPE[0]+1,
-            BOARD_VERT_SHAPE[1]+1),
-            .010, # size of checkerboard square
-            # .015,
-            .008, # size of charuco target square
-            # .012,
-            dictionary
-        )
+    ids_q = mp.Queue()
+    rets_q = mp.Queue()
+    board, _ = generate_charuco_board(square_size, aruco_size)
 
     # do camera calibration from chessboard images
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        if method == 'charuco':
-            future_to_file = {pool.submit(find_corners_charuco, file, dictionary) : file for file in files}
-        else:
-            future_to_file = {pool.submit(find_corners, file) : file for file in files}
+        future_to_file = {pool.submit(find_corners_aruco, file, DEFAULT_ARUCO_DICT) : file for file in image_files}
+
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
             try:
-                if method == 'charuco':
-                    ret, corners, ids, im, gray = future.result()
-                else:
-                    ret, corners, im, gray = future.result()
+                ret, corners, ids, gray = future.result()
             except Exception as e:
                 logger.warning(f'file {file} generated an exception: {e}')
             else:
+                rets_q.put(ret)
                 if ret:
                     objpoints_q.put(BOARD_CORNER_LOCS)
-                    if method == 'charuco':
-                        res2 = cv2.aruco.interpolateCornersCharuco(
-                            corners,
-                            ids,
-                            gray,
-                            board
-                        )
-                        corners2 = res2[1]
-                        if (res2[2] is not None) and  len(res2[2]) >= 9:
-                            ids_q.put(res2[2])
-                        im = cv2.aruco.drawDetectedMarkers(
-                            gray,
-                            corners,
-                            ids
-                        )
-                    else:
-                        corners2 = cv2.cornerSubPix(gray, corners, (5,5),(-1,-1), CORNER_TERM_CRIT)
-                        im = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
+                    res2 = cv2.aruco.interpolateCornersCharuco(
+                        corners,
+                        ids,
+                        gray,
+                        board
+                    )
+                    corners2 = res2[1]
+                    # only consider images with substantial portions of board in view
+                    if (res2[2] is not None) and len(res2[2]) >= 9:
+                        ids_q.put(res2[2])
+                    im = cv2.aruco.drawDetectedMarkers(
+                        gray,
+                        corners,
+                        ids
+                    )
+                    im_with_corners = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
+                    # only consider images with substantial number of corners found in view
                     if (corners2 is not None) and len(corners2) >= 9:
                         imgpoints_q.put(corners2)
                 if plot:
                     plt.figure()
-                    # plt.get_current_fig_manager().window.setGeometry(400,300,1000,800)
-                    plt.imshow(im)
+                    plt.imshow(im_with_corners)
                     ax = plt.gca()
                     ax.set_aspect('equal')
 
     # Do the actual camera calibration with all the data we gathered.
     # OpenCV likes lists.
+    rets = []
+    while not rets_q.empty():
+        rets.append(rets_q.get(timeout=0.1))
+    if not any(rets):
+        raise ValueError('No images had aruco targets for charuco calibration.')
+
     objpoints = []
     while not objpoints_q.empty():
         objpoints.append(objpoints_q.get(timeout=0.1))
@@ -243,17 +231,15 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
     while not imgpoints_q.empty():
         imgpoints.append(imgpoints_q.get(timeout=0.1))
 
-    h,w = cv2.imread(files[0], flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR)).shape[:2]
+    # assumption: all images taken with same camera
+    h,w = cv2.imread(image_files[0], flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR)).shape[:2]
 
-    if method == 'charuco':
-        ids = []
-        while not ids_q.empty():
-            ids.append(ids_q.get(timeout=0.1))
-        ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(imgpoints, ids, board, gray.shape[::-1], None, None)
-    else:
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+    calib_ids = []
+    while not ids_q.empty():
+        calib_ids.append(ids_q.get(timeout=0.1))
+    ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(imgpoints, calib_ids, board, gray.shape[::-1], None, None)
 
-    print('ret', ret)
+    logger.info('RMS reprojection error', ret, 'px')
 
     optimal_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(
         mtx,
@@ -265,334 +251,104 @@ def calibrate_camera(image_dir: str, method='chessboard', plot=False):
     return mtx, dist, optimal_camera_matrix, roi
 
 
-@numba.jit(nopython=True)
-def xcorr_prep(im: np.ndarray):
+def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=DEFAULT_TARGET_SIZE, plot=False):
     '''
-    Helper function to apply pre-processing that makes cross-correlation work
+    Determine the pose of specified aruco ids relative to the camera.
     '''
-    im_corr = np.sum(im.astype(np.float64), axis=2) # ensure single channel
-    im_corr /= im_corr.max() # normalize
-    im_corr -= np.mean(im_corr) # detrend
-    return im_corr
-
-
-def find_template(template_filename: str, im_warped: np.ndarray, avg_px_per_m: float, stride=2, ax=None):
-    '''
-    Returns the pixel coordinates of the best-cross-corr match of the template image in im_warped,
-    which ought to be a lens-distortion-free, camera-angle-projection-free image.
-    avg_px_per_m is needed to scale the target's known size in m to the image's pixel scale.
-    
-    Parameters
-    ----------
-    template_filename
-        Path to an image file to search for in `im_warped`
-    im_warped
-        ndarray of distortion/perspective-free image to look for
-        photogrammetry targets in
-    avg_px_per_m
-        Scalar to scale the template image to the correct expected number of
-        pixels, given the known template size
-    stride : optional
-        Downsample `im_warped` and the template by taking every `stride`-th
-        element. Makes function faster at the expense of accuracy.
-    ax : optional
-        Matplotlib axes object. If specified, will plot the template's found
-        location on the axes.
-    
-    Returns
-    -------
-    xfound, yfound
-        Pixel coordinates of the center of the template, as found in `im_warped`
-    '''
-    im_tmp = np.rot90(cv2.imread(template_filename), k=IMG_ROT_NUM)
-    tmp_px = im_tmp.shape[0]
-    # number of pixels in a shape with some real size in meters:
-    target_px = TARGET_W_AS_PRINTED * avg_px_per_m
-    # zoom the template to the right size in pixels
-    tmp = ndimage.zoom(im_tmp, target_px / tmp_px)
-    a = xcorr_prep(im_warped[::stride,::stride])
-    b = xcorr_prep(tmp[::stride,::stride])
-    xcorr = signal.fftconvolve(
-        a,
-        b[::-1, ::-1],
-        mode='valid'
-    )
-    y,x = np.unravel_index(np.argmax(xcorr), xcorr.shape)
-    xfound = x# + b.shape[0] / 2
-    yfound = y# + b.shape[1] / 2
-
-    if ax:
-        ax.imshow(xcorr, cmap='Greys_r')
-        ax.scatter(xfound, yfound, s=80, color='w')
-        ax.scatter(xfound, yfound, label=template_filename)
-
-    return int(xfound * stride), int(yfound * stride)
-
-
-def find_target(file, target_dir, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
-    '''
-    See docstring of `find_targets`.
-    '''
-    # use camera cal matrix to de-distort all images
-    im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
-    im = np.rot90(im, k=IMG_ROT_NUM)
-    undistorted_image = cv2.undistort(
-        im,
-        mtx,
-        dist,
-        None, 
-        optimal_camera_matrix
-    )
-    # re-find chessboard corners in undistorted image
-    gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
-    
-    # ret, corners = cv2.findChessboardCorners(
-    #     gray,
-    #     BOARD_VERT_SHAPE,
-    #     cv2.CALIB_CB_ADAPTIVE_THRESH + \
-    #     cv2.CALIB_CB_FAST_CHECK + \
-    #     cv2.CALIB_CB_NORMALIZE_IMAGE
-    # )
-
-    dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
-    board = cv2.aruco.CharucoBoard(
-        (BOARD_VERT_SHAPE[0]+1,
-        BOARD_VERT_SHAPE[1]+1),
-        .010, # size of checkerboard square
-        .008, # size of charuco target square
-        dictionary
-    )
-    corners_pre, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray)#, dictionary)
-    res2 = cv2.aruco.interpolateCornersCharuco(
-                        corners_pre,
-                        ids,
-                        gray,
-                        board
-                    )
-    corners = res2[1]
-    if len(corners) > 0:
-        ret = True
-    else:
-        ret = False
-    
-    logger.info(f'Corner detection after de-distortion in {file}: {ret}')
-    if ret == True:
-        corners2 = cv2.cornerSubPix(
-            gray,
-            corners,
-            (5,5),
-            (-1,-1),
-            CORNER_TERM_CRIT
-        )
-        # undistorted_image_corners = cv2.drawChessboardCorners(
-        #     gray,
-        #     BOARD_VERT_SHAPE,
-        #     corners2,
-        #     ret
-        # )
-    else:
-        return
-
-    # find the homographic transform that undistorts the found chessboard
-    # corners into the rectified, "bird's eye" view of the chessboard.
-
-    # magic number: homographic transform for de-projection sometimes makes
-    # resulting image really tiny for some reason. if we didn't scale it 
-    # back up, we'd have only a few pixels across each chessboard
-    # intersection, degrading the quality of the subpixel refinement and 
-    # eventually the template location xcorr too.
-    sf = 4250.
-
-    # if necessary, try rotation for better fit
-    # https://scipython.com/book/chapter-6-numpy/examples/creating-a-rotation-matrix-in-numpy/
-    theta = 0 * (np.pi / 180.)
-    c, s = np.cos(theta), np.sin(theta)
-    R = np.array(((c, -s), (s, c)))
-    try:
-        h, status = cv2.findHomography(
-            corners2[:,0,:],
-            np.dot(BOARD_CORNER_LOCS[0,:,:2], R) * sf + corners2[0][0]
-        )
-    except:
-        return {'raft_target':(0,0), 'SW_target': (0,0)}, 1
-    # deproject chessboard points
-    corners_warped = cv2.perspectiveTransform(
-        corners2,
-        h
-    )
-    im_warped = cv2.warpPerspective(
-        undistorted_image,
-        h,
-        (undistorted_image.shape[1], undistorted_image.shape[0])
-    )
-    im_warped = np.flipud(im_warped) # order of charuco vs. checkerboard corners don't agree?
-
-    if plot:
-        plt.figure()
-        # plt.get_current_fig_manager().window.setGeometry(600,400,1000,800)
-        ax = plt.axes()
-        ax.imshow(cv2.cvtColor(im_warped, cv2.COLOR_BGR2GRAY))
-        # ax = None
-    else:
-        ax = None
-
-    # calc pixel scale: get pairs of euclidean distances along each axis.
-    # this leaves some information on the table (e.g. expected distance
-    # info of non-adjacent pairs), but is simple and there are enough
-    # pairs that the average should be good to submm precision across ~1 m
-    found_corners = corners_warped[:,0,:].reshape((BOARD_VERT_SHAPE[1], BOARD_VERT_SHAPE[0], 2))
-    dists0 = np.array([])
-    for i in range(found_corners.shape[0]):
-        d = np.diff(found_corners[i,:,:], axis=0)
-        dists0 = np.concatenate([dists0, np.sqrt((d ** 2).sum(axis=1))])
-    dists1 = np.array([])
-    for j in range(found_corners.shape[1]):
-        d = np.diff(found_corners[:,j,:], axis=0)
-        dists1 = np.concatenate([dists1, np.sqrt((d ** 2).sum(axis=1))])
-    dists = np.concatenate([dists0, dists1])
-    # print('dists0', dists0.mean(), 'dists1', dists1.mean(), 'discrepancy', dists0.mean() - dists1.mean())
-    avg_spacing = np.mean(np.abs(dists))
-    px_per_m = avg_spacing / BOARD_SQUARE_SIZE
-
-    target_locs = {}
-    targets = ['raft_target', 'SW_target']#, 'SE_target', 'NW_target', 'NE_target']
-    for target in targets:
-        x,y = find_template(
-            os.path.join(target_dir, target + '.png'),
-            im_warped,
-            px_per_m,
-            stride=stride,
-            ax=ax)
-        target_locs[target] = (x,y)
-    if plot:
-        ax.legend(loc='best')
-        ax.set_title('Targets found')
-        # plt.savefig(f'found_{os.path.basename(file)}.png')
-    return target_locs, px_per_m
-
-
-def find_targets(image_dir, target_dir, mtx, dist, optimal_camera_matrix, stride=2, plot=False):
-    '''
-    Uses an OpenCV camera matrix to undo distortion in all test images, then
-    finds a homographic transform of the undistorted chessboard corners to the
-    ideal, rectified plane of the chessboard (the "bird's-eye" view of it).
-    Uses that and information of how far apart the chessboard intersections
-    really are to calculate a px-to-m conversion.
-    Finally, does a cross-correlation to find the location of all target
-    images, in pixels.
-
-    Parameters
-    ----------
-    image_dir
-        Path to a directory full of test images. These images contain the
-        calibration chessboard and all photogrammetry targets.
-    target_dir
-        Path to a directory full of template images. These images contain the
-        patterns of photogrammetry targets to search for.
-    mtx, dist, optimal_camera_matrix
-        See `calibrate_camera` docstring.
-    stride: optional
-        Downsample images before finding targets in them, to do it faster but with less fidelity.
-    plot : optional
-        If True, make plots of the found locations of all targets in the image
-
-    Returns
-    -------
-    image_data : dict
-        Dictionary full of key, value pairs describing the results of target
-        finding and px-to-meter calculation.
-    '''
-    extensions = ['.jpeg', '.jpg', '.JPG']
-    files = []
-    for ext in extensions:
-        files += sorted(glob.glob(os.path.join(image_dir, '**' + ext)))
-    assert files, 'No image files found when searching for images for target measurement.'
-    # files = files[:2]
-    image_data = {}
-    px_per_ms = []
-    # dicts are kinda thread-safe
-    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as pool:
-        future_to_file = {pool.submit(find_target, *(file, target_dir, mtx, dist, optimal_camera_matrix), **{'stride' : stride, 'plot' : plot}) : file for file in files}
-        for future in concurrent.futures.as_completed(future_to_file):
-            file = future_to_file[future]
-            try:
-                target_locs, px_per_m = future.result()
-            except Exception as e:
-                logger.warning(f'file {file} generated an exception: {e}')
-            else:
-                px_per_ms.append(px_per_m)
-                image_data[file] = {}
-                image_data[file]['px_per_m'] = px_per_m
-                image_data[file]['target_locs'] = target_locs
-    avg_px_per_m = np.mean(px_per_ms)
-    image_data['source dir'] = os.path.abspath(image_dir)
-    image_data['avg_px_per_m'] = avg_px_per_m
-
-    return image_data
-
-
-def post_process_SW_reference(image_data: dict, out_dir):
-    '''
-    Calculate the jitter in mm of the target used as the reference point for 
-    all raft positions. Jitter is calculated about the mean position.
-    '''
-    # https://stackoverflow.com/a/16090640
-    nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
-    # Get the per-image data out of the image_data dict
-    # natural sort image data to align with command sequence
-    img_keys = [img for img in sorted(list(image_data.keys()), key=nsort) if os.path.exists(img)]
-    locs = np.zeros((len(img_keys), 2))
-    for i, img in enumerate(img_keys):
-        if not isinstance(image_data[img], dict):
+    img_data = {}
+    for file in files:
+        found, corners, ids, gray = find_corners_aruco(file, valid_ids=aruco_ids)
+        if not found or not any(ids):
             continue
-        # image space to mapper space transform
-        # SW position is absolute reference, so we may only quantify the jitter of it.
-        loc = np.array(image_data[img]['target_locs']['SW_target'])
-        loc[1] *= -1
-        loc = loc / image_data['avg_px_per_m']
-        locs[i] = loc
+        logger.info(f'Found specified ArUco targets {ids}.')
 
-    mean_pos = np.mean(locs, axis=0)
-    print(mean_pos)
+        if plot:
+            fig, ax = plt.subplots(subplot_kw={'projection':'3d'})
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('SW reference point jitter about mean')
-    residuals_mm = np.array(locs - mean_pos) * 1000.
-    sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), shade=True, ax=ax)
-    ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
-    # ax.set_xlim(-5, 5)
-    # ax.set_ylim(-5, 5)
-    ax.set_xlabel('X-dir Jitter (mm)')
-    ax.set_ylabel('Y-dir Jitter (mm)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    plt.savefig(os.path.join(out_dir, 'reference_residuals.png'), facecolor='white', transparent=False)
-    return locs
+        img_data[file] = {}
+        for i in range(len(ids)):
+            target_rvec, target_tvec, obj_points = estimate_pose_aruco(file, corners[i], aruco_size, camera_matrix, camera_dist, plot=False)
+            target_rvec_row = target_rvec[0][0]
+            target_tvec_row = target_tvec[0][0]
+
+            board_rvec, board_tvec = estimate_pose_charuco(file, camera_matrix, camera_dist, plot=False)
+            board_rvec_row = board_rvec.T[0]
+            board_tvec_row = board_tvec.T[0]
+
+            # the rotation of the board relative to the camera
+            Rb = R.from_rotvec(board_rvec_row)
+            # the rotation of the aruco target relative to the camera
+            Rt = R.from_rotvec(target_rvec_row)
+            # the rotation of the target frame relative to the board frame
+            Rtb = Rb.inv() * Rt
+            # the offset of the target frame origin from the board origin
+            # in camera coordinates
+            tb = target_tvec_row - board_tvec_row
+            # that offset in the frame of the board
+            tb_b = Rb.inv().apply(tb)
+
+            target_rvec_final = Rtb.as_rotvec()
+            target_tvec_final = tb_b
+
+            # we are now in a frame where the rotation matrix is the identity
+            # and the translation is the origin
+            board_rvec_final = (Rb.inv() * Rb).as_rotvec()
+            board_tvec_final = board_tvec_row - board_tvec_row
+
+            img_data[file][ids[i]] = {}
+            img_data[file][ids[i]]['rvec'] = target_rvec_final
+            img_data[file][ids[i]]['tvec'] = target_tvec_final
+
+            img_data[file]['board'] = {}
+            img_data[file]['board']['rvec'] = board_rvec_final
+            img_data[file]['board']['tvec'] = board_tvec_final
+
+            if plot:
+                if i == 0:
+                    label_prefix = ''
+                else:
+                    label_prefix = '_'
+                ax.scatter(target_tvec_final[0], target_tvec_final[1], target_tvec_final[2], label=f'Target {ids[i]}')
+                ax.scatter(board_tvec_final[0], board_tvec_final[1], board_tvec_final[2], color='k', label=label_prefix + 'ArUco Board Origin')
+        if plot:
+            ax.legend(loc='best')
+    return img_data
 
 
-def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_offset=None):
+def estimate_angular_offset(img_data, file, entity0, entity1):
+    '''
+    Calculate the minimum angle needed to rotate one coordinate system into the other
+    from the axis-angle representations.
+    https://math.stackexchange.com/questions/2113634/comparing-two-rotation-matrices
+    https://math.stackexchange.com/questions/3999557/how-to-compare-two-rotations-represented-by-axis-angle-rotation-vectors
+    '''
+    rvec0 = img_data[file][entity0]['rvec']
+    rvec1 = img_data[file][entity1]['rvec']
+    rmat0, _ = cv2.Rodrigues(rvec0)
+    rmat1, _ = cv2.Rodrigues(rvec1)
+    AB = rmat0 @ rmat1.T
+    theta = np.arccos((np.trace(AB) - 1) / 2)
+    return theta
+
+
+def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=46, coord_offset=None):
     '''
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
 
     Parameters
     ----------
-    image_data: dict
-        Return dict of `find_targets`.
+    img_data: dict
+        Return dict of `measure_images`.
     out_dir: str
         Location to save plots
     command_file: str
         .csv file that was used to run the scan. Should be from the
         hotspot/data/input/profiles dir.
-    SW_offset (optional): tuple
+    coord_offset (optional): tuple
         If provided, will calculate positions relative to a target with a known
         position offset from the mapper frame origin.
     '''
-    # func for natsort
-    # https://stackoverflow.com/a/16090640
-    nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)', s)]
-
     # Reshape command profile assuming a square box is scanned.
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
     assert np.round(np.sqrt(commanded_pts_flat.shape[0])) == np.sqrt(commanded_pts_flat.shape[0]), 'Command profile shape not square. Rewrite alg to handle non-square shapes.'
@@ -606,41 +362,53 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
     xs = np.unique([pt[0] for pt in commanded_pts_flat])
     ys = np.unique([pt[1] for pt in commanded_pts_flat])
     
-    plt.figure()
-    plt.suptitle('Commanded vs. Measured Positions', fontsize=18)
-    ax = plt.axes()
+    fig, ax = plt.subplots()#subplot_kw={'projection':'3d'})
+    fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
     queries = np.zeros_like(commanded_pts)
     residuals = np.zeros_like(commanded_pts)
-    # Get the per-image data out of the image_data dict
+    # Get the per-image data out of the img_data dict
     # natural sort image data to align with command sequence
-    img_keys = [img for img in sorted(list(image_data.keys()), key=nsort) if os.path.exists(img)]
+    img_keys = [file for file in sorted(list(img_data.keys()), key=nsort) if os.path.exists(file)]
+    img_keys = (img_keys * 100)[:100]
     imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
     for j in range(imgs.shape[0]):
         for k in range(imgs.shape[1]):
-            if not isinstance(image_data[imgs[j][k]], dict):
+            if not isinstance(img_data[imgs[j][k]], dict):
                 continue
-            # image space to mapper space transform
-            # If the position of the SW target is offset from the mapper frame origin, take into account
-            if SW_offset:
-                query = (
-                    np.array(image_data[imgs[j][k]]['target_locs']['raft_target']) -
-                    np.array(image_data[imgs[j][k]]['target_locs']['SW_target'])
-                )
-            # assume first position is perfect and calc errors relative to that
-            else:
-                query = (
-                    np.array(image_data[imgs[j][k]]['target_locs']['raft_target']) -
-                    np.array(image_data[imgs[0][0]]['target_locs']['raft_target'])
-                )
-            query[1] *= -1
-            query = query / image_data['avg_px_per_m']
-            if SW_offset:
-                query += np.array(SW_offset)
-            else:
-                query += commanded_pts[0,0,:]
-            queries[j][k][0] = query[0]
-            queries[j][k][1] = query[1]
+            # Measured positions are in 3D pose relative to camera:
+            query_tvec = img_data[imgs[j][k]][raft_id]['tvec']
+            query_rvec = img_data[imgs[j][k]][raft_id]['rvec']
+            board_rvec = img_data[imgs[j][k]]['board']['tvec']
+            queries[j][k][0] = query_tvec[0]
+            queries[j][k][1] = query_tvec[1]
+            # queries[j][k][2] = query[2]
+
+    # If the position of the ArUco board is offset relative to the mapper frame origin, take into account
+    if coord_offset:
+        queries -= coord_offset
+
+    residuals = queries[:,:,:2] - commanded_pts
+
+    # error check: ignore ridiculous residuals
+    rmse = None
+    # if residuals.size > 16: # need good stats
+    #     rmse = np.sqrt(np.mean(residuals ** 2.))
+    #     print('RMSE:', rmse)
+    #     sig_thresh = 3. * rmse
+    #     bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
+    #     bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
+    #     queries[bad_x] = commanded_pts[bad_x]
+    #     queries[bad_y] = commanded_pts[bad_y]
+    #     print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
+    #     print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
+    #     residuals = queries - commanded_pts
+    #     rmse = np.sqrt(np.mean(residuals ** 2.))
+    # else:
+    #     bad_x = None
+    #     bad_y = None
+    bad_x = []
+    bad_y = []
 
     ax.scatter(
         commanded_pts[:,:,0],
@@ -650,26 +418,6 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
         label=f'Raft Commanded Pos.',
         zorder=1
     )
-    residuals = queries - commanded_pts
-
-    # error check: ignore ridiculous residuals
-    rmse = None
-    if residuals.size > 16: # need good stats
-        rmse = np.sqrt(np.mean(residuals ** 2.))
-        print('RMSE:', rmse)
-        sig_thresh = 3. * rmse
-        bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
-        bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
-        queries[bad_x] = commanded_pts[bad_x]
-        queries[bad_y] = commanded_pts[bad_y]
-        print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
-        print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
-        residuals = queries - commanded_pts
-        rmse = np.sqrt(np.mean(residuals ** 2.))
-    else:
-        bad_x = None
-        bad_y = None
-
     ax.quiver(
         queries[:,:,0],
         queries[:,:,1],
@@ -695,9 +443,9 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
     
     plt.xticks(rotation=45)
     if rmse:
-        ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']) + '\n' + f'RMSE: {rmse * 1000.:.2f} mm')
+        ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
     else:
-        ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' + 'Run: ' + os.path.basename(image_data['source dir']))
+        ax.set_title('Profile: ' + os.path.basename(command_file))
     ax.set_xlabel('x-distance from SW corner (m)')
     ax.set_ylabel('y-distance from SW corner (m)')
     ax.grid(True)
@@ -729,10 +477,8 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
     ax = plt.axes()
     ax.set_title('Residuals: Commanded - Measured')
     residuals_mm = np.array(residuals) * 1000.
-    sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), shade=True, ax=ax)
+    sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
     ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    # ax.set_xlim(-10, 10)
-    # ax.set_ylim(-10, 10)
     ax.set_xlabel('X-dir Residuals (mm)')
     ax.set_ylabel('Y-dir Residuals (mm)')
     ax.grid(True)
@@ -753,47 +499,3 @@ def post_process_scan(image_data: dict, out_dir: str , command_file: str, SW_off
     plt.savefig(os.path.join(out_dir, 'error_vs_time.png'), facecolor='white', transparent=False)
 
     return commanded_pts, queries, residuals
-
-
-if __name__ == '__main__':
-    # plt.ion()
-    # # check for pickled camera matrices to avoid expensive recalibration
-    # if not (
-    #     os.path.exists('camera_cal_mtx.pickle') and
-    #     os.path.exists('camera_cal_dist.pickle') and
-    #     os.path.exists('camera_cal_optimal_camera_matrix.pickle')
-    # ):
-    #     logger.info('No pickled camera calibration found. Recalibrating...')
-    #     # calibrate the camera for distortion
-    #     mtx, dist, optimal_camera_matrix, roi = calibrate_camera(
-    #         os.path.join('input', 'camera_cal'),
-    #         plot=False
-    #     )
-    #     with open('camera_cal_mtx.pickle', 'wb') as f:
-    #         pickle.dump(mtx, f, protocol=pickle.HIGHEST_PROTOCOL)
-    #     with open('camera_cal_dist.pickle', 'wb') as f:
-    #         pickle.dump(dist, f, protocol=pickle.HIGHEST_PROTOCOL)
-    #     with open('camera_cal_optimal_camera_matrix.pickle', 'wb') as f:
-    #         pickle.dump(optimal_camera_matrix, f, protocol=pickle.HIGHEST_PROTOCOL)
-    # else:
-    #     logger.info('Found pickled camera calibration. Skipping camera calibration.')
-    #     with open('camera_cal_mtx.pickle', 'rb') as f:
-    #         mtx = pickle.load(f)
-    #     with open('camera_cal_dist.pickle', 'rb') as f:
-    #         dist = pickle.load(f)
-    #     with open('camera_cal_optimal_camera_matrix.pickle', 'rb') as f:
-    #         optimal_camera_matrix = pickle.load(f)
-    # logger.info('Finding photogrammetry targets in images.')
-    # image_data = find_targets(
-    #     os.path.join('input', 'meas', 'try1'),
-    #     os.path.join('targets'),
-    #     mtx,
-    #     dist,
-    #     optimal_camera_matrix,
-    #     plot=False
-    # )
-    # logger.info('Post-processing found targets.')
-    # command_file = os.path.join('..', 'data', 'input', 'profiles', '24in_breadboard_raster_9x9_.2x.2.csv')
-    # post_process_scan(image_data, command_file)
-    # plt.show(block=True)
-    pass
