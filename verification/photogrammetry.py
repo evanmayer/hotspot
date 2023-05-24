@@ -23,11 +23,11 @@ METERS_PER_INCH = 0.0254
 # dimensions/pattern.
 BOARD_VERT_SHAPE = (10,7) # this was the shape of the board that is in Dan's lab
 # BOARD_VERT_SHAPE = (18,11) # this was the shape of the finer board printed on sticker paper
-BOARD_SQUARE_SIZE = 0.02019 # m, this was the size of the board that is in Dan's lab
+BOARD_SQUARE_SIZE = 0.020245 # m, this was the size of the board that is in Dan's lab
 # BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
 # BOARD_SQUARE_SIZE = 13.091e-3 # m, this was the size of the finer board printed on sticker paper
 BOARD_ARUCO_SIZE = 0.015 # m
-DEFAULT_TARGET_SIZE = 0.025 # m
+DEFAULT_TARGET_SIZE = 0.02506 # m
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
 
 CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
