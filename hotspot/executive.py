@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 
-from hotspot.hw_context import hawkeye_serial_instance, stepper_serial_instance
+from hotspot.hw_context import hawkeye_serial_instance, stepper_serial_instance, StepperSerial
 import hotspot.algorithm as alg
 import hotspot.constants as const
 import hotspot.hardware as hw
@@ -103,6 +103,10 @@ class Executive:
 
         # terminate all running commands
         resp = hw.ezstepper_write(self.stepper_ser, '_', 'T\r\n')
+        # Swap to faster baud
+        self.stepper_ser.write(f'/_b{const.SERIAL_BAUD_FAST}R\r\n'.encode())
+        self.stepper_ser.close()
+        self.stepper_ser = StepperSerial(const.STEPPER_SERIAL_PORT, const.SERIAL_BAUD_FAST, timeout=const.SERIAL_TIMEOUT)
         for address in self.steppers.keys():
             # initialize driver settings
             resp = hw.ezstepper_write(
@@ -435,7 +439,7 @@ class Executive:
         self.do_hawkeye_tasks(cmd)
         logger.info(f'Raft centroid: {self.robot.raft.position}')
         logger.info(f'Command completed. Sequence progress: {progress:.2f} %')
-        # self.router.process_tm(plot_enable=self.plot_enable)
+        self.router.process_tm(plot_enable=self.plot_enable)
         return
 
 
@@ -518,10 +522,11 @@ class Executive:
         # CHUNK_DIST is a trade-off between smoothly approximating the needed
         # stepping profiles and the time taken to send many commands over
         # serial before starting the move.
-        CHUNK_DIST = .03
+        CHUNK_DIST = .06
         pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
         dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+        wait_time = dist_to_go * const.ENCODER_TICKS_PER_REV / const.LENGTH_PER_REV / const.MAX_SPEED_TICKS
         while dist_to_go > CHUNK_DIST:
             logger.debug(f'Dist. to go in this move: {dist_to_go}')
             # determine a position CHUNK_DIST away from the starting pos along
@@ -538,6 +543,7 @@ class Executive:
         # Signal ezsteppers to run once we've sent all commands for this move
         logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after, run=True)
+        time.sleep(wait_time)
         return
 
 
@@ -565,10 +571,12 @@ class Executive:
         }
         self.tm_queue.put(packet)
 
-        self.take_image()
+        time.sleep(const.SETTLE_TIME)
+
+        # self.take_image()
 
         freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 1
+        num_blinks = 10
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()
@@ -595,5 +603,7 @@ class Executive:
         time.sleep(.1)
         hw.ezstepper_write(self.stepper_ser, '_', 'm0R\r\n')
         hw.ezstepper_write(self.stepper_ser, '_', 'h0R\r\n')
+        # Restore default baud
+        hw.ezstepper_write(self.stepper_ser, '_', 'b9600R\r\n')
         self.stepper_ser.close()
         return

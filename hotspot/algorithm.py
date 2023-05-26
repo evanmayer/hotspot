@@ -5,6 +5,7 @@
 import logging
 import multiprocessing as mp
 import numpy as np
+import sys
 import time
 
 import hotspot.constants as const
@@ -208,13 +209,6 @@ class Robot:
             'ne': 0.,
             'se': 0.
         }
-        # Input checking, this is just in case of malformed inputs.
-        eps = np.finfo(float).eps
-        distance = np.linalg.norm(np.array(pos_cmd) - self.raft.position)
-        if distance <= eps:
-            logger.warning(f'Position command malformed: distance: {distance}')
-            return motor_cmds
-
         # update the commanded position
         logger.debug(f'Commanded position: {pos_cmd}')
         self.pos_cmd = pos_cmd
@@ -229,14 +223,9 @@ class Robot:
         # sqrt(minor diameter^2 + thread pitch^2)
         # for a single rotation.
         
-        # The implicit assumption here is that the end not attached to 
-        # the drum that goes through the eyelet is far enough away from the
-        # drum that a small-angle assumption is valid, such that the induced 
-        # change in cable length as a function of the position the cable leaves
-        # the drum is negligible.
+        # The implicit assumption here is one of "conservation of string".
 
-        length_per_rev = np.sqrt(const.DRUM_PITCH ** 2. + (np.pi * 2. * const.PULLEY_RADIUS) ** 2.)
-        num_revs = lengths_after / length_per_rev
+        num_revs = lengths_after / const.LENGTH_PER_REV
         angles = 2. * np.pi * num_revs
 
         motor_cmds['sw'] = angles[0, 0]

@@ -6,10 +6,13 @@ import sys
 import time
 
 import hotspot.constants as const
-from hotspot.hw_context import Serial
+from hotspot.hw_context import StepperSerial, HawkeyeSerial
 
 logger = logging.getLogger(__name__)
 
+IDX_READY_BIT = 2
+IDX_STATUS_BYTE = 2
+NUM_TRAILING_BYTES = 3
 
 # Conventions:
 # - positive steps/angular rates spin the motor shaft clockwise (CW) when
@@ -22,12 +25,12 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 def ezstepper_check_status(resp):
     '''
-    Compare the response bytes from the EZStepper to some common error codes.
+    Compare the status byte from the EZStepper to some common error codes.
 
     Parameters
     ----------
     resp
-        bytes, EZStepper response, straight out of serial
+        bytes, EZStepper response, after throwing away garbage bytes
 
     Returns
     -------
@@ -37,7 +40,7 @@ def ezstepper_check_status(resp):
     status_good = True
     if resp:
         # bits 0-3 form an error code: see EZStepper docs
-        status = resp[3] & 0b00001111
+        status = resp[IDX_STATUS_BYTE] & 0b00001111
     else:
         status = b''
         status_good = False
@@ -47,7 +50,7 @@ def ezstepper_check_status(resp):
     if 15 == status:
         logger.warning('Command overflow (unit was already executing a command when another command was received)')
         status_good = False
-    if status:
+    if status and ((0 != status) or (9 != status) or (15 != status)):
         logger.warning(f'Unrecognized error code {status}. Consult EZStepper documentation.')
     return status_good
 
@@ -59,17 +62,17 @@ def ezstepper_check_ready(resp):
     Parameters
     ----------
     resp
-        bytes, EZStepper response, straight out of serial
+        bytes, EZStepper response, after throwing away garbage bytes
 
     Returns
     -------
     bool
         True if ready bit is set
     '''
-    return bool(resp[3] & 0b0100000)
+    return bool(resp[IDX_READY_BIT] & 0b00100000)
 
 
-def wait_for_ready(ser, address, ready_timeout=.5):
+def wait_for_ready(ser, address, ready_timeout=10.0):
     '''
     Parameters
     ----------
@@ -86,16 +89,38 @@ def wait_for_ready(ser, address, ready_timeout=.5):
         ready = False
         while not ready and (time.time() - start_busywait) < ready_timeout:
             ser.write((f'/{address}Q\r\n').encode())
-            resp = ser.readline()
+            resp = look_for_response(ser.readline())
             if resp:
                 ready = ezstepper_check_ready(resp)
-        # logger.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
+        logger.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
         if not ready:
             logger.warning(f'EZStepper {address} was not ready in allotted time {ready_timeout} sec')
     return
 
 
-def ezstepper_write(ser: Serial, address, command_str: str):
+def look_for_response(resp):
+    '''
+    Responses addressed to the controller node begin with /0, with possible
+    junk before.
+
+    Parameters
+    ----------
+    resp
+        bytes, EZStepper response, straight out of serial
+
+    Returns
+    -------
+    resp
+        Any bytes after /0
+    '''
+    if b'/0' in resp:
+        resp = resp[resp.find(b'/0'):]
+    else:
+        resp = b''
+    return resp
+
+
+def ezstepper_write(ser: StepperSerial, address, command_str: str):
     '''
     Builds a serial command to send to EZStepper(s), checks status bytes in
     response, and returns response bytes.
@@ -125,13 +150,13 @@ def ezstepper_write(ser: Serial, address, command_str: str):
     wait_for_ready(ser, address)
     ser.write((f'/{address}' + command_str).encode())
     logger.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
-    resp = ser.readline()
+    resp = look_for_response(ser.readline())
     status_good = ezstepper_check_status(resp)
     logger.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
     return resp
 
 
-def get_encoder_pos(ser: Serial, address):
+def get_encoder_pos(ser: StepperSerial, address):
     '''
     Gets EZStepper's encoder counts in terms of ticks. It is critical for
     accurate operation that this call succeeds, so the program will exit
@@ -156,7 +181,8 @@ def get_encoder_pos(ser: Serial, address):
         logger.critical(f'Encoder {address} status bad: {resp}. Is EZStepper/encoder connected?')
         sys.exit(1)
     else:
-        payload = resp[4:-3]
+        payload = resp[IDX_STATUS_BYTE+1:-NUM_TRAILING_BYTES]
+        logger.debug(f'Encoder reading: {payload}')
         if payload:
             ticks = int(payload.decode('utf-8'))
         else:
@@ -165,7 +191,7 @@ def get_encoder_pos(ser: Serial, address):
         return ticks
 
 
-def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_current=50, move_current=50):
+def bump_hard_stop(ser: StepperSerial, address: int, ticks: int, speed: int, hold_current=50, move_current=50):
     '''
     Run the motor backward until it can't anymore.
 
@@ -212,7 +238,7 @@ def bump_hard_stop(ser: Serial, address: int, ticks: int, speed: int, hold_curre
     return prev_ticks
 
 
-def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
+def all_steppers_ez(ser: StepperSerial, addresses, radians: list, run=True):
     '''
     Send serial commands to AllMotion EZHR17EN driver boards.
     Driver boards should already be in position-correction mode, so will take
@@ -288,7 +314,7 @@ def all_steppers_ez(ser: Serial, addresses, radians: list, run=True):
 # -----------------------------------------------------------------------------
 # Hawkeye functions
 # -----------------------------------------------------------------------------
-def send_hawkeye_byte(ser: Serial, data):
+def send_hawkeye_byte(ser: HawkeyeSerial, data):
     '''
     Control three groups of Hawkeye IR sources on the raft. Each of the first
     three bits of the `data` byte turns on one of the three available groups of

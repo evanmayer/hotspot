@@ -10,6 +10,7 @@ import os
 import re
 from scipy.spatial.transform import Rotation as R
 import seaborn as sns
+import time
 
 
 logging.basicConfig(level='INFO')
@@ -34,8 +35,7 @@ CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.00
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
 BOARD_CORNER_LOCS[0,:,:2] = np.mgrid[0:BOARD_VERT_SHAPE[0], 0:BOARD_VERT_SHAPE[1]].T.reshape(-1, 2) * BOARD_SQUARE_SIZE
-# Number of 90deg rotations to apply to images before corner finding. Use 0 if
-# your images show chessboards of 6 cols by 9 rows, otherwise -1 or 1.
+# Number of 90deg rotations to apply to images when loading.
 IMG_ROT_NUM = 0
 
 
@@ -64,6 +64,7 @@ def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, valid_ids=[], c
 
     dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     parameters = cv2.aruco.DetectorParameters()
+    parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
     detector = cv2.aruco.ArucoDetector(dictionary, parameters)
     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
 
@@ -81,17 +82,18 @@ def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, valid_ids=[], c
                 mask.append(list(ids).index(valid_id))
 
     logger.info(f'ArUco finding in {file}: {found}')
-    logger.info(f'ID\'d {len(corners)} targets.')
+    logger.info(f'ID\'d {len([corners[i] for i in mask])} targets.')
     return found, np.array([corners[i] for i in mask]), np.array([ids[i][0] for i in mask]), gray
 
 
-def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, plot=False):
+def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, fig=None, ax=None, plot=False):
     rvec, tvec, obj_points = cv2.aruco.estimatePoseSingleMarkers(corners, aruco_size, camera_matrix, camera_dist)
     if plot:
+        if (not fig or not ax):
+            fig, ax = plt.subplots()
         gray = load_to_gray(file, camera_matrix=camera_matrix, camera_dist=camera_dist)
         im_with_axes = cv2.drawFrameAxes(gray, camera_matrix, camera_dist, rvec, tvec, 0.075)
-        fig, ax = plt.subplots()
-        ax.imshow(im_with_axes)
+        ax.imshow(im_with_axes, cmap='bone')
     return rvec, tvec, obj_points
 
 
@@ -112,7 +114,7 @@ def generate_charuco_board(square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DIC
     return board, dictionary
 
 
-def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, plot=False):
+def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, fig=None, ax=None, plot=False):
     '''
     Thin wrapper for OpenCV aruco detectBoard
     '''
@@ -124,10 +126,19 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQ
     charuco_ret, aruco_corners, aruco_ids = cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, gray, board)
     ret, rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(aruco_corners, aruco_ids, board, camera_matrix, camera_dist, None, None)
 
+    # Board z-axis points away from the camera, but we want it pointing
+    # toward the camera to align the board axes with the mapper coordinate
+    # frame
+    board_rvec_row = rvec.T[0]
+    Rb = R.from_rotvec(board_rvec_row)
+    Rb *= R.from_euler('zyx', [-np.pi / 2., 0.0, np.pi])
+    rvec = np.array([Rb.as_rotvec()]).T # Repackage like it came out of pose estimator
+
     if plot:
-        im_with_charuco_board = cv2.drawFrameAxes(gray, camera_matrix, camera_dist, rvec, tvec, 0.075)
-        fig, ax = plt.subplots()
-        ax.imshow(im_with_charuco_board)
+        if (not fig or not ax):
+            fig, ax = plt.subplots()
+        im_with_charuco_board = cv2.drawFrameAxes(gray, camera_matrix, camera_dist, rvec, tvec, 0.1)
+        ax.imshow(im_with_charuco_board, cmap='bone')
 
     return rvec, tvec
 
@@ -239,7 +250,7 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
         calib_ids.append(ids_q.get(timeout=0.1))
     ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(imgpoints, calib_ids, board, gray.shape[::-1], None, None)
 
-    logger.info('RMS reprojection error', ret, 'px')
+    logger.info(f'RMS reprojection error {ret} px')
 
     optimal_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(
         mtx,
@@ -257,7 +268,12 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
     '''
     img_data = {}
     for file in files:
-        found, corners, ids, gray = find_corners_aruco(file, valid_ids=aruco_ids)
+        found, corners, ids, gray = find_corners_aruco(
+            file,
+            camera_matrix=camera_matrix,
+            camera_dist=camera_dist,
+            valid_ids=aruco_ids
+        )
         if not found or not any(ids):
             continue
         logger.info(f'Found specified ArUco targets {ids}.')
@@ -267,16 +283,29 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
 
         img_data[file] = {}
         for i in range(len(ids)):
-            target_rvec, target_tvec, obj_points = estimate_pose_aruco(file, corners[i], aruco_size, camera_matrix, camera_dist, plot=False)
+            target_rvec, target_tvec, obj_points = estimate_pose_aruco(
+                file,
+                corners[i],
+                aruco_size,
+                camera_matrix,
+                camera_dist,
+                plot=plot
+            )
             target_rvec_row = target_rvec[0][0]
             target_tvec_row = target_tvec[0][0]
 
-            board_rvec, board_tvec = estimate_pose_charuco(file, camera_matrix, camera_dist, plot=False)
+            board_rvec, board_tvec = estimate_pose_charuco(
+                file,
+                camera_matrix,
+                camera_dist,
+                plot=plot
+            )
             board_rvec_row = board_rvec.T[0]
             board_tvec_row = board_tvec.T[0]
 
             # the rotation of the board relative to the camera
             Rb = R.from_rotvec(board_rvec_row)
+
             # the rotation of the aruco target relative to the camera
             Rt = R.from_rotvec(target_rvec_row)
             # the rotation of the target frame relative to the board frame
@@ -308,8 +337,19 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
                     label_prefix = ''
                 else:
                     label_prefix = '_'
-                ax.scatter(target_tvec_final[0], target_tvec_final[1], target_tvec_final[2], label=f'Target {ids[i]}')
-                ax.scatter(board_tvec_final[0], board_tvec_final[1], board_tvec_final[2], color='k', label=label_prefix + 'ArUco Board Origin')
+                ax.scatter(
+                    target_tvec_final[0],
+                    target_tvec_final[1],
+                    target_tvec_final[2],
+                    label=f'Target {ids[i]}'
+                )
+                ax.scatter(
+                    board_tvec_final[0],
+                    board_tvec_final[1],
+                    board_tvec_final[2],
+                    color='k',
+                    label=label_prefix + 'ArUco Board Origin'
+                )
         if plot:
             ax.legend(loc='best')
     return img_data
@@ -331,7 +371,7 @@ def estimate_angular_offset(img_data, file, entity0, entity1):
     return theta
 
 
-def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=46, coord_offset=None):
+def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None):
     '''
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
@@ -345,9 +385,11 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
     command_file: str
         .csv file that was used to run the scan. Should be from the
         hotspot/data/input/profiles dir.
-    coord_offset (optional): tuple
-        If provided, will calculate positions relative to a target with a known
-        position offset from the mapper frame origin.
+    raft_id: int
+        ArUco ID of a target mounted on the center of the end effector.
+    origin_id: int (optional)
+        ArUco ID of a target mounted at a known location relative to the origin
+        of the mapper coordinate frame.
     '''
     # Reshape command profile assuming a square box is scanned.
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
@@ -359,6 +401,9 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
             2
         )
     )
+    # add a degenerate z-dir coord for comparison with our data
+    commanded_pts = np.concatenate([commanded_pts, np.zeros_like(commanded_pts[:,:,:1])], axis=-1)
+
     xs = np.unique([pt[0] for pt in commanded_pts_flat])
     ys = np.unique([pt[1] for pt in commanded_pts_flat])
     
@@ -367,28 +412,39 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
 
     queries = np.zeros_like(commanded_pts)
     residuals = np.zeros_like(commanded_pts)
+
     # Get the per-image data out of the img_data dict
     # natural sort image data to align with command sequence
+    # Assumes images are numbered something like 1.jpg, 2.jpg, 3.jpg...
     img_keys = [file for file in sorted(list(img_data.keys()), key=nsort) if os.path.exists(file)]
-    img_keys = (img_keys * 100)[:100]
+
+    img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
+
     imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
     for j in range(imgs.shape[0]):
         for k in range(imgs.shape[1]):
             if not isinstance(img_data[imgs[j][k]], dict):
                 continue
-            # Measured positions are in 3D pose relative to camera:
+            if not (raft_id in img_data[imgs[j][k]].keys()):
+                continue
+            # Measured positions are 3D poses relative to aruco board
             query_tvec = img_data[imgs[j][k]][raft_id]['tvec']
             query_rvec = img_data[imgs[j][k]][raft_id]['rvec']
-            board_rvec = img_data[imgs[j][k]]['board']['tvec']
+            board_tvec = img_data[imgs[j][k]]['board']['tvec']
             queries[j][k][0] = query_tvec[0]
             queries[j][k][1] = query_tvec[1]
-            # queries[j][k][2] = query[2]
+            queries[j][k][2] = query_tvec[2]
 
-    # If the position of the ArUco board is offset relative to the mapper frame origin, take into account
-    if coord_offset:
-        queries -= coord_offset
+            if origin_id:
+                if not (origin_id in img_data[imgs[j][k]].keys()):
+                    continue
+                origin_tvec = img_data[imgs[j][k]][origin_id]['tvec']
+                origin_rvec = img_data[imgs[j][k]][origin_id]['rvec']
+                queries[j][k][0] -= origin_tvec[0]
+                queries[j][k][1] -= origin_tvec[1]
+                queries[j][k][2] -= origin_tvec[2]
 
-    residuals = queries[:,:,:2] - commanded_pts
+    residuals = queries - commanded_pts
 
     # error check: ignore ridiculous residuals
     rmse = None
@@ -454,12 +510,13 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
     ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'quiver.png'), facecolor='white', transparent=False)
+    t_str = str(time.time())
+    plt.savefig(os.path.join(out_dir, f'quiver_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
     ax.set_title('Residual Magnitude: Commanded - Measured')
-    residuals_mag_mm = np.linalg.norm(residuals, axis=-1) * 1000.
+    residuals_mag_mm = np.linalg.norm(residuals[:,:,:2], axis=-1) * 1000.
     levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .5, .5)
     X,Y = np.meshgrid(xs, ys)
     im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, vmin=0, vmax=10)
@@ -471,7 +528,17 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
     ax.set_ylabel('Y-dir Position (m)')
     ax.grid(True)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'magnitudes.png'), facecolor='white', transparent=False)
+    plt.savefig(os.path.join(out_dir, f'magnitudes_{str(time.time())}.png'), facecolor='white', transparent=False)
+
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Position z-component')
+    sns.kdeplot(1e3 * queries[:,:,2].flatten(), fill=True, ax=ax)
+    sns.rugplot(1e3 * queries[:,:,2].flatten(), ax=ax)
+    ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
+    ax.set_ylabel('Density')
+    ax.grid(True)
+    plt.savefig(os.path.join(out_dir, f'zdir_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
@@ -479,11 +546,13 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
     residuals_mm = np.array(residuals) * 1000.
     sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
     ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
+    ax.set_xlim(-7,7)
+    ax.set_ylim(-7,7)
     ax.set_xlabel('X-dir Residuals (mm)')
     ax.set_ylabel('Y-dir Residuals (mm)')
     ax.grid(True)
     ax.set_aspect('equal')
-    plt.savefig(os.path.join(out_dir, 'residuals.png'), facecolor='white', transparent=False)
+    plt.savefig(os.path.join(out_dir, f'residuals_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
@@ -496,6 +565,6 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id=
     ax.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
-    plt.savefig(os.path.join(out_dir, 'error_vs_time.png'), facecolor='white', transparent=False)
+    plt.savefig(os.path.join(out_dir, f'error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
 
     return commanded_pts, queries, residuals

@@ -19,13 +19,17 @@ ENCODER_TICKS_PER_REV = 40000
 DEG_PER_STEP = 360. / 200. / MICROSTEP_NUM
 DEG_PER_RAD = 180. / np.pi
 STEP_PER_TICK = 200. * MICROSTEP_NUM / ENCODER_TICKS_PER_REV
-# ticks / sec, experimentally determined. EZStepper driver takes 10-40V
+# encoder ticks / sec, experimentally determined. EZStepper driver takes 10-40V
 # more PSU volts = faster current rise time = faster max speed.
-MAX_SPEED_TICKS = 100000
-# Default for EZSteppers
+MAX_SPEED_TICKS = 150000
+# Default for EZSteppers and hawkeye driver peripheral
 SERIAL_BAUD = 9600
+# BIG MODE
+SERIAL_BAUD_FAST = 115200
 # if you get garbage replies from stepper drivers, increase this timeout.
 SERIAL_TIMEOUT = 0.07
+# time before performing any actions at each position reached
+SETTLE_TIME = 1e-3
 
 # -----------------------------------------------------------------------------
 # Physical constants
@@ -36,6 +40,8 @@ PULLEY_RADIUS = .030132 / 2.
 # The helical drum means the length unspooled per radian is longer.
 # 1.5 mm pitch
 DRUM_PITCH = 1.5 / 1000.
+LENGTH_PER_REV = np.sqrt(DRUM_PITCH ** 2. + (np.pi * 2. * PULLEY_RADIUS) ** 2.)
+
 # delta x distance from the NW eyelet to the raft centroid, when it is driven
 # to the NW limit and the raft isn't cockeyed
 HOMING_OFFSET_X = 0.0276
