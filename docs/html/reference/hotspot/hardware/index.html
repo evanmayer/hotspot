@@ -428,6 +428,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#look_for_response" class="md-nav__link">
+    look_for_response
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#send_hawkeye_byte" class="md-nav__link">
     send_hawkeye_byte
   </a>
@@ -593,6 +600,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#look_for_response" class="md-nav__link">
+    look_for_response
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#send_hawkeye_byte" class="md-nav__link">
     send_hawkeye_byte
   </a>
@@ -645,9 +659,15 @@
 
 <span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
 
-<span class="kn">from</span> <span class="nn">hotspot.hw_context</span> <span class="kn">import</span> <span class="n">Serial</span>
+<span class="kn">from</span> <span class="nn">hotspot.hw_context</span> <span class="kn">import</span> <span class="n">StepperSerial</span><span class="p">,</span> <span class="n">HawkeyeSerial</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">IDX_READY_BIT</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">IDX_STATUS_BYTE</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">NUM_TRAILING_BYTES</span> <span class="o">=</span> <span class="mi">3</span>
 
 <span class="c1"># Conventions:</span>
 
@@ -667,11 +687,35 @@
 
 <span class="k">def</span> <span class="nf">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
 
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Compare the status byte from the EZStepper to some common error codes.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    resp</span>
+
+<span class="sd">        bytes, EZStepper response, after throwing away garbage bytes</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    status_good</span>
+
+<span class="sd">        bool, True if response is nonempty and no unusual status byte patterns found</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
     <span class="n">status_good</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
 
-        <span class="n">status</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b0001111</span> <span class="c1"># bits 0-3 form an error code</span>
+        <span class="c1"># bits 0-3 form an error code: see EZStepper docs</span>
+
+        <span class="n">status</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="n">IDX_STATUS_BYTE</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b00001111</span>
 
     <span class="k">else</span><span class="p">:</span>
 
@@ -691,7 +735,7 @@
 
         <span class="n">status_good</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="ow">and</span> <span class="p">((</span><span class="mi">0</span> <span class="o">!=</span> <span class="n">status</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="mi">9</span> <span class="o">!=</span> <span class="n">status</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="mi">15</span> <span class="o">!=</span> <span class="n">status</span><span class="p">)):</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unrecognized error code </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s1">. Consult EZStepper documentation.&#39;</span><span class="p">)</span>
 
@@ -703,11 +747,47 @@
 
 <span class="sd">    The EZStepper is ready to accept a new command if the ready bit is set.</span>
 
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    resp</span>
+
+<span class="sd">        bytes, EZStepper response, after throwing away garbage bytes</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    bool</span>
+
+<span class="sd">        True if ready bit is set</span>
+
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b0100000</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="n">IDX_READY_BIT</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b00100000</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">.5</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    ser</span>
+
+<span class="sd">        pyserial instance, the port to send bytes over from</span>
+
+<span class="sd">    address</span>
+
+<span class="sd">        str, address of ezstepper</span>
+
+<span class="sd">    ready_timeout (optional)</span>
+
+<span class="sd">        float, time in seconds before deciding the stepper is unresponsive</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="o">!=</span> <span class="n">address</span><span class="p">:</span>
 
@@ -721,13 +801,13 @@
 
             <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">Q</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">look_for_response</span><span class="p">(</span><span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
 
             <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
 
                 <span class="n">ready</span> <span class="o">=</span> <span class="n">ezstepper_check_ready</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
 
-        <span class="c1"># logger.debug(f&#39;Waited {time.time() - start_busywait:.2f} sec for ready signal&#39;)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Waited </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_busywait</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> sec for ready signal&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ready</span><span class="p">:</span>
 
@@ -735,9 +815,53 @@
 
     <span class="k">return</span>
 
-<span class="k">def</span> <span class="nf">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">command_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">look_for_response</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Responses addressed to the controller node begin with /0, with possible</span>
+
+<span class="sd">    junk before.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    resp</span>
+
+<span class="sd">        bytes, EZStepper response, straight out of serial</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    resp</span>
+
+<span class="sd">        Any bytes after /0</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="sa">b</span><span class="s1">&#39;/0&#39;</span> <span class="ow">in</span> <span class="n">resp</span><span class="p">:</span>
+
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="n">resp</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/0&#39;</span><span class="p">):]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">resp</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+
+    <span class="k">return</span> <span class="n">resp</span>
+
+<span class="k">def</span> <span class="nf">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">StepperSerial</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">command_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Builds a serial command to send to EZStepper(s), checks status bytes in</span>
+
+<span class="sd">    response, and returns response bytes.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
 
 <span class="sd">    ser</span>
 
@@ -751,9 +875,25 @@
 
 <span class="sd">        string, chars to send over EZStepper bus</span>
 
-<span class="sd">    busy_timeout</span>
+<span class="sd">    Returns</span>
 
-<span class="sd">        float, stop trying to wait for busy ezstepper after this time</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    resp</span>
+
+<span class="sd">        bytes, serial response from EZStepper</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">    ```</span>
+
+<span class="sd">    ezstepper.write(ser, 1, &#39;A1000R\r\n&#39;)</span>
+
+<span class="sd">    ezstepper.write(ser, &#39;_&#39;, &#39;A12000\r\n&#39;)</span>
+
+<span class="sd">    ezstepper.write(ser, &#39;_&#39;, &#39;R\r\n&#39;)</span>
+
+<span class="sd">    ```</span>
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
@@ -763,7 +903,7 @@
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;EZStepper cmd: </span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">command_str</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)))</span>
 
-    <span class="n">resp</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">look_for_response</span><span class="p">(</span><span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
 
     <span class="n">status_good</span> <span class="o">=</span> <span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
 
@@ -771,19 +911,55 @@
 
     <span class="k">return</span> <span class="n">resp</span>
 
-<span class="k">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">StepperSerial</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Gets EZStepper&#39;s encoder counts in terms of ticks. It is critical for</span>
+
+<span class="sd">    accurate operation that this call succeeds, so the program will exit</span>
+
+<span class="sd">    if it fails.</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    ser</span>
+
+<span class="sd">        pyserial instance, the port to send bytes over from</span>
+
+<span class="sd">    address</span>
+
+<span class="sd">        str, address of ezstepper</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    -------</span>
+
+<span class="sd">    ticks</span>
+
+<span class="sd">        Number of encoder ticks counted by encoder. A 10000 line encoder</span>
+
+<span class="sd">        has 4 * 10000 = 40000 lines per revolution.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">ticks</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="n">resp</span> <span class="o">=</span> <span class="n">ezstepper_write</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="s1">&#39;?8R</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Encoder </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1"> status bad: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Encoder </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1"> status bad: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s1">. Is EZStepper/encoder connected?&#39;</span><span class="p">)</span>
 
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
 
-        <span class="n">payload</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="n">IDX_STATUS_BYTE</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="n">NUM_TRAILING_BYTES</span><span class="p">]</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Encoder reading: </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">payload</span><span class="p">:</span>
 
@@ -797,7 +973,7 @@
 
         <span class="k">return</span> <span class="n">ticks</span>
 
-<span class="k">def</span> <span class="nf">bump_hard_stop</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">bump_hard_stop</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">StepperSerial</span><span class="p">,</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ticks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hold_current</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">move_current</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
 
@@ -841,13 +1017,11 @@
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="n">t_move</span> <span class="o">=</span> <span class="n">ticks</span> <span class="o">/</span> <span class="n">speed</span>
-
-    <span class="n">max_tries</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="n">max_tries</span> <span class="o">=</span> <span class="mi">10000</span> <span class="c1"># may take several moves to hit a hard stop</span>
 
     <span class="n">tries</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="n">prev_ticks</span> <span class="o">=</span> <span class="mi">800000</span>
+    <span class="n">prev_ticks</span> <span class="o">=</span> <span class="mi">800000</span> <span class="c1"># more ticks than we have total available cable</span>
 
     <span class="n">curr_ticks</span> <span class="o">=</span> <span class="n">prev_ticks</span> <span class="o">-</span> <span class="mi">1</span>
 
@@ -883,7 +1057,7 @@
 
     <span class="k">return</span> <span class="n">prev_ticks</span>
 
-<span class="k">def</span> <span class="nf">all_steppers_ez</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">addresses</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">all_steppers_ez</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">StepperSerial</span><span class="p">,</span> <span class="n">addresses</span><span class="p">,</span> <span class="n">radians</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
 
@@ -917,7 +1091,7 @@
 
 <span class="sd">    run (optional)</span>
 
-<span class="sd">        If True, execute EZStepper command queue. If False, add to it.</span>
+<span class="sd">        If True, execute EZStepper command buffer after adding to it.</span>
 
 <span class="sd">    Returns</span>
 
@@ -1017,7 +1191,7 @@
 
 <span class="c1"># -----------------------------------------------------------------------------</span>
 
-<span class="k">def</span> <span class="nf">send_hawkeye_byte</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">Serial</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">send_hawkeye_byte</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">HawkeyeSerial</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
 
@@ -1067,13 +1241,22 @@
 
         <span class="n">data</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 
     <span class="k">return</span>
 </code></pre></div>
 
 </details>
 <h2 id="variables">Variables</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">IDX_READY_BIT</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">IDX_STATUS_BYTE</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">NUM_TRAILING_BYTES</span>
+</code></pre></div>
+
 <div class="codehilite"><pre><span></span><code><span class="n">logger</span>
 </code></pre></div>
 
@@ -1125,7 +1308,7 @@ boards in order, based on their addresses [1,2,3,4].</p>
 <tr>
 <td>run (optional)</td>
 <td>None</td>
-<td>If True, execute EZStepper command queue. If False, add to it.</td>
+<td>If True, execute EZStepper command buffer after adding to it.</td>
 <td>None</td>
 </tr>
 </tbody>
@@ -1151,7 +1334,7 @@ boards in order, based on their addresses [1,2,3,4].</p>
 </table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="nl">ser</span><span class="p">:</span><span class="w"> </span><span class="n">Serial</span><span class="p">,</span><span class="w"> </span><span class="n">addresses</span><span class="p">,</span><span class="w"> </span><span class="nf">radians</span><span class="err">:</span><span class="w"> </span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">True</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">all_steppers_ez</span><span class="p">(</span><span class="nl">ser</span><span class="p">:</span><span class="w"> </span><span class="n">StepperSerial</span><span class="p">,</span><span class="w"> </span><span class="n">addresses</span><span class="p">,</span><span class="w"> </span><span class="nf">radians</span><span class="err">:</span><span class="w"> </span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="o">=</span><span class="k">True</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
 <span class="w">    </span><span class="s1">&#39;&#39;&#39;</span>
 
@@ -1185,7 +1368,7 @@ boards in order, based on their addresses [1,2,3,4].</p>
 
 <span class="s1">    run (optional)</span>
 
-<span class="s1">        If True, execute EZStepper command queue. If False, add to it.</span>
+<span class="s1">        If True, execute EZStepper command buffer after adding to it.</span>
 
 <span class="s1">    Returns</span>
 
@@ -1359,7 +1542,7 @@ boards in order, based on their addresses [1,2,3,4].</p>
 </table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">bump_hard_stop</span><span class="ss">(</span><span class="nv">ser</span>: <span class="nv">Serial</span>, <span class="nv">address</span>: <span class="nv">int</span>, <span class="nv">ticks</span>: <span class="nv">int</span>, <span class="nv">speed</span>: <span class="nv">int</span>, <span class="nv">hold_current</span><span class="o">=</span><span class="mi">50</span>, <span class="nv">move_current</span><span class="o">=</span><span class="mi">50</span><span class="ss">)</span>:
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">bump_hard_stop</span><span class="ss">(</span><span class="nv">ser</span>: <span class="nv">StepperSerial</span>, <span class="nv">address</span>: <span class="nv">int</span>, <span class="nv">ticks</span>: <span class="nv">int</span>, <span class="nv">speed</span>: <span class="nv">int</span>, <span class="nv">hold_current</span><span class="o">=</span><span class="mi">50</span>, <span class="nv">move_current</span><span class="o">=</span><span class="mi">50</span><span class="ss">)</span>:
 
     <span class="s1">&#39;&#39;&#39;</span>
 
@@ -1403,13 +1586,11 @@ boards in order, based on their addresses [1,2,3,4].</p>
 
     <span class="s1">&#39;&#39;&#39;</span>
 
-    <span class="nv">t_move</span> <span class="o">=</span> <span class="nv">ticks</span> <span class="o">/</span> <span class="nv">speed</span>
-
-    <span class="nv">max_tries</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="nv">max_tries</span> <span class="o">=</span> <span class="mi">10000</span> # <span class="nv">may</span> <span class="nv">take</span> <span class="nv">several</span> <span class="nv">moves</span> <span class="nv">to</span> <span class="nv">hit</span> <span class="nv">a</span> <span class="nv">hard</span> <span class="nv">stop</span>
 
     <span class="nv">tries</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="nv">prev_ticks</span> <span class="o">=</span> <span class="mi">800000</span>
+    <span class="nv">prev_ticks</span> <span class="o">=</span> <span class="mi">800000</span> # <span class="nv">more</span> <span class="nv">ticks</span> <span class="nv">than</span> <span class="nv">we</span> <span class="nv">have</span> <span class="nv">total</span> <span class="nv">available</span> <span class="nv">cable</span>
 
     <span class="nv">curr_ticks</span> <span class="o">=</span> <span class="nv">prev_ticks</span> <span class="o">-</span> <span class="mi">1</span>
 
@@ -1454,17 +1635,67 @@ boards in order, based on their addresses [1,2,3,4].</p>
 </code></pre></div>
 
 <p>The EZStepper is ready to accept a new command if the ready bit is set. </p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resp</td>
+<td>None</td>
+<td>bytes, EZStepper response, after throwing away garbage bytes</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bool</td>
+<td>True if ready bit is set</td>
+</tr>
+</tbody>
+</table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">ezstepper_check_ready</span><span class="ss">(</span><span class="nv">resp</span><span class="ss">)</span>:
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">ezstepper_check_ready</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
-    <span class="s1">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="s1">&#39;&#39;&#39;</span>
 
-    <span class="nv">The</span> <span class="nv">EZStepper</span> <span class="nv">is</span> <span class="nv">ready</span> <span class="nv">to</span> <span class="nv">accept</span> <span class="nv">a</span> <span class="nv">new</span> <span class="nv">command</span> <span class="k">if</span> <span class="nv">the</span> <span class="nv">ready</span> <span class="nv">bit</span> <span class="nv">is</span> <span class="nv">set</span>.
+<span class="s1">    The EZStepper is ready to accept a new command if the ready bit is set.</span>
 
-    <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    Parameters</span>
 
-    <span class="k">return</span> <span class="nv">bool</span><span class="ss">(</span><span class="nv">resp</span>[<span class="mi">3</span>] <span class="o">&amp;</span> <span class="mi">0</span><span class="nv">b0100000</span><span class="ss">)</span>
+<span class="s1">    ----------</span>
+
+<span class="s1">    resp</span>
+
+<span class="s1">        bytes, EZStepper response, after throwing away garbage bytes</span>
+
+<span class="s1">    Returns</span>
+
+<span class="s1">    -------</span>
+
+<span class="s1">    bool</span>
+
+<span class="s1">        True if ready bit is set</span>
+
+<span class="s1">    &#39;&#39;&#39;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">bool</span><span class="p">(</span><span class="n">resp</span><span class="o">[</span><span class="n">IDX_READY_BIT</span><span class="o">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mi">0</span><span class="n">b00100000</span><span class="p">)</span><span class="w"></span>
 </code></pre></div>
 
 </details>
@@ -1474,39 +1705,98 @@ boards in order, based on their addresses [1,2,3,4].</p>
 <span class="p">)</span>
 </code></pre></div>
 
+<p>Compare the status byte from the EZStepper to some common error codes.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resp</td>
+<td>None</td>
+<td>bytes, EZStepper response, after throwing away garbage bytes</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>status_good</td>
+<td>bool, True if response is nonempty and no unusual status byte patterns found</td>
+</tr>
+</tbody>
+</table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">ezstepper_check_status</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
-    <span class="n">status_good</span> <span class="o">=</span> <span class="n">True</span>
+<span class="w">    </span><span class="s1">&#39;&#39;&#39;</span>
 
-    <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
+<span class="s1">    Compare the status byte from the EZStepper to some common error codes.</span>
 
-        <span class="n">status</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mi">0</span><span class="n">b0001111</span> <span class="c1"># bits 0-3 form an error code</span>
+<span class="s1">    Parameters</span>
 
-    <span class="k">else</span><span class="p">:</span>
+<span class="s1">    ----------</span>
 
-        <span class="n">status</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+<span class="s1">    resp</span>
 
-        <span class="n">status_good</span> <span class="o">=</span> <span class="n">False</span>
+<span class="s1">        bytes, EZStepper response, after throwing away garbage bytes</span>
 
-    <span class="k">if</span> <span class="mi">9</span> <span class="o">==</span> <span class="n">status</span><span class="p">:</span>
+<span class="s1">    Returns</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Overload Error (Physical system could not keep up with commanded position)&#39;</span><span class="p">)</span>
+<span class="s1">    -------</span>
 
-        <span class="n">status_good</span> <span class="o">=</span> <span class="n">False</span>
+<span class="s1">    status_good</span>
 
-    <span class="k">if</span> <span class="mi">15</span> <span class="o">==</span> <span class="n">status</span><span class="p">:</span>
+<span class="s1">        bool, True if response is nonempty and no unusual status byte patterns found</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Command overflow (unit was already executing a command when another command was received)&#39;</span><span class="p">)</span>
+<span class="s1">    &#39;&#39;&#39;</span><span class="w"></span>
 
-        <span class="n">status_good</span> <span class="o">=</span> <span class="n">False</span>
+<span class="w">    </span><span class="n">status_good</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">True</span><span class="w"></span>
 
-    <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nl">resp</span><span class="p">:</span><span class="w"></span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unrecognized error code {status}. Consult EZStepper documentation.&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">bits</span><span class="w"> </span><span class="mi">0</span><span class="o">-</span><span class="mi">3</span><span class="w"> </span><span class="n">form</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="nl">code</span><span class="p">:</span><span class="w"> </span><span class="n">see</span><span class="w"> </span><span class="n">EZStepper</span><span class="w"> </span><span class="n">docs</span><span class="w"></span>
 
-    <span class="k">return</span> <span class="n">status_good</span>
+<span class="w">        </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">resp</span><span class="o">[</span><span class="n">IDX_STATUS_BYTE</span><span class="o">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mi">0</span><span class="n">b00001111</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">else</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="s1">&#39;&#39;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">status_good</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">False</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="mi">9</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nl">status</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Overload Error (Physical system could not keep up with commanded position)&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">status_good</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">False</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="mi">15</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nl">status</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Command overflow (unit was already executing a command when another command was received)&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">status_good</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">False</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="p">((</span><span class="mi">0</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="p">(</span><span class="mi">9</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="p">(</span><span class="mi">15</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">status</span><span class="p">))</span><span class="err">:</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unrecognized error code {status}. Consult EZStepper documentation.&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">status_good</span><span class="w"></span>
 </code></pre></div>
 
 </details>
@@ -1518,19 +1808,47 @@ boards in order, based on their addresses [1,2,3,4].</p>
 <span class="p">)</span>
 </code></pre></div>
 
-<p>ser</p>
-<p>pyserial instance, the port to send bytes over from
+<p>Builds a serial command to send to EZStepper(s), checks status bytes in</p>
+<p>response, and returns response bytes.</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">Parameters</span>
+<span class="gh">----------</span>
+ser
+    pyserial instance, the port to send bytes over from
 address
     str, address of ezstepper
 command_str
     string, chars to send over EZStepper bus
-busy_timeout
-    float, stop trying to wait for busy ezstepper after this time</p>
+
+<span class="gh">Returns</span>
+<span class="gh">-------</span>
+resp
+    bytes, serial response from EZStepper
+
+Example:
+
+<span class="s">```</span>
+<span class="s">ezstepper.write(ser, 1, &#39;A1000R</span>
+</code></pre></div>
+
+<p>')
+    ezstepper.write(ser, '<em>', 'A12000
+')
+    ezstepper.write(ser, '</em>', 'R
+')
+    ```</p>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">ser</span>: <span class="nv">Serial</span>, <span class="nv">address</span>, <span class="nv">command_str</span>: <span class="nv">str</span><span class="ss">)</span>:
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">ezstepper_write</span><span class="ss">(</span><span class="nv">ser</span>: <span class="nv">StepperSerial</span>, <span class="nv">address</span>, <span class="nv">command_str</span>: <span class="nv">str</span><span class="ss">)</span>:
 
     <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">Builds</span> <span class="nv">a</span> <span class="nv">serial</span> <span class="nv">command</span> <span class="nv">to</span> <span class="k">send</span> <span class="nv">to</span> <span class="nv">EZStepper</span><span class="ss">(</span><span class="nv">s</span><span class="ss">)</span>, <span class="nv">checks</span> <span class="nv">status</span> <span class="nv">bytes</span> <span class="nv">in</span>
+
+    <span class="nv">response</span>, <span class="nv">and</span> <span class="nv">returns</span> <span class="nv">response</span> <span class="nv">bytes</span>.
+
+    <span class="nv">Parameters</span>
+
+    <span class="o">----------</span>
 
     <span class="nv">ser</span>
 
@@ -1544,9 +1862,25 @@ busy_timeout
 
         <span class="nv">string</span>, <span class="nv">chars</span> <span class="nv">to</span> <span class="k">send</span> <span class="nv">over</span> <span class="nv">EZStepper</span> <span class="nv">bus</span>
 
-    <span class="nv">busy_timeout</span>
+    <span class="nv">Returns</span>
 
-        <span class="nv">float</span>, <span class="nv">stop</span> <span class="nv">trying</span> <span class="nv">to</span> <span class="k">wait</span> <span class="k">for</span> <span class="nv">busy</span> <span class="nv">ezstepper</span> <span class="nv">after</span> <span class="nv">this</span> <span class="nv">time</span>
+    <span class="o">-------</span>
+
+    <span class="nv">resp</span>
+
+        <span class="nv">bytes</span>, <span class="nv">serial</span> <span class="nv">response</span> <span class="nv">from</span> <span class="nv">EZStepper</span>
+
+    <span class="nv">Example</span>:
+
+    ```
+
+    <span class="nv">ezstepper</span>.<span class="nv">write</span><span class="ss">(</span><span class="nv">ser</span>, <span class="mi">1</span>, <span class="s1">&#39;</span><span class="s">A1000R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+
+    <span class="nv">ezstepper</span>.<span class="nv">write</span><span class="ss">(</span><span class="nv">ser</span>, <span class="s1">&#39;</span><span class="s">_</span><span class="s1">&#39;</span>, <span class="s1">&#39;</span><span class="s">A12000\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+
+    <span class="nv">ezstepper</span>.<span class="nv">write</span><span class="ss">(</span><span class="nv">ser</span>, <span class="s1">&#39;</span><span class="s">_</span><span class="s1">&#39;</span>, <span class="s1">&#39;</span><span class="s">R\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)</span>
+
+    ```
 
     <span class="s1">&#39;&#39;&#39;</span>
 
@@ -1556,7 +1890,7 @@ busy_timeout
 
     <span class="nv">logger</span>.<span class="nv">debug</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">EZStepper cmd: {}{}</span><span class="s1">&#39;</span>.<span class="nv">format</span><span class="ss">(</span><span class="nv">address</span>, <span class="nv">command_str</span>.<span class="nv">rstrip</span><span class="ss">(</span><span class="s1">&#39;</span><span class="s">\r</span><span class="se">\n</span><span class="s1">&#39;</span><span class="ss">)))</span>
 
-    <span class="nv">resp</span> <span class="o">=</span> <span class="nv">ser</span>.<span class="nv">readline</span><span class="ss">()</span>
+    <span class="nv">resp</span> <span class="o">=</span> <span class="nv">look_for_response</span><span class="ss">(</span><span class="nv">ser</span>.<span class="nv">readline</span><span class="ss">())</span>
 
     <span class="nv">status_good</span> <span class="o">=</span> <span class="nv">ezstepper_check_status</span><span class="ss">(</span><span class="nv">resp</span><span class="ss">)</span>
 
@@ -1573,33 +1907,198 @@ busy_timeout
 <span class="p">)</span>
 </code></pre></div>
 
+<p>Gets EZStepper's encoder counts in terms of ticks. It is critical for</p>
+<p>accurate operation that this call succeeds, so the program will exit
+if it fails.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ser</td>
+<td>None</td>
+<td>pyserial instance, the port to send bytes over from</td>
+<td>None</td>
+</tr>
+<tr>
+<td>address</td>
+<td>None</td>
+<td>str, address of ezstepper</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ticks</td>
+<td>Number of encoder ticks counted by encoder. A 10000 line encoder</td>
+</tr>
+<tr>
+<td>has 4 * 10000 = 40000 lines per revolution.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="s s-Atom">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span><span class="nn">ser</span><span class="p">:</span> <span class="nv">Serial</span><span class="p">,</span> <span class="s s-Atom">address</span><span class="p">)</span><span class="s s-Atom">:</span>
+<div class="codehilite"><pre><span></span><code><span class="s s-Atom">def</span> <span class="nf">get_encoder_pos</span><span class="p">(</span><span class="nn">ser</span><span class="p">:</span> <span class="nv">StepperSerial</span><span class="p">,</span> <span class="s s-Atom">address</span><span class="p">)</span><span class="s s-Atom">:</span>
 
-    <span class="s s-Atom">resp</span> <span class="o">=</span> <span class="nf">ezstepper_write</span><span class="p">(</span><span class="s s-Atom">ser</span><span class="p">,</span> <span class="s s-Atom">address</span><span class="p">,</span> <span class="s s-Atom">&#39;?8R\r\n&#39;</span><span class="p">)</span>
+    <span class="s s-Atom">&#39;&#39;&#39;</span>
 
-    <span class="s s-Atom">if</span> <span class="o">not</span> <span class="nf">ezstepper_check_status</span><span class="p">(</span><span class="s s-Atom">resp</span><span class="p">)</span><span class="s s-Atom">:</span>
+<span class="s s-Atom">    Gets EZStepper&#39;s</span> <span class="s s-Atom">encoder</span> <span class="s s-Atom">counts</span> <span class="s s-Atom">in</span> <span class="s s-Atom">terms</span> <span class="s s-Atom">of</span> <span class="s s-Atom">ticks</span><span class="p">.</span> <span class="nv">It</span> <span class="o">is</span> <span class="s s-Atom">critical</span> <span class="s s-Atom">for</span>
 
-        <span class="s s-Atom">logger</span><span class="p">.</span><span class="nf">critical</span><span class="p">(</span><span class="s s-Atom">f&#39;Encoder {address} status bad: {resp}.&#39;</span><span class="p">)</span>
+    <span class="s s-Atom">accurate</span> <span class="s s-Atom">operation</span> <span class="s s-Atom">that</span> <span class="s s-Atom">this</span> <span class="s s-Atom">call</span> <span class="s s-Atom">succeeds</span><span class="p">,</span> <span class="s s-Atom">so</span> <span class="s s-Atom">the</span> <span class="s s-Atom">program</span> <span class="s s-Atom">will</span> <span class="s s-Atom">exit</span>
 
-        <span class="s s-Atom">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="s s-Atom">if</span> <span class="s s-Atom">it</span> <span class="s s-Atom">fails</span><span class="p">.</span>
 
-    <span class="nn">else</span><span class="p">:</span>
+    <span class="nv">Parameters</span>
 
-        <span class="s s-Atom">payload</span> <span class="o">=</span> <span class="s s-Atom">resp</span><span class="p">[</span><span class="mi">4</span><span class="p">:-</span><span class="mi">3</span><span class="p">]</span>
+    <span class="s s-Atom">----------</span>
 
-        <span class="s s-Atom">if</span> <span class="nn">payload</span><span class="p">:</span>
+    <span class="s s-Atom">ser</span>
 
-            <span class="s s-Atom">ticks</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="s s-Atom">payload</span><span class="p">.</span><span class="nf">decode</span><span class="p">(</span><span class="s s-Atom">&#39;utf-8&#39;</span><span class="p">))</span>
+        <span class="s s-Atom">pyserial</span> <span class="s s-Atom">instance</span><span class="p">,</span> <span class="s s-Atom">the</span> <span class="s s-Atom">port</span> <span class="s s-Atom">to</span> <span class="s s-Atom">send</span> <span class="s s-Atom">bytes</span> <span class="s s-Atom">over</span> <span class="s s-Atom">from</span>
 
-        <span class="nn">else</span><span class="p">:</span>
+    <span class="s s-Atom">address</span>
 
-            <span class="s s-Atom">logger</span><span class="p">.</span><span class="nf">critical</span><span class="p">(</span><span class="s s-Atom">f&#39;Encoder {address} didn\&#39;t</span> <span class="s s-Atom">respond</span><span class="p">.</span><span class="err">&#39;</span><span class="p">)</span>
+        <span class="s s-Atom">str</span><span class="p">,</span> <span class="s s-Atom">address</span> <span class="s s-Atom">of</span> <span class="s s-Atom">ezstepper</span>
+
+    <span class="nv">Returns</span>
+
+    <span class="s s-Atom">-------</span>
+
+    <span class="s s-Atom">ticks</span>
+
+        <span class="nv">Number</span> <span class="s s-Atom">of</span> <span class="s s-Atom">encoder</span> <span class="s s-Atom">ticks</span> <span class="s s-Atom">counted</span> <span class="s s-Atom">by</span> <span class="s s-Atom">encoder</span><span class="p">.</span> <span class="nv">A</span> <span class="mi">10000</span> <span class="s s-Atom">line</span> <span class="s s-Atom">encoder</span>
+
+        <span class="s s-Atom">has</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">10000</span> <span class="o">=</span> <span class="mi">40000</span> <span class="s s-Atom">lines</span> <span class="s s-Atom">per</span> <span class="s s-Atom">revolution</span><span class="p">.</span>
+
+    <span class="s s-Atom">&#39;&#39;&#39;</span>
+
+<span class="s s-Atom">    ticks = 0</span>
+
+<span class="s s-Atom">    resp = ezstepper_write(ser, address, &#39;?</span><span class="mi">8</span><span class="nv">R</span><span class="s s-Atom">\r\n&#39;)</span>
+
+<span class="s s-Atom">    if not ezstepper_check_status(resp):</span>
+
+<span class="s s-Atom">        logger.critical(f&#39;</span><span class="nv">Encoder</span> <span class="p">{</span><span class="s s-Atom">address</span><span class="p">}</span> <span class="s s-Atom">status</span> <span class="nn">bad</span><span class="p">:</span> <span class="p">{</span><span class="s s-Atom">resp</span><span class="p">}.</span> <span class="nv">Is</span> <span class="nv">EZStepper</span><span class="o">/</span><span class="s s-Atom">encoder</span> <span class="s s-Atom">connected?&#39;)</span>
+
+<span class="s s-Atom">        sys.exit(1)</span>
+
+<span class="s s-Atom">    else:</span>
+
+<span class="s s-Atom">        payload = resp[IDX_STATUS_BYTE+1:-NUM_TRAILING_BYTES]</span>
+
+<span class="s s-Atom">        logger.debug(f&#39;</span><span class="nv">Encoder</span> <span class="nn">reading</span><span class="p">:</span> <span class="p">{</span><span class="s s-Atom">payload</span><span class="p">}</span><span class="s s-Atom">&#39;)</span>
+
+<span class="s s-Atom">        if payload:</span>
+
+<span class="s s-Atom">            ticks = int(payload.decode(&#39;utf</span><span class="o">-</span><span class="mi">8</span><span class="s s-Atom">&#39;))</span>
+
+<span class="s s-Atom">        else:</span>
+
+<span class="s s-Atom">            logger.critical(f&#39;</span><span class="nv">Encoder</span> <span class="p">{</span><span class="s s-Atom">address</span><span class="p">}</span> <span class="s s-Atom">didn\&#39;t respond.&#39;</span><span class="p">)</span>
 
             <span class="s s-Atom">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="s s-Atom">return</span> <span class="s s-Atom">ticks</span>
+</code></pre></div>
+
+</details>
+<h3 id="look_for_response">look_for_response</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">look_for_response</span><span class="p">(</span>
+    <span class="n">resp</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>Responses addressed to the controller node begin with /0, with possible</p>
+<p>junk before.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resp</td>
+<td>None</td>
+<td>bytes, EZStepper response, straight out of serial</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resp</td>
+<td>Any bytes after /0</td>
+</tr>
+</tbody>
+</table>
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="nv">def</span> <span class="nv">look_for_response</span><span class="ss">(</span><span class="nv">resp</span><span class="ss">)</span>:
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="nv">Responses</span> <span class="nv">addressed</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">controller</span> <span class="nv">node</span> <span class="nv">begin</span> <span class="nv">with</span> <span class="o">/</span><span class="mi">0</span>, <span class="nv">with</span> <span class="nv">possible</span>
+
+    <span class="nv">junk</span> <span class="nv">before</span>.
+
+    <span class="nv">Parameters</span>
+
+    <span class="o">----------</span>
+
+    <span class="nv">resp</span>
+
+        <span class="nv">bytes</span>, <span class="nv">EZStepper</span> <span class="nv">response</span>, <span class="nv">straight</span> <span class="nv">out</span> <span class="nv">of</span> <span class="nv">serial</span>
+
+    <span class="nv">Returns</span>
+
+    <span class="o">-------</span>
+
+    <span class="nv">resp</span>
+
+        <span class="nv">Any</span> <span class="nv">bytes</span> <span class="nv">after</span> <span class="o">/</span><span class="mi">0</span>
+
+    <span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="nv">b</span><span class="s1">&#39;</span><span class="s">/0</span><span class="s1">&#39;</span> <span class="nv">in</span> <span class="nv">resp</span>:
+
+        <span class="nv">resp</span> <span class="o">=</span> <span class="nv">resp</span>[<span class="nv">resp</span>.<span class="nv">find</span><span class="ss">(</span><span class="nv">b</span><span class="s1">&#39;</span><span class="s">/0</span><span class="s1">&#39;</span><span class="ss">)</span>:]
+
+    <span class="k">else</span>:
+
+        <span class="nv">resp</span> <span class="o">=</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
+
+    <span class="k">return</span> <span class="nv">resp</span>
 </code></pre></div>
 
 </details>
@@ -1614,7 +2113,7 @@ busy_timeout
 <p>three bits of the <code>data</code> byte turns on one of the three available groups of
 Hawkeyes on the raft: center, inner ring, and outer ring.
 The byte is sent over serial to a microcontroller, which forwards the byte
-to a shift register on the raft via SPI. </p>
+to a shift register on the raft via SPI.</p>
 <p>For example:
 - data = 1 -&gt; 001 -&gt; center Hawkeye only
 - data = 2 -&gt; 010 -&gt; inner ring only
@@ -1653,7 +2152,7 @@ to a shift register on the raft via SPI. </p>
 </table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">send_hawkeye_byte</span><span class="p">(</span><span class="n">ser</span><span class="o">:</span> <span class="kt">Serial</span><span class="p">,</span> <span class="k">data</span><span class="p">)</span><span class="o">:</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">send_hawkeye_byte</span><span class="p">(</span><span class="n">ser</span><span class="o">:</span> <span class="n">HawkeyeSerial</span><span class="p">,</span> <span class="k">data</span><span class="p">)</span><span class="o">:</span>
 
     <span class="s1">&#39;</span><span class="se">&#39;&#39;</span><span class="s1"></span>
 
@@ -1703,7 +2202,7 @@ to a shift register on the raft via SPI. </p>
 
         <span class="k">data</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="n">ser</span><span class="p">.</span><span class="k">write</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;{data}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="n">ser</span><span class="p">.</span><span class="k">write</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;{data}</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">.</span><span class="n">encode</span><span class="p">())</span>
 
     <span class="k">return</span>
 </code></pre></div>
@@ -1713,13 +2212,64 @@ to a shift register on the raft via SPI. </p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">wait_for_ready</span><span class="p">(</span>
     <span class="n">ser</span><span class="p">,</span>
     <span class="n">address</span><span class="p">,</span>
-    <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">0.5</span>
+    <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">10.0</span>
 <span class="p">)</span>
 </code></pre></div>
 
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ser</td>
+<td>None</td>
+<td>pyserial instance, the port to send bytes over from</td>
+<td>None</td>
+</tr>
+<tr>
+<td>address</td>
+<td>None</td>
+<td>str, address of ezstepper</td>
+<td>None</td>
+</tr>
+<tr>
+<td>ready_timeout (optional)</td>
+<td>None</td>
+<td>float, time in seconds before deciding the stepper is unresponsive</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=.</span><span class="mi">5</span><span class="p">):</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span> <span class="n">wait_for_ready</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">ready_timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    Parameters</span>
+
+<span class="sd">    ----------</span>
+
+<span class="sd">    ser</span>
+
+<span class="sd">        pyserial instance, the port to send bytes over from</span>
+
+<span class="sd">    address</span>
+
+<span class="sd">        str, address of ezstepper</span>
+
+<span class="sd">    ready_timeout (optional)</span>
+
+<span class="sd">        float, time in seconds before deciding the stepper is unresponsive</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="k">if</span> <span class="s1">&#39;_&#39;</span> <span class="o">!=</span> <span class="n">address</span><span class="p">:</span>
 
@@ -1733,13 +2283,13 @@ to a shift register on the raft via SPI. </p>
 
             <span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="n">f</span><span class="s1">&#39;/{address}Q</span><span class="se">\r\n</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">look_for_response</span><span class="p">(</span><span class="n">ser</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
 
             <span class="k">if</span> <span class="n">resp</span><span class="p">:</span>
 
                 <span class="n">ready</span> <span class="o">=</span> <span class="n">ezstepper_check_ready</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
 
-        <span class="c1"># logger.debug(f&#39;Waited {time.time() - start_busywait:.2f} sec for ready signal&#39;)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Waited {time.time() - start_busywait:.2f} sec for ready signal&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ready</span><span class="p">:</span>
 

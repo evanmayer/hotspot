@@ -531,19 +531,27 @@
 
 <span class="n">STEP_PER_TICK</span> <span class="o">=</span> <span class="mf">200.</span> <span class="o">*</span> <span class="n">MICROSTEP_NUM</span> <span class="o">/</span> <span class="n">ENCODER_TICKS_PER_REV</span>
 
-<span class="c1"># ticks / sec, experimentally determined. EZStepper driver takes 10-40V</span>
+<span class="c1"># encoder ticks / sec, experimentally determined. EZStepper driver takes 10-40V</span>
 
 <span class="c1"># more PSU volts = faster current rise time = faster max speed.</span>
 
-<span class="n">MAX_SPEED_TICKS</span> <span class="o">=</span> <span class="mi">100000</span>
+<span class="n">MAX_SPEED_TICKS</span> <span class="o">=</span> <span class="mi">150000</span>
 
-<span class="c1"># Default for EZSteppers</span>
+<span class="c1"># Default for EZSteppers and hawkeye driver peripheral</span>
 
 <span class="n">SERIAL_BAUD</span> <span class="o">=</span> <span class="mi">9600</span>
+
+<span class="c1"># BIG MODE</span>
+
+<span class="n">SERIAL_BAUD_FAST</span> <span class="o">=</span> <span class="mi">115200</span>
 
 <span class="c1"># if you get garbage replies from stepper drivers, increase this timeout.</span>
 
 <span class="n">SERIAL_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.07</span>
+
+<span class="c1"># time before performing any actions at each position reached</span>
+
+<span class="n">SETTLE_TIME</span> <span class="o">=</span> <span class="mf">1e-3</span>
 
 <span class="c1"># -----------------------------------------------------------------------------</span>
 
@@ -562,6 +570,8 @@
 <span class="c1"># 1.5 mm pitch</span>
 
 <span class="n">DRUM_PITCH</span> <span class="o">=</span> <span class="mf">1.5</span> <span class="o">/</span> <span class="mf">1000.</span>
+
+<span class="n">LENGTH_PER_REV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">sqrt</span><span class="p">(</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
 
 <span class="c1"># delta x distance from the NW eyelet to the raft centroid, when it is driven</span>
 
@@ -629,6 +639,9 @@
 <div class="codehilite"><pre><span></span><code><span class="n">HOMING_OFFSET_Y</span>
 </code></pre></div>
 
+<div class="codehilite"><pre><span></span><code><span class="n">LENGTH_PER_REV</span>
+</code></pre></div>
+
 <div class="codehilite"><pre><span></span><code><span class="n">MAX_QLEN</span>
 </code></pre></div>
 
@@ -644,7 +657,13 @@
 <div class="codehilite"><pre><span></span><code><span class="n">SERIAL_BAUD</span>
 </code></pre></div>
 
+<div class="codehilite"><pre><span></span><code><span class="n">SERIAL_BAUD_FAST</span>
+</code></pre></div>
+
 <div class="codehilite"><pre><span></span><code><span class="n">SERIAL_TIMEOUT</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">SETTLE_TIME</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code><span class="n">STEPPER_SERIAL_PORT</span>

@@ -733,9 +733,9 @@
 
             <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="n">time</span> <span class="o">=</span> <span class="n">file_handle</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="kp">source</span><span class="p">][</span><span class="s1">&#39;Local Time (s)&#39;</span><span class="p">]</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">atleast_1d</span><span class="p">(</span><span class="n">file_handle</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="kp">source</span><span class="p">][</span><span class="s1">&#39;Local Time (s)&#39;</span><span class="p">])</span>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="n">file_handle</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="kp">source</span><span class="p">][</span><span class="n">varname</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">atleast_1d</span><span class="p">(</span><span class="n">file_handle</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="kp">source</span><span class="p">][</span><span class="n">varname</span><span class="p">])</span>
 
         <span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="kp">shape</span><span class="p">)</span>
 
@@ -812,6 +812,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span> <span class="o">=</span> <span class="n">tm_queue</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">visualizers</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">process_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packet</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 
@@ -897,6 +899,8 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">update_display</span><span class="p">()</span>
 
+        <span class="k">return</span>
+
     <span class="k">def</span> <span class="nf">run_gui_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -944,7 +948,7 @@
 <h2 id="classes">Classes</h2>
 <h3 id="datarouter">DataRouter</h3>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">DataRouter</span><span class="p">(</span>
-    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f884f74b908</span><span class="o">&gt;&gt;</span>
+    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f7292b4b748</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -967,6 +971,8 @@
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">tm_queue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tm_queue</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">visualizers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">{}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"></span>
 
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">process_packet</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="nl">packet</span><span class="p">:</span><span class="w"> </span><span class="n">dict</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
@@ -1051,6 +1057,8 @@
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nl">plot_enable</span><span class="p">:</span><span class="w"></span>
 
 <span class="w">                </span><span class="n">self</span><span class="p">.</span><span class="n">update_display</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"></span>
 
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">run_gui_event_loop</span><span class="p">(</span><span class="n">self</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 
@@ -1209,6 +1217,8 @@ Values can be 1- or 2-D.</p>
             <span class="k">if</span> <span class="nv">plot_enable</span>:
 
                 <span class="nv">self</span>.<span class="nv">update_display</span><span class="ss">()</span>
+
+        <span class="k">return</span>
 </code></pre></div>
 
 </details>
@@ -1322,9 +1332,9 @@ Values can be 1- or 2-D.</p>
 
 <span class="w">            </span><span class="n">ax</span><span class="p">.</span><span class="n">grid</span><span class="p">(</span><span class="k">True</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="nc">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">&#39;Local Time (s)&#39;</span><span class="o">]</span><span class="w"></span>
+<span class="w">        </span><span class="nc">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">&#39;Local Time (s)&#39;</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">varname</span><span class="o">]</span><span class="w"></span>
+<span class="w">        </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">varname</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="k">data</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span><span class="w"></span>
 
@@ -1411,9 +1421,9 @@ Values can be 1- or 2-D.</p>
 
 <span class="w">            </span><span class="n">ax</span><span class="p">.</span><span class="n">grid</span><span class="p">(</span><span class="k">True</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="nc">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">&#39;Local Time (s)&#39;</span><span class="o">]</span><span class="w"></span>
+<span class="w">        </span><span class="nc">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">&#39;Local Time (s)&#39;</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
 
-<span class="w">        </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">varname</span><span class="o">]</span><span class="w"></span>
+<span class="w">        </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">np</span><span class="p">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">file_handle</span><span class="o">[</span><span class="n">self.source</span><span class="o">][</span><span class="n">varname</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">len</span><span class="p">(</span><span class="k">data</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span><span class="w"></span>
 

@@ -695,6 +695,8 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
+
 <span class="kn">import</span> <span class="nn">time</span>
 
 <span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
@@ -738,6 +740,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">is_inbounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
 
@@ -861,6 +865,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 
+        <span class="k">return</span>
+
     <span class="nd">@property</span>
 
     <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -892,6 +898,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">=</span> <span class="n">new_pos</span>
+
+        <span class="k">return</span>
 
 <span class="k">class</span> <span class="nc">Robot</span><span class="p">:</span>
 
@@ -942,6 +950,8 @@
         <span class="c1"># A handle to the queue for outputting TM packets for vis and logging</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span> <span class="o">=</span> <span class="n">tm_queue</span>
+
+        <span class="k">return</span>
 
     <span class="nd">@property</span>
 
@@ -1041,18 +1051,6 @@
 
         <span class="p">}</span>
 
-        <span class="c1"># Input checking, this is just in case of malformed inputs.</span>
-
-        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
-
-        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="kp">array</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Position command malformed: distance: </span><span class="si">{</span><span class="n">distance</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-
-            <span class="k">return</span> <span class="n">motor_cmds</span>
-
         <span class="c1"># update the commanded position</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Commanded position: </span><span class="si">{</span><span class="n">pos_cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -1077,19 +1075,9 @@
 
         <span class="c1"># for a single rotation.</span>
 
-        <span class="c1"># The implicit assumption here is that the end not attached to</span>
+        <span class="c1"># The implicit assumption here is one of &quot;conservation of string&quot;.</span>
 
-        <span class="c1"># the drum that goes through the eyelet is far enough away from the</span>
-
-        <span class="c1"># drum that a small-angle assumption is valid, such that the induced</span>
-
-        <span class="c1"># change in cable length as a function of the position the cable leaves</span>
-
-        <span class="c1"># the drum is negligible.</span>
-
-        <span class="n">length_per_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="kp">sqrt</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
-
-        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">length_per_rev</span>
+        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">LENGTH_PER_REV</span>
 
         <span class="n">angles</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">num_revs</span>
 
@@ -1184,6 +1172,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 
+        <span class="k">return</span>
+
     <span class="err">@</span><span class="n">property</span>
 
     <span class="n">def</span> <span class="n">position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1215,6 +1205,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ne</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">=</span> <span class="n">new_pos</span>
+
+        <span class="k">return</span>
 </code></pre></div>
 
 </details>
@@ -1228,7 +1220,7 @@
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Robot</span><span class="p">(</span>
     <span class="n">surf</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">TestSurface</span><span class="p">,</span>
     <span class="n">raft</span><span class="p">:</span><span class="n">hotspot</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">Raft</span><span class="p">,</span>
-    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f884f74b908</span><span class="o">&gt;&gt;</span>
+    <span class="n">tm_queue</span><span class="p">:</span><span class="o">&lt;</span><span class="n">bound</span> <span class="n">method</span> <span class="n">BaseContext</span><span class="o">.</span><span class="n">Queue</span> <span class="n">of</span> <span class="o">&lt;</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">DefaultContext</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f7292b4b748</span><span class="o">&gt;&gt;</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1283,6 +1275,8 @@
         <span class="c1"># A handle to the queue for outputting TM packets for vis and logging</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tm_queue</span> <span class="o">=</span> <span class="n">tm_queue</span>
+
+        <span class="k">return</span>
 
     <span class="err">@</span><span class="n">property</span>
 
@@ -1382,18 +1376,6 @@
 
         <span class="p">}</span>
 
-        <span class="c1"># Input checking, this is just in case of malformed inputs.</span>
-
-        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb nb-Type">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
-
-        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command malformed: distance: {distance}&#39;</span><span class="p">)</span>
-
-            <span class="k">return</span> <span class="n">motor_cmds</span>
-
         <span class="c1"># update the commanded position</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded position: {pos_cmd}&#39;</span><span class="p">)</span>
@@ -1418,19 +1400,9 @@
 
         <span class="c1"># for a single rotation.</span>
 
-        <span class="c1"># The implicit assumption here is that the end not attached to</span>
+        <span class="c1"># The implicit assumption here is one of &quot;conservation of string&quot;.</span>
 
-        <span class="c1"># the drum that goes through the eyelet is far enough away from the</span>
-
-        <span class="c1"># drum that a small-angle assumption is valid, such that the induced</span>
-
-        <span class="c1"># change in cable length as a function of the position the cable leaves</span>
-
-        <span class="c1"># the drum is negligible.</span>
-
-        <span class="n">length_per_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
-
-        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">length_per_rev</span>
+        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">LENGTH_PER_REV</span>
 
         <span class="n">angles</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">num_revs</span>
 
@@ -1566,18 +1538,6 @@ from rear.</p>
 
         <span class="p">}</span>
 
-        <span class="c1"># Input checking, this is just in case of malformed inputs.</span>
-
-        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb nb-Type">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
-
-        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos_cmd</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">raft</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Position command malformed: distance: {distance}&#39;</span><span class="p">)</span>
-
-            <span class="k">return</span> <span class="n">motor_cmds</span>
-
         <span class="c1"># update the commanded position</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Commanded position: {pos_cmd}&#39;</span><span class="p">)</span>
@@ -1602,19 +1562,9 @@ from rear.</p>
 
         <span class="c1"># for a single rotation.</span>
 
-        <span class="c1"># The implicit assumption here is that the end not attached to</span>
+        <span class="c1"># The implicit assumption here is one of &quot;conservation of string&quot;.</span>
 
-        <span class="c1"># the drum that goes through the eyelet is far enough away from the</span>
-
-        <span class="c1"># drum that a small-angle assumption is valid, such that the induced</span>
-
-        <span class="c1"># change in cable length as a function of the position the cable leaves</span>
-
-        <span class="c1"># the drum is negligible.</span>
-
-        <span class="n">length_per_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="k">const</span><span class="o">.</span><span class="n">DRUM_PITCH</span> <span class="o">**</span> <span class="mf">2.</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="k">const</span><span class="o">.</span><span class="n">PULLEY_RADIUS</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.</span><span class="p">)</span>
-
-        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="n">length_per_rev</span>
+        <span class="n">num_revs</span> <span class="o">=</span> <span class="n">lengths_after</span> <span class="o">/</span> <span class="k">const</span><span class="o">.</span><span class="n">LENGTH_PER_REV</span>
 
         <span class="n">angles</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">num_revs</span>
 
@@ -1694,6 +1644,8 @@ from rear.</p>
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">nw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="o">[</span><span class="n">0,1</span><span class="o">]</span><span class="w"></span>
 
 <span class="w">        </span><span class="n">self</span><span class="p">.</span><span class="n">ne</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">corners</span><span class="o">[</span><span class="n">1,1</span><span class="o">]</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"></span>
 
 <span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">is_inbounds</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="nl">pos</span><span class="p">:</span><span class="w"> </span><span class="n">tuple</span><span class="p">)</span><span class="err">:</span><span class="w"></span>
 

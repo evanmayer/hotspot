@@ -441,11 +441,11 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#serial" class="md-nav__link">
-    Serial
+  <a href="#hawkeyeserial" class="md-nav__link">
+    HawkeyeSerial
   </a>
   
-    <nav class="md-nav" aria-label="Serial">
+    <nav class="md-nav" aria-label="HawkeyeSerial">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -471,6 +471,47 @@
         
           <li class="md-nav__item">
   <a href="#write_1" class="md-nav__link">
+    write
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stepperserial" class="md-nav__link">
+    StepperSerial
+  </a>
+  
+    <nav class="md-nav" aria-label="StepperSerial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methods_2" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close_2" class="md-nav__link">
+    close
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readline_2" class="md-nav__link">
+    readline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_2" class="md-nav__link">
     write
   </a>
   
@@ -618,11 +659,11 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#serial" class="md-nav__link">
-    Serial
+  <a href="#hawkeyeserial" class="md-nav__link">
+    HawkeyeSerial
   </a>
   
-    <nav class="md-nav" aria-label="Serial">
+    <nav class="md-nav" aria-label="HawkeyeSerial">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -648,6 +689,47 @@
         
           <li class="md-nav__item">
   <a href="#write_1" class="md-nav__link">
+    write
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stepperserial" class="md-nav__link">
+    StepperSerial
+  </a>
+  
+    <nav class="md-nav" aria-label="StepperSerial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methods_2" class="md-nav__link">
+    Methods
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close_2" class="md-nav__link">
+    close
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readline_2" class="md-nav__link">
+    readline
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write_2" class="md-nav__link">
     write
   </a>
   
@@ -693,13 +775,33 @@
 
 <span class="kn">import</span> <span class="nn">serial</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
+
 <span class="kn">import</span> <span class="nn">hotspot.constants</span> <span class="k">as</span> <span class="nn">const</span>
+
+<span class="k">class</span> <span class="nc">DummySerial</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">pass</span>
 
 <span class="k">try</span><span class="p">:</span>
 
     <span class="n">stepper_serial_instance</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">STEPPER_SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_TIMEOUT</span><span class="p">)</span>
 
-    <span class="n">Serial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
+    <span class="n">StepperSerial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
 
 <span class="k">except</span> <span class="n">serial</span><span class="o">.</span><span class="n">serialutil</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
 
@@ -709,35 +811,17 @@
 
         <span class="o">+</span> <span class="s1">&#39; a device to the serial port.&#39;</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Continuing with dummy serial port.&#39;</span><span class="p">)</span>
-
-    <span class="k">class</span> <span class="nc">DummySerial</span><span class="p">:</span>
-
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-        <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-        <span class="k">def</span> <span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
-
-        <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">pass</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;This program cannot continue without steppers connected.&#39;</span><span class="p">)</span>
 
     <span class="n">stepper_serial_instance</span> <span class="o">=</span> <span class="n">DummySerial</span><span class="p">()</span>
 
-    <span class="n">Serial</span> <span class="o">=</span> <span class="n">DummySerial</span>
+    <span class="n">StepperSerial</span> <span class="o">=</span> <span class="n">DummySerial</span>
 
 <span class="k">try</span><span class="p">:</span>
 
     <span class="n">hawkeye_serial_instance</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">HAWKEYE_SERIAL_PORT</span><span class="p">,</span> <span class="n">const</span><span class="o">.</span><span class="n">SERIAL_BAUD</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">SERIAL_TIMEOUT</span><span class="p">)</span>
 
-    <span class="n">Serial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
+    <span class="n">HawkeyeSerial</span> <span class="o">=</span> <span class="n">serial</span><span class="o">.</span><span class="n">Serial</span>
 
 <span class="k">except</span> <span class="n">serial</span><span class="o">.</span><span class="n">serialutil</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
 
@@ -749,27 +833,9 @@
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Continuing with dummy serial port.&#39;</span><span class="p">)</span>
 
-    <span class="k">class</span> <span class="nc">DummySerial</span><span class="p">:</span>
-
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-        <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
-        <span class="k">def</span> <span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
-
-        <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-            <span class="k">pass</span>
-
     <span class="n">hawkeye_serial_instance</span> <span class="o">=</span> <span class="n">DummySerial</span><span class="p">()</span>
 
-    <span class="n">Serial</span> <span class="o">=</span> <span class="n">DummySerial</span>
+    <span class="n">HawkeyeSerial</span> <span class="o">=</span> <span class="n">DummySerial</span>
 </code></pre></div>
 
 </details>
@@ -783,29 +849,30 @@
 <h2 id="classes">Classes</h2>
 <h3 id="dummyserial">DummySerial</h3>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">DummySerial</span><span class="p">(</span>
-
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span>
 </code></pre></div>
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="k">class</span> <span class="n">DummySerial:</span>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="n">DummySerial:</span>
 
-        <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>):
+    <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>, *<span class="nb">args</span>, **<span class="n">kwargs</span>):
 
-            <span class="nb">pass</span>
+        <span class="nb">pass</span>
 
-        <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
+    <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
 
-            <span class="nb">pass</span>
+        <span class="nb">pass</span>
 
-        <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
+    <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
 
-            <span class="k">return</span> <span class="n">b&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">b&#39;&#39;</span>
 
-        <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
+    <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
 
-            <span class="nb">pass</span>
+        <span class="nb">pass</span>
 </code></pre></div>
 
 </details>
@@ -819,9 +886,9 @@
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        def close(self):
+<div class="codehilite"><pre><span></span><code>    def close(self):
 
-            pass
+        pass
 </code></pre></div>
 
 </details>
@@ -833,9 +900,9 @@
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
+<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
 
-            <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
 </code></pre></div>
 
 </details>
@@ -848,37 +915,38 @@
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        def write(self, bytes):
+<div class="codehilite"><pre><span></span><code>    def write(self, bytes):
 
-            pass
+        pass
 </code></pre></div>
 
 </details>
-<h3 id="serial">Serial</h3>
-<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">Serial</span><span class="p">(</span>
-
+<h3 id="hawkeyeserial">HawkeyeSerial</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">HawkeyeSerial</span><span class="p">(</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span>
 </code></pre></div>
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>    <span class="k">class</span> <span class="n">DummySerial:</span>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="n">DummySerial:</span>
 
-        <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>):
+    <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>, *<span class="nb">args</span>, **<span class="n">kwargs</span>):
 
-            <span class="nb">pass</span>
+        <span class="nb">pass</span>
 
-        <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
+    <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
 
-            <span class="nb">pass</span>
+        <span class="nb">pass</span>
 
-        <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
+    <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
 
-            <span class="k">return</span> <span class="n">b&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">b&#39;&#39;</span>
 
-        <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
+    <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
 
-            <span class="nb">pass</span>
+        <span class="nb">pass</span>
 </code></pre></div>
 
 </details>
@@ -892,9 +960,9 @@
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        def close(self):
+<div class="codehilite"><pre><span></span><code>    def close(self):
 
-            pass
+        pass
 </code></pre></div>
 
 </details>
@@ -906,9 +974,9 @@
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
+<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
 
-            <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
 </code></pre></div>
 
 </details>
@@ -921,9 +989,83 @@
 
 <details class="example">
 <summary>View Source</summary>
-<div class="codehilite"><pre><span></span><code>        def write(self, bytes):
+<div class="codehilite"><pre><span></span><code>    def write(self, bytes):
 
-            pass
+        pass
+</code></pre></div>
+
+</details>
+<h3 id="stepperserial">StepperSerial</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">StepperSerial</span><span class="p">(</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="n">DummySerial:</span>
+
+    <span class="n">def</span> <span class="n">__init__</span>(<span class="nb">self</span>, *<span class="nb">args</span>, **<span class="n">kwargs</span>):
+
+        <span class="nb">pass</span>
+
+    <span class="n">def</span> <span class="nb">write</span>(<span class="nb">self</span>, <span class="nb">bytes</span>):
+
+        <span class="nb">pass</span>
+
+    <span class="n">def</span> <span class="n">readline</span>(<span class="nb">self</span>):
+
+        <span class="k">return</span> <span class="n">b&#39;&#39;</span>
+
+    <span class="n">def</span> <span class="nb">close</span>(<span class="nb">self</span>):
+
+        <span class="nb">pass</span>
+</code></pre></div>
+
+</details>
+<hr />
+<h4 id="methods_2">Methods</h4>
+<h4 id="close_2">close</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">close</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    def close(self):
+
+        pass
+</code></pre></div>
+
+</details>
+<h4 id="readline_2">readline</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">readline</span><span class="p">(</span>
+    <span class="bp">self</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    <span class="nv">def</span> <span class="nv">readline</span><span class="ss">(</span><span class="nv">self</span><span class="ss">)</span>:
+
+        <span class="k">return</span> <span class="nv">b</span><span class="s1">&#39;&#39;</span>
+</code></pre></div>
+
+</details>
+<h4 id="write_2">write</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="nb">bytes</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<details class="example">
+<summary>View Source</summary>
+<div class="codehilite"><pre><span></span><code>    def write(self, bytes):
+
+        pass
 </code></pre></div>
 
 </details>

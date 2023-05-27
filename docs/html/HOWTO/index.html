@@ -426,6 +426,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#serial-communications" class="md-nav__link">
+    Serial Communications
+  </a>
+  
+    <nav class="md-nav" aria-label="Serial Communications">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    Windows
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu" class="md-nav__link">
+    Ubuntu
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#motion-outputs" class="md-nav__link">
     Motion Outputs
   </a>
@@ -677,55 +704,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-documentation" class="md-nav__link">
-    Other Documentation
-  </a>
-  
-    <nav class="md-nav" aria-label="Other Documentation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-call-graph" class="md-nav__link">
-    Example Call Graph
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#module-flow-charts" class="md-nav__link">
-    Module Flow Charts
-  </a>
-  
-    <nav class="md-nav" aria-label="Module Flow Charts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#executive" class="md-nav__link">
-    Executive
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#reference-html" class="md-nav__link">
     Reference HTML
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pycallgraph" class="md-nav__link">
-    pycallgraph
   </a>
   
 </li>
@@ -1097,6 +1077,33 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#serial-communications" class="md-nav__link">
+    Serial Communications
+  </a>
+  
+    <nav class="md-nav" aria-label="Serial Communications">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    Windows
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu" class="md-nav__link">
+    Ubuntu
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#motion-outputs" class="md-nav__link">
     Motion Outputs
   </a>
@@ -1348,55 +1355,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-documentation" class="md-nav__link">
-    Other Documentation
-  </a>
-  
-    <nav class="md-nav" aria-label="Other Documentation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-call-graph" class="md-nav__link">
-    Example Call Graph
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#module-flow-charts" class="md-nav__link">
-    Module Flow Charts
-  </a>
-  
-    <nav class="md-nav" aria-label="Module Flow Charts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#executive" class="md-nav__link">
-    Executive
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#reference-html" class="md-nav__link">
     Reference HTML
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pycallgraph" class="md-nav__link">
-    pycallgraph
   </a>
   
 </li>
@@ -1421,7 +1381,7 @@
                 <h1 id="how-to">How To</h1>
 <p>This doc contains instructions for various tasks related to setting up and running the <code>hotspot</code> mirror mapper.</p>
 <h4 id="what-is-hotspot">What is <code>hotspot</code>?</h4>
-<p><img alt="entire system" src="image of entire system" /></p>
+<p><img alt="entire system" src="../docs/img/full_system.jpeg" /></p>
 <p><code>hotspot</code> is a planar cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources by changing the length of cables attached to it. The cables are fixed to an adjustable frame. The frame can clamp to any rectangular surface, but it was designed to clamp to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response.</p>
 <h4 id="what-is-this-document">What is this document?</h4>
 <p>This document is a comprehensive how-to on setting up, maintaining, and running the mirror mapper. It contains all the information that would be needed to replace and reconfigure major components of the system, however unlikely that may be.</p>
@@ -1471,8 +1431,8 @@
 </blockquote>
 <h3 id="hawkeyes">Hawkeyes</h3>
 <h4 id="do-the-hawkeyes-have-power">Do the Hawkeyes have power?</h4>
-<p>The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and negative terminals are labeled.</p>
-<p><img alt="photo of screw terminal" src="photo of screw terminal" /></p>
+<p>The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and ground terminals are labeled.</p>
+<p><img alt="photo of screw terminal" src="../docs/img/screw_terminal.jpeg" /></p>
 <p>Requirements:</p>
 <ul>
 <li>6.7 V (constant voltage)</li>
@@ -1484,6 +1444,7 @@
 <p>The Hawkeye sources are turned on and off by an Adafruit Trinket M0 microcontroller. It gets 5V power via a micro USB cable.</p>
 <h4 id="does-the-microcontroller-have-power">Does the microcontroller have power?</h4>
 <p>The Trinket M0's power LED will illuminate when it is connected to the USB port. The Trinket GND pin should be connected to the Hawkeye power supply's ground terminal.</p>
+<p><img alt="photo of mcu on" src="../docs/img/trinketm0.jpeg" /></p>
 <h2 id="frame">Frame</h2>
 <h4 id="is-the-frame-fully-assembled">Is the frame fully assembled?</h4>
 <p>The 3D printed stepper motor mounts are attached to the beam mapper frame by 5/16-18 x 2" or 2.25" bolts with nyloc "jam" nuts.</p>
@@ -1492,6 +1453,15 @@
 <p><strong>NOTE:</strong> These tabs register the frame to a third edge of the mirror, so <strong>it is important that they not be bent</strong>.</p>
 </blockquote>
 <p>Long 5/16-18 steel threaded rods connect the two halves of the frame. On one end of the threaded rods, threads in the aluminum extrusion provide clamping force. On the other end of the threaded rod, a slide-adjust nut with a thumb button allows easily changing the distance between clamping surfaces, and applies clamping force to the outside of the opposite aluminum extrusion. Care should be exercised with this slide-adjust nut, as pressing the button will release any tension on the threaded rod.</p>
+<h2 id="serial-communications">Serial Communications</h2>
+<p>We will be talking to devices over serial. </p>
+<h3 id="windows">Windows</h3>
+<p>Windows users may need to open <code>hotspot/constants.py</code> and edit the <code>COM</code> values to match the COM ports assigned to the Hawkeye microcontroller and USB-to-RS485 converter by the OS.</p>
+<h3 id="ubuntu">Ubuntu</h3>
+<p>On Ubuntu, our user must be a part of a special group to talk to devices over serial. To see the groups your user is a part of, type <code>groups</code> in a command prompt.</p>
+<p>Add yourself to the <code>tty</code> and <code>dialout</code> groups, then log out and back in to have the changes take effect:</p>
+<p><code>sudo usermod -a -G tty $USER</code></p>
+<p><code>sudo usermod -a -G dialout $USER</code></p>
 <h2 id="motion-outputs">Motion Outputs</h2>
 <h3 id="motors_1">Motors</h3>
 <h4 id="can-the-computer-talk-to-the-motor-drivers">Can the computer talk to the motor drivers?</h4>
@@ -1525,7 +1495,8 @@
 <p><img alt="photo of drum with cable extended, at longer rotational limit" src="../docs/img/spool_empty.jpg" /></p>
 <p><img alt="photo of drum with cable extended, at shorter rotational limit" src="../docs/img/spool_full.jpg" /></p>
 <p>If they are not already attached, the cable drums should be fixed to the 5 mm stepper motor shaft via one M3 setscrew.</p>
-<p>The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference. Do not overtighten, as the threads are plastic.</p>
+<p>The screws mate to brass threaded inserts that are hot-pressed into the PETG plastic spools.</p>
+<p>The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference.</p>
 <p><img alt="photo of cable in screw" src="../docs/img/cable_fixture.jpg" /></p>
 <blockquote>
 <p><strong>NOTE:</strong> Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.</p>
@@ -1540,13 +1511,13 @@
 <h2 id="radiation-outputs">Radiation Outputs</h2>
 <h4 id="will-moving-the-cables-move-the-hawkeyes">Will moving the cables move the Hawkeyes?</h4>
 <p>The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies <a href="http://www.hawkeyetechnologies.com/source-selection/pulsable/">IR-50</a> emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a sequence of flashes using a number of the emitters to enhance the detectability of the signal in the IR receiver output data.</p>
-<p>[photo of raft]</p>
+<p><img alt="photo of raft" src="../docs/img/hawkeye_board.jpeg" /></p>
 <p>Pass the cables that emerge from the corner eyelets to the closest eyelets on the raft. Wrap the ends of the fishing line around the screws in each corner of the raft, and screw them down.</p>
 <h4 id="can-the-computer-command-the-hawkeyes">Can the computer command the Hawkeyes?</h4>
 <p>The Hawkeye IR sources are arranged in roughly 3 concentric circles. Each circle is a separately controllable group of sources, which can be turned on and off by the control software. The first group is a single center source. The second group is the inner ring of six sources surrounding the center. The third group is the outer ring of six sources. Turning on more sources increases the intensity that the TIME receiver sees; this may be necessary for mapping optics where the beam is less concentrated.</p>
 <p>Each group is turned on and off by a MOSFET on the raft. The MOSFET gates are controlled by the outputs of a <a href="https://en.wikipedia.org/wiki/Shift_register">shift register</a> chip. The shift register multiplexes 8 bits (a byte) received at its input to its 8 output pins. Only 3 of the 8 are connected to MOSFETs.</p>
 <p>The shift register receives a byte from an Adafruit Trinket M0 microcontroller over <a href="https://en.wikipedia.org/wiki/Serial_Peripheral_Interface">SPI</a> via the black silicone ribbon cable, which should be hooked up to the grey connector on the raft. The connector pinout is on the back of the PCB. The other end of the cable is soldered to the Trinket M0 pins.</p>
-<p><img alt="photo of Hawkeye data connector" src="photo of Hawkeye data connector" /></p>
+<p><img alt="photo of Hawkeye data connector" src="../docs/img/hawkeye_data_connector.jpeg" /></p>
 <p>The data connection pinout from the Trinket M0 to the ribbon cable connector is as follows:</p>
 <ul>
 <li>Trinket M0 GND → GND<ul>
@@ -1570,7 +1541,7 @@
 </ul>
 </li>
 </ul>
-<p><img alt="photo of Trinket M0" src="photo of trinket M0" /></p>
+<p><img alt="photo of mcu on" src="../docs/img/trinketm0.jpeg" /></p>
 <p>The Trinket M0 receives a byte from the control computer over a USB serial connection and forwards it to the shift register over SPI.</p>
 <table>
 <thead>
@@ -1645,7 +1616,6 @@
 <h3 id="cable-maintenance">Cable Maintenance</h3>
 <h4 id="what-if-a-cable-breaks">What if a cable breaks?</h4>
 <p>The original cable is Spiderwire EZ Braid braided dyneema fishing line (50 lb pull strength), chosen for its stretch resistance. A replacement can be found at any tackle store or Wal-Mart, but a spool of extra cable should already be stored with the beam mapper.</p>
-<p>[photo of line replacement]</p>
 <p>Cable length should be carefully sized to allow the raft to reach all corners of the workspace, but with as little extra length as possible at the maximum allowed separation of 25.5".</p>
 <h2 id="coordinate-system">Coordinate System</h2>
 <p>In order for the raft to be moved to a meaningful position in mirror-space, coordinates must be referenced to sensible locations where the mirror edges and robot frame register to one another.</p>
@@ -1812,7 +1782,7 @@ Read on to learn what they are for and what is inside each.</p>
 <li>Make sure the power supply output is on.</li>
 <li>Make sure that the cable is wound onto each spool and that no loops of excess cable are trapped underneath the cable wound onto the spools.</li>
 <li>Check the excess cable played out in the raft's current position. Some excess is fine as long as it doesn't interfere with the raft's motion.</li>
-<li>Ensure the Hawkeye source power and data cables lines won't interfere with mapper operation.</li>
+<li>Ensure the Hawkeye source power and data cables lines won't interfere with mapper operation, usually, this means routing the cables somewhat along the gravity vector.</li>
 <li>Ensure the <code>hotspot</code> <code>conda</code> env is active: <code>conda activate hotspot</code>.</li>
 </ol>
 <h3 id="mapping">Mapping</h3>
@@ -1821,32 +1791,20 @@ Read on to learn what they are for and what is inside each.</p>
 <li>Perform a homing calibration: <code>c</code>, <code>RETURN</code> key. </li>
 <li>The motors will drive to each corner in turn, bumping the hard stop three times in order to measure the encoder position where 0 mm of cable is played out. When complete, it will move to the center of the workspace.</li>
 <li>Verify that the raft reached its home position in the center of the workspace, and that the other axes achieved tension. If not, GOTO 2. If homing succeeded without incident and cables are not taut, check the measurements of the corner eyelets and the raft dimensions provided in the geometry input .csv file.</li>
-<li>Perform a mapping sequence: <code>s</code>, <code>RETURN</code> key. </li>
+<li>Perform a mapping sequence: <code>r</code> (for run), <code>RETURN</code> key. </li>
 <li>The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Observe the mapper, ensuring the Hawkeye signal cable does not interfere with the mapper.<ol>
 <li>You may request a mode change at any time. Mode changes are processed at the end of each move.</li>
 <li>You may abort the program with <code>Ctrl+C</code>.</li>
 </ol>
 </li>
 <li>Upon completing a sequence, it may be repeated by requesting the sequence mode again.</li>
+<li>You may select a different sequence by pressing <code>s</code> and following the prompts.</li>
 </ol>
-<h2 id="other-documentation">Other Documentation</h2>
-<h3 id="example-call-graph">Example Call Graph</h3>
-<p><img alt="callgraph" src="../docs/img/pycallgraph.png" title="callgraph" /></p>
-<h2 id="module-flow-charts">Module Flow Charts</h2>
-<h3 id="executive">Executive</h3>
-<p>[updated flow charts here]</p>
 <h2 id="reference-html">Reference HTML</h2>
 <p>The html documentation of the source code and Markdown materials is generated by <a href="https://timothycrosley.github.io/portray/">portray</a>.</p>
 <p>To regenerate the documentation, execute:</p>
 <div class="codehilite"><pre><span></span><code>portray as_html -m hotspot -o docs/html/ --overwrite
 </code></pre></div>
-
-<h2 id="pycallgraph"><code>pycallgraph</code></h2>
-<p>To re-generate the call graph image, run</p>
-<div class="codehilite"><pre><span></span><code>pycallgraph -i <span class="s2">&quot;alg*&quot;</span> -i <span class="s2">&quot;const*&quot;</span> -i <span class="s2">&quot;exec*&quot;</span> -i <span class="s2">&quot;hardw*&quot;</span> -i <span class="s2">&quot;hot*&quot;</span> -i <span class="s2">&quot;hw*&quot;</span> -i <span class="s2">&quot;tele*&quot;</span> graphviz --output-file<span class="o">=</span>docs/img/pycallgraph.png -- main.py data/input/geometry/test_surface.csv data/input/profiles/box_frame.csv
-</code></pre></div>
-
-<p>You must have <code>graphviz</code> installed using your operating system's package manager.</p>
                 
               
               

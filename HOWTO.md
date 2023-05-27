@@ -4,7 +4,7 @@ This doc contains instructions for various tasks related to setting up and runni
 
 #### What is `hotspot`?
 
-![entire system](image of entire system)
+![entire system](docs/img/full_system.jpeg)
 
 `hotspot` is a planar cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources by changing the length of cables attached to it. The cables are fixed to an adjustable frame. The frame can clamp to any rectangular surface, but it was designed to clamp to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response.
 
@@ -86,9 +86,9 @@ The EZStepper drivers are configured in software to draw 50% of the rated 2 A cu
 
 #### Do the Hawkeyes have power?
 
-The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and negative terminals are labeled.
+The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and ground terminals are labeled.
 
-![photo of screw terminal](photo of screw terminal)
+![photo of screw terminal](docs/img/screw_terminal.jpeg)
 
 Requirements:
 
@@ -107,7 +107,7 @@ The Hawkeye sources are turned on and off by an Adafruit Trinket M0 microcontrol
 
 The Trinket M0's power LED will illuminate when it is connected to the USB port. The Trinket GND pin should be connected to the Hawkeye power supply's ground terminal.
 
-![photo of mcu on](photo of mcu on)
+![photo of mcu on](docs/img/trinketm0.jpeg)
 
 ## Frame
 
@@ -213,7 +213,7 @@ Finally, excess cable should be wound onto the drum by hand, under tension, to e
 
 The end effector of this robot is a rectangular raft carrying several Hawkeye Technologies [IR-50](http://www.hawkeyetechnologies.com/source-selection/pulsable/) emitters. The robot drives the centroid of the effector to a specified position, and the control algorithm performs a sequence of flashes using a number of the emitters to enhance the detectability of the signal in the IR receiver output data.
 
-![photo of raft](photo of raft)
+![photo of raft](docs/img/hawkeye_board.jpeg)
 
 Pass the cables that emerge from the corner eyelets to the closest eyelets on the raft. Wrap the ends of the fishing line around the screws in each corner of the raft, and screw them down.
 
@@ -225,7 +225,7 @@ Each group is turned on and off by a MOSFET on the raft. The MOSFET gates are co
 
 The shift register receives a byte from an Adafruit Trinket M0 microcontroller over [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) via the black silicone ribbon cable, which should be hooked up to the grey connector on the raft. The connector pinout is on the back of the PCB. The other end of the cable is soldered to the Trinket M0 pins.
 
-![photo of Hawkeye data connector](photo of Hawkeye data connector)
+![photo of Hawkeye data connector](docs/img/hawkeye_data_connector.jpeg)
 
 The data connection pinout from the Trinket M0 to the ribbon cable connector is as follows:
 
@@ -240,7 +240,7 @@ The data connection pinout from the Trinket M0 to the ribbon cable connector is 
 * Trinket M0 5 → PICO (peripheral input, controller output)
     * This pin goes low or high during an SPI transfer to send bits to the shift register.
 
-![photo of Trinket M0](photo of trinket M0)
+![photo of mcu on](docs/img/trinketm0.jpeg)
 
 The Trinket M0 receives a byte from the control computer over a USB serial connection and forwards it to the shift register over SPI.
 
@@ -416,17 +416,12 @@ When a surface geometry file has been created and the profile for the given shap
 2. Perform a homing calibration: `c`, `RETURN` key. 
 3. The motors will drive to each corner in turn, bumping the hard stop three times in order to measure the encoder position where 0 mm of cable is played out. When complete, it will move to the center of the workspace.
 4. Verify that the raft reached its home position in the center of the workspace, and that the other axes achieved tension. If not, GOTO 2. If homing succeeded without incident and cables are not taut, check the measurements of the corner eyelets and the raft dimensions provided in the geometry input .csv file.
-6. Perform a mapping sequence: `s`, `RETURN` key. 
+6. Perform a mapping sequence: `r` (for run), `RETURN` key. 
 7. The raft will drive to each location and flash the Hawkeyes at each point in the sequence. Observe the mapper, ensuring the Hawkeye signal cable does not interfere with the mapper.
     1. You may request a mode change at any time. Mode changes are processed at the end of each move.
     2. You may abort the program with `Ctrl+C`.
 8. Upon completing a sequence, it may be repeated by requesting the sequence mode again.
-
-## Other Documentation
-
-### Example Call Graph
-
-![callgraph](docs/img/pycallgraph.png "callgraph")
+9. You may select a different sequence by pressing `s` and following the prompts.
 
 ## Reference HTML
 The html documentation of the source code and Markdown materials is generated by [portray](https://timothycrosley.github.io/portray/).
@@ -436,11 +431,3 @@ To regenerate the documentation, execute:
 ```bash
 portray as_html -m hotspot -o docs/html/ --overwrite
 ```
-
-## `pycallgraph`
-
-To re-generate the call graph image, run
-```bash
-pycallgraph -i "alg*" -i "const*" -i "exec*" -i "hardw*" -i "hot*" -i "hw*" -i "tele*" graphviz --output-file=docs/img/pycallgraph.png -- main.py data/input/geometry/test_surface.csv data/input/profiles/box_frame.csv
-```
-You must have `graphviz` installed using your operating system's package manager.
