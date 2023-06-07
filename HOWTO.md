@@ -197,7 +197,7 @@ The fishing line is affixed to the each spool by wrapping it around the setscrew
 
 > **NOTE:** Positive motor rotation is defined by convention to spin the shaft clockwise when viewed from the rear of the motor. Cables should be oriented relative to the spool such that a positive motor rotation produces a positive cable length change (i.e., cable is played out from the spool), and a negative motor rotation winds cable onto the spool.
 
-Since helical threads change the position along the drum $y$ that the cable exits as a function of motor position, the actual length of the cable at any given rotational position is given by $z$. If not mitigated, this imparts an error in actual cable length at any given position of $z - x$. To mitigate this, we route the cable from each drum a distance $x$ much greater than the height of the drum helix $y$, to the opposite E-W side of the frame. Then we can leverage a small angle approximation to assert that the error in position imparted by the extra length $z - x$ is negligible (<< 1 mm).
+Since helical threads change the position along the drum $y$ that the cable exits as a function of motor position, the actual length of cable change for a given rotation depends on the thread pitch. Also, a controlled spooling mechanism is usually required. In this case, the corresponding eyelet is located some distance from the spool to achieve controlled spooling with less complexity.
 
 ![Drum rationale](docs/img/spool_rationale.jpg)
 
