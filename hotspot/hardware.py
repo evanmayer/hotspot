@@ -44,13 +44,16 @@ def ezstepper_check_status(resp):
     else:
         status = b''
         status_good = False
+    if 2 == status:
+        logger.warning('Bad command error (illegal command was sent)')
+        status_good = False
     if 9 == status:
-        logger.warning('Overload Error (Physical system could not keep up with commanded position)')
+        logger.warning('Overload error (Physical system could not keep up with commanded position)')
         status_good = False
     if 15 == status:
         logger.warning('Command overflow (unit was already executing a command when another command was received)')
         status_good = False
-    if status and ((0 != status) or (9 != status) or (15 != status)):
+    if status not in [b'', 0, 2, 9, 15]:
         logger.warning(f'Unrecognized error code {status}. Consult EZStepper documentation.')
     return status_good
 
@@ -83,13 +86,17 @@ def wait_for_ready(ser, address, ready_timeout=10.0):
     ready_timeout (optional)
         float, time in seconds before deciding the stepper is unresponsive
     '''
+    resp = b''
     if '_' != address:
         # only send a new command if ezstepper not busy
         start_busywait = time.time()
         ready = False
         while not ready and (time.time() - start_busywait) < ready_timeout:
             ser.write((f'/{address}Q\r\n').encode())
-            resp = look_for_response(ser.readline())
+            line = ser.readline()
+            if line:
+                resp = look_for_response(line)
+            logger.debug(f'Ready response: {resp}')
             if resp:
                 ready = ezstepper_check_ready(resp)
         logger.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
@@ -113,7 +120,7 @@ def look_for_response(resp):
     resp
         Any bytes after /0
     '''
-    if b'/0' in resp:
+    if (b'/0' in resp) and (b'\x03' in resp):
         resp = resp[resp.find(b'/0'):]
     else:
         resp = b''
@@ -150,9 +157,10 @@ def ezstepper_write(ser: StepperSerial, address, command_str: str):
     wait_for_ready(ser, address)
     ser.write((f'/{address}' + command_str).encode())
     logger.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
+
     resp = look_for_response(ser.readline())
-    status_good = ezstepper_check_status(resp)
     logger.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
+    status_good = ezstepper_check_status(resp)
     return resp
 
 
@@ -177,6 +185,12 @@ def get_encoder_pos(ser: StepperSerial, address):
     '''
     ticks = 0
     resp = ezstepper_write(ser, address, '?8R\r\n')
+    
+    retries = 10
+    while not resp and retries > 0:
+        resp = ezstepper_write(ser, address, '?8R\r\n')
+        retries -= 1
+        logger.warning(f'Encoder {address} was slow to respond. Retrying, {retries} remaining.')
     if not ezstepper_check_status(resp):
         logger.critical(f'Encoder {address} status bad: {resp}. Is EZStepper/encoder connected?')
         sys.exit(1)
