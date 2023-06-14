@@ -116,7 +116,7 @@ class Executive:
                     'n0' + # clear any special modes
                     'm50' + # set move current limit to 50% = 1 A
                     'h50' + # set hold current limit to 50% = 1 A
-                    # 'L150' + # acceleration factor
+                    f'L{const.MAX_ACCEL_TICKS}' + # acceleration factor
                     'aC200' + # encoder coarse correction deadband, ticks
                     'ac5' + # encoder fine correction deadband, ticks
                     # encoder ratio: 1000 * (usteps / rev) / (encoder ticks / rev)
@@ -522,21 +522,20 @@ class Executive:
         # CHUNK_DIST is a trade-off between smoothly approximating the needed
         # stepping profiles and the time taken to send many commands over
         # serial before starting the move.
-        CHUNK_DIST = .06
         pos_before = self.robot.raft.position
         pos_after = cmd['pos_cmd']
         dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
         wait_time = dist_to_go * const.ENCODER_TICKS_PER_REV / const.LENGTH_PER_REV / const.MAX_SPEED_TICKS
-        while dist_to_go > CHUNK_DIST:
+        while dist_to_go > const.CHUNK_DIST:
             logger.debug(f'Dist. to go in this move: {dist_to_go}')
             # determine a position CHUNK_DIST away from the starting pos along
             # the direction of travel
             v = np.array(pos_after) - np.array(pos_before)
             u = v / np.linalg.norm(v) # the unit vector pointing along the line
             logger.debug(f'Direction vector: {v}, Unit vector: {u}')
-            pos_cmd = pos_before + CHUNK_DIST * u
+            pos_cmd = pos_before + const.CHUNK_DIST * u
             logger.debug(f'Intermediate move: {pos_cmd}')
-            send_pos_cmd(pos_cmd, run=False) # alg updates raft position
+            send_pos_cmd(pos_cmd, run=True) # alg updates raft position
             # calculate new dist to go
             pos_before = self.robot.raft.position
             dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
