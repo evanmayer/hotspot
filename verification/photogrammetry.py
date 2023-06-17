@@ -22,7 +22,7 @@ nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
-BOARD_VERT_SHAPE = (10,7) # this was the shape of the board that is in Dan's lab
+BOARD_VERT_SHAPE = (7,10) # this was the shape of the board that is in Dan's lab
 # BOARD_VERT_SHAPE = (18,11) # this was the shape of the finer board printed on sticker paper
 BOARD_SQUARE_SIZE = 0.020245 # m, this was the size of the board that is in Dan's lab
 # BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
@@ -31,12 +31,15 @@ BOARD_ARUCO_SIZE = 0.015 # m
 DEFAULT_TARGET_SIZE = 0.02506 # m
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
 
-CORNER_TERM_CRIT = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # Locations of chessboard corner coords in the plane of the chessboard
 BOARD_CORNER_LOCS = np.zeros((1, BOARD_VERT_SHAPE[0] * BOARD_VERT_SHAPE[1], 3), np.float32)
-BOARD_CORNER_LOCS[0,:,:2] = np.mgrid[0:BOARD_VERT_SHAPE[0], 0:BOARD_VERT_SHAPE[1]].T.reshape(-1, 2) * BOARD_SQUARE_SIZE
+BOARD_CORNER_LOCS[0,:,:2] = BOARD_SQUARE_SIZE + np.mgrid[0:BOARD_VERT_SHAPE[0], 0:BOARD_VERT_SHAPE[1]].T.reshape(-1, 2) * BOARD_SQUARE_SIZE
 # Number of 90deg rotations to apply to images when loading.
 IMG_ROT_NUM = 0
+
+CAMERA_FOCAL_LENGTH_GUESS = 2.7e-3 # m, iPhone 13 mini ultrawide
+CAMERA_PIXEL_SIZE_GUESS = 1.7e-6 # m, iPhone 13 mini ultrawide
+CAMERA_PIXEL_SHAPE = (4032, 3024)
 
 
 def load_to_gray(file, camera_matrix=None, camera_dist=None):
@@ -56,7 +59,7 @@ def load_to_gray(file, camera_matrix=None, camera_dist=None):
     return gray
 
 
-def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, valid_ids=[], camera_matrix=None, camera_dist=None):
+def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, refine_subpixel=False, valid_ids=[], camera_matrix=None, camera_dist=None):
     '''
     Thin wrapper for OpenCV detectMarkers
     '''
@@ -64,7 +67,10 @@ def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, valid_ids=[], c
 
     dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     parameters = cv2.aruco.DetectorParameters()
-    parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+    if refine_subpixel:
+        parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+        parameters.cornerRefinementMaxIterations = 40 # default 30
+        parameters.cornerRefinementMinAccuracy = 0.01 # default 0.1
     detector = cv2.aruco.ArucoDetector(dictionary, parameters)
     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
 
@@ -100,8 +106,8 @@ def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, f
 def generate_charuco_board(square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DICT, gen_png=False):
     dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     board = cv2.aruco.CharucoBoard(
-        (BOARD_VERT_SHAPE[1]+1,
-        BOARD_VERT_SHAPE[0]+1),
+        (BOARD_VERT_SHAPE[0]+1,
+        BOARD_VERT_SHAPE[1]+1),
         square_size,
         aruco_size,
         dictionary
@@ -122,10 +128,15 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQ
     gray = load_to_gray(file, camera_matrix=camera_matrix, camera_dist=camera_dist)
 
     detector = cv2.aruco.CharucoDetector(board)
+    params = detector.getDetectorParameters()
+    params.minMarkerPerimeterRate = 1e-2
+    detector.setDetectorParameters(params)
     aruco_corners, aruco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
     charuco_ret, aruco_corners, aruco_ids = cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, gray, board)
     ret, rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(aruco_corners, aruco_ids, board, camera_matrix, camera_dist, None, None)
 
+    if not ret:
+        logger.critical('failed to find charuco pose')
     # Board z-axis points away from the camera, but we want it pointing
     # toward the camera to align the board axes with the mapper coordinate
     # frame
@@ -143,7 +154,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQ
     return rvec, tvec
 
 
-def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, plot=False):
+def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False):
     '''
     The general idea is to take a set of test images with a chessboard pattern
     (6x9, i.e. 5x8 intersections) to calculate the distortion parameters of the
@@ -182,6 +193,8 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
         Region of interest, may be used for cropping out blank pixels after
         distortion removal
     '''
+    num_found_thresh = 20
+
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
     ids_q = mp.Queue()
@@ -210,19 +223,20 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
                     )
                     corners2 = res2[1]
                     # only consider images with substantial portions of board in view
-                    if (res2[2] is not None) and len(res2[2]) >= 9:
+                    if (res2[2] is not None) and len(res2[2]) >= num_found_thresh:
                         ids_q.put(res2[2])
-                    im = cv2.aruco.drawDetectedMarkers(
-                        gray,
-                        corners,
-                        ids
-                    )
-                    im_with_corners = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
                     # only consider images with substantial number of corners found in view
-                    if (corners2 is not None) and len(corners2) >= 9:
+                    if (corners2 is not None) and len(corners2) >= num_found_thresh:
                         imgpoints_q.put(corners2)
+                    if plot:
+                        im = cv2.aruco.drawDetectedMarkers(
+                            gray,
+                            corners,
+                            ids
+                        )
+                        im_with_corners = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
                 if plot:
-                    plt.figure()
+                    plt.figure(figsize=(14,24))
                     plt.imshow(im_with_corners)
                     ax = plt.gca()
                     ax.set_aspect('equal')
@@ -248,7 +262,31 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
     calib_ids = []
     while not ids_q.empty():
         calib_ids.append(ids_q.get(timeout=0.1))
-    ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(imgpoints, calib_ids, board, gray.shape[::-1], None, None)
+
+    flags = (
+        cv2.CALIB_RATIONAL_MODEL + 
+        cv2.CALIB_FIX_ASPECT_RATIO +
+        cv2.CALIB_FIX_PRINCIPAL_POINT +
+        0
+    )
+    if guess_intrinsics:
+        flags += cv2.CALIB_USE_INTRINSIC_GUESS
+        guess_mtx = np.array([
+            [CAMERA_FOCAL_LENGTH_GUESS / CAMERA_PIXEL_SIZE_GUESS, 0, CAMERA_PIXEL_SHAPE[0] / 2],
+            [0, CAMERA_FOCAL_LENGTH_GUESS / CAMERA_PIXEL_SIZE_GUESS, CAMERA_PIXEL_SHAPE[1] / 2],
+            [0, 0, 1],
+        ])
+    else:
+        guess_mtx = None
+    ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(
+        imgpoints,
+        calib_ids,
+        board,
+        gray.shape[::-1],
+        guess_mtx,
+        None,
+        flags=flags
+    )
 
     logger.info(f'RMS reprojection error {ret} px')
 
@@ -259,6 +297,22 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
         1, 
         (w,h)
     )
+
+    if plot:
+        for i in range(len(objpoints)):
+            fig, ax = plt.subplots(figsize=(12,7))
+            
+            reprojected_obj_points, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+            reprojected_obj_points = reprojected_obj_points.reshape(-1,2)
+            these_imgpoints = imgpoints[i].reshape(-1, 2)
+
+            ax.scatter((reprojected_obj_points)[:,0], (reprojected_obj_points)[:,1], color='k')
+            ax.scatter(these_imgpoints[:,0], these_imgpoints[:,1], color='r')
+            ax.set_ylim(0, 3024)
+            ax.set_xlim(0, 4032)
+            ax.set_aspect('equal')
+            fig.show()
+
     return mtx, dist, optimal_camera_matrix, roi
 
 
@@ -272,6 +326,7 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
             file,
             camera_matrix=camera_matrix,
             camera_dist=camera_dist,
+            refine_subpixel=True,
             valid_ids=aruco_ids
         )
         if not found or not any(ids):
@@ -282,6 +337,21 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
             fig, ax = plt.subplots(subplot_kw={'projection':'3d'})
 
         img_data[file] = {}
+
+        board_rvec, board_tvec = estimate_pose_charuco(
+            file,
+            camera_matrix,
+            camera_dist,
+            plot=plot
+        )
+        board_rvec_row = board_rvec.T[0]
+        board_tvec_row = board_tvec.T[0]
+
+        # the rotation of the board relative to the camera
+        Rb = R.from_rotvec(board_rvec_row)
+
+        logger.info(f'Board euler angles: {Rb.as_euler("zyx", degrees=True)} deg')
+
         for i in range(len(ids)):
             target_rvec, target_tvec, obj_points = estimate_pose_aruco(
                 file,
@@ -293,18 +363,6 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
             )
             target_rvec_row = target_rvec[0][0]
             target_tvec_row = target_tvec[0][0]
-
-            board_rvec, board_tvec = estimate_pose_charuco(
-                file,
-                camera_matrix,
-                camera_dist,
-                plot=plot
-            )
-            board_rvec_row = board_rvec.T[0]
-            board_tvec_row = board_tvec.T[0]
-
-            # the rotation of the board relative to the camera
-            Rb = R.from_rotvec(board_rvec_row)
 
             # the rotation of the aruco target relative to the camera
             Rt = R.from_rotvec(target_rvec_row)
@@ -371,7 +429,7 @@ def estimate_angular_offset(img_data, file, entity0, entity1):
     return theta
 
 
-def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None):
+def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None, savefig=True):
     '''
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
@@ -407,7 +465,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     xs = np.unique([pt[0] for pt in commanded_pts_flat])
     ys = np.unique([pt[1] for pt in commanded_pts_flat])
     
-    fig, ax = plt.subplots()#subplot_kw={'projection':'3d'})
+    fig, ax = plt.subplots(figsize=(7,5))#subplot_kw={'projection':'3d'})
     fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
     queries = np.zeros_like(commanded_pts)
@@ -443,6 +501,11 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
                 queries[j][k][0] -= origin_tvec[0]
                 queries[j][k][1] -= origin_tvec[1]
                 queries[j][k][2] -= origin_tvec[2]
+            else:
+                # No reference given, take the first location as perfectly correct.
+                if (j == 0 and k == 0):
+                    fudge_offset = queries[j][k] - commanded_pts[j][k]
+                queries[j][k] -= fudge_offset
 
     residuals = queries - commanded_pts
 
@@ -499,9 +562,9 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     
     plt.xticks(rotation=45)
     if rmse:
-        ax.set_title('Profile: ' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
+        ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
     else:
-        ax.set_title('Profile: ' + os.path.basename(command_file))
+        ax.set_title('Profile:\n' + os.path.basename(command_file))
     ax.set_xlabel('x-distance from SW corner (m)')
     ax.set_ylabel('y-distance from SW corner (m)')
     ax.grid(True)
@@ -511,7 +574,8 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
     t_str = str(time.time())
-    plt.savefig(os.path.join(out_dir, f'quiver_{t_str}.png'), facecolor='white', transparent=False)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'quiver_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
@@ -528,7 +592,8 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     ax.set_ylabel('Y-dir Position (m)')
     ax.grid(True)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, f'magnitudes_{str(time.time())}.png'), facecolor='white', transparent=False)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'magnitudes_{str(time.time())}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
@@ -538,7 +603,8 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
     ax.set_ylabel('Density')
     ax.grid(True)
-    plt.savefig(os.path.join(out_dir, f'zdir_{t_str}.png'), facecolor='white', transparent=False)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'zdir_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
@@ -552,9 +618,10 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     ax.set_ylabel('Y-dir Residuals (mm)')
     ax.grid(True)
     ax.set_aspect('equal')
-    plt.savefig(os.path.join(out_dir, f'residuals_{t_str}.png'), facecolor='white', transparent=False)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'residuals_{t_str}.png'), facecolor='white', transparent=False)
 
-    plt.figure()
+    plt.figure(figsize=(12,7))
     ax = plt.axes()
     ax.set_title('Residuals vs. Position Num.')
     residuals_ordered_mm = np.ravel(residuals_mag_mm)
@@ -565,6 +632,52 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     ax.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
-    plt.savefig(os.path.join(out_dir, f'error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
+
+
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Residuals vs. z-dir residual')
+    residuals_ordered_mm = np.ravel(residuals_mag_mm)
+    ax.scatter(residuals_mm[:,:,2].ravel(), residuals_ordered_mm)
+    # ax.set_ylim(0, 10)
+    ax.set_xlabel('Z-dir residual')
+    ax.set_ylabel('Position Error Magnitude (mm)')
+    ax.grid(True)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+
+    # Publication-ready figures
+    plt.style.use('seaborn-v0_8-paper')
+
+    # from matplotlib
+    # plt.figure()
+    # ax = plt.axes()
+    # ax.set_title('Residuals: Commanded - Measured')
+    # residuals_mm = np.array(residuals) * 1000.
+    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
+    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
+    # ax.
+    # ax.set_xlim(-7,7)
+    # ax.set_ylim(-7,7)
+    # ax.set_xlabel('X-dir Residuals (mm)')
+    # ax.set_ylabel('Y-dir Residuals (mm)')
+    # ax.grid(True)
+    # ax.set_aspect('equal')
+    # plt.savefig(os.path.join(out_dir, f'pub_residuals_{t_str}.png'), facecolor='white', transparent=False)
+
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Error vs. Position Number')
+    residuals_ordered_mm = np.ravel(residuals_mag_mm)
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+    ax.set_ylim(0, 10)
+    ax.set_xlabel('Scan Order')
+    ax.set_ylabel('Position Error Magnitude (mm)')
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'pub_error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
 
     return commanded_pts, queries, residuals

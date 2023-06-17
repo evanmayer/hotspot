@@ -22,24 +22,24 @@ STEP_PER_TICK = 200. * MICROSTEP_NUM / ENCODER_TICKS_PER_REV
 # encoder ticks / sec, experimentally determined. EZStepper driver takes 10-40V
 # more PSU volts = faster current rise time = faster max speed.
 MAX_SPEED_TICKS = 25000
-MAX_ACCEL_TICKS = 1000
+MAX_ACCEL_TICKS = 400
 # Default for EZSteppers and hawkeye driver peripheral
 SERIAL_BAUD = 9600
 # BIG MODE
-SERIAL_BAUD_FAST = 230400
+SERIAL_BAUD_FAST = 115200
 # if you get garbage replies from stepper drivers, increase this timeout.
 SERIAL_TIMEOUT = 0.1
 # time before performing any actions at each position reached
 SETTLE_TIME = 1e-3
 # for long moves, approximate the intermediate path by moves of this maximum length, m
-CHUNK_DIST = 0.01
+CHUNK_DIST = 0.005
 
 # -----------------------------------------------------------------------------
 # Physical constants
 # -----------------------------------------------------------------------------
 # Used for converting linear distances into rotational ones.
 # This is the measured value of the helical drum minor diameter.
-PULLEY_RADIUS = .030132 / 2.
+PULLEY_RADIUS = .030142 / 2.
 # The helical drum means the length unspooled per radian is longer.
 # 1.5 mm pitch
 DRUM_PITCH = 1.5 / 1000.

@@ -87,19 +87,20 @@ def wait_for_ready(ser, address, ready_timeout=10.0):
         float, time in seconds before deciding the stepper is unresponsive
     '''
     resp = b''
+    ready = False
     if '_' != address:
         # only send a new command if ezstepper not busy
         start_busywait = time.time()
-        ready = False
+        query = (f'/{address}Q\r\n').encode()
         while not ready and (time.time() - start_busywait) < ready_timeout:
-            ser.write((f'/{address}Q\r\n').encode())
+            ser.write(query)
             line = ser.readline()
             if line:
                 resp = look_for_response(line)
             logger.debug(f'Ready response: {resp}')
             if resp:
                 ready = ezstepper_check_ready(resp)
-        logger.debug(f'Waited {time.time() - start_busywait:.2f} sec for ready signal')
+        logger.debug(f'Waited {time.time() - start_busywait:.4f} sec for ready signal')
         if not ready:
             logger.warning(f'EZStepper {address} was not ready in allotted time {ready_timeout} sec')
     return
@@ -154,7 +155,6 @@ def ezstepper_write(ser: StepperSerial, address, command_str: str):
     ezstepper.write(ser, '_', 'R\r\n')
     ```
     '''
-    wait_for_ready(ser, address)
     ser.write((f'/{address}' + command_str).encode())
     logger.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
 
@@ -236,6 +236,7 @@ def bump_hard_stop(ser: StepperSerial, address: int, ticks: int, speed: int, hol
 
     while ((curr_ticks < prev_ticks) and (tries < max_tries)):
         prev_ticks = curr_ticks
+        wait_for_ready(ser, address)
         resp = ezstepper_write(
             ser,
             address,
@@ -310,6 +311,7 @@ def all_steppers_ez(ser: StepperSerial, addresses, radians: list, run=True):
     for i in range(len(ticks_to_go)):
         if (ticks_to_go[i] and vels[i]):
             # Set velocity and command absolute encoder ticks
+            wait_for_ready(ser, addresses[i])
             resp = ezstepper_write(
                 ser,
                 addresses[i],
