@@ -28,7 +28,8 @@ BOARD_SQUARE_SIZE = 0.020245 # m, this was the size of the board that is in Dan'
 # BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
 # BOARD_SQUARE_SIZE = 13.091e-3 # m, this was the size of the finer board printed on sticker paper
 BOARD_ARUCO_SIZE = 0.015 # m
-DEFAULT_TARGET_SIZE = 0.02506 # m
+# DEFAULT_TARGET_SIZE = 0.02506 # m
+DEFAULT_TARGET_SIZE = 0.0249 # m
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
 
 # Locations of chessboard corner coords in the plane of the chessboard
@@ -265,7 +266,7 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
 
     flags = (
         cv2.CALIB_RATIONAL_MODEL + 
-        cv2.CALIB_FIX_ASPECT_RATIO +
+        # cv2.CALIB_FIX_ASPECT_RATIO +
         cv2.CALIB_FIX_PRINCIPAL_POINT +
         0
     )
