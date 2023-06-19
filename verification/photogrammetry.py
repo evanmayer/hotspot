@@ -22,12 +22,12 @@ nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
-BOARD_VERT_SHAPE = (7,10) # this was the shape of the board that is in Dan's lab
+BOARD_VERT_SHAPE = (14,20) # this was the shape of the board that is in Dan's lab
 # BOARD_VERT_SHAPE = (18,11) # this was the shape of the finer board printed on sticker paper
-BOARD_SQUARE_SIZE = 0.020245 # m, this was the size of the board that is in Dan's lab
+BOARD_SQUARE_SIZE = 0.020245 / 2 # m, this was the size of the board that is in Dan's lab
 # BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
 # BOARD_SQUARE_SIZE = 13.091e-3 # m, this was the size of the finer board printed on sticker paper
-BOARD_ARUCO_SIZE = 0.015 # m
+BOARD_ARUCO_SIZE = 0.015 / 2 # m
 # DEFAULT_TARGET_SIZE = 0.02506 # m
 DEFAULT_TARGET_SIZE = 0.0249 # m
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
@@ -104,28 +104,29 @@ def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, f
     return rvec, tvec, obj_points
 
 
-def generate_charuco_board(square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DICT, gen_png=False):
+def generate_charuco_board(board_vert_shape, square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DICT, gen_png=False):
     dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     board = cv2.aruco.CharucoBoard(
-        (BOARD_VERT_SHAPE[0]+1,
-        BOARD_VERT_SHAPE[1]+1),
+        (board_vert_shape[0]+1,
+        board_vert_shape[1]+1),
         square_size,
         aruco_size,
         dictionary
     )
     if gen_png:
+        # change these parameters for different printers or sheets of paper.
         dpi = 300
         img = board.generateImage((int(8.5 * dpi), int(11 * dpi)), marginSize=int(dpi * square_size / METERS_PER_INCH))
-        cv2.imwrite(f'{BOARD_VERT_SHAPE[1]+1}x{BOARD_VERT_SHAPE[0]+1}_square_{square_size}m_aruco_{aruco_size}m_charuco_dict_{DEFAULT_ARUCO_DICT}.png', img)
+        cv2.imwrite(f'{board_vert_shape[1]+1}x{board_vert_shape[0]+1}_square_{square_size}m_aruco_{aruco_size}m_charuco_dict_{aruco_dict}.png', img)
 
     return board, dictionary
 
 
-def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, fig=None, ax=None, plot=False):
+def estimate_pose_charuco(file, camera_matrix, camera_dist, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, fig=None, ax=None, plot=False):
     '''
     Thin wrapper for OpenCV aruco detectBoard
     '''
-    board, _ = generate_charuco_board(square_size, aruco_size, aruco_dict=aruco_dict)
+    board, _ = generate_charuco_board(board_vert_shape, square_size, aruco_size, aruco_dict=aruco_dict)
     gray = load_to_gray(file, camera_matrix=camera_matrix, camera_dist=camera_dist)
 
     detector = cv2.aruco.CharucoDetector(board)
@@ -155,7 +156,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, square_size=BOARD_SQ
     return rvec, tvec
 
 
-def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False):
+def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False):
     '''
     The general idea is to take a set of test images with a chessboard pattern
     (6x9, i.e. 5x8 intersections) to calculate the distortion parameters of the
@@ -174,6 +175,8 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
     ----------
     image_files
         list of images of a chessboard or charuco board
+    board_vert_shape : tuple of ints (optional)
+        shape of chessboard vertices
     square_size : float (optional)
         size of chessboard square, m
     aruco_size : float (optional)
@@ -200,7 +203,7 @@ def calibrate_camera(image_files: list, square_size=BOARD_SQUARE_SIZE, aruco_siz
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
     ids_q = mp.Queue()
     rets_q = mp.Queue()
-    board, _ = generate_charuco_board(square_size, aruco_size)
+    board, _ = generate_charuco_board(board_vert_shape, square_size, aruco_size)
 
     # do camera calibration from chessboard images
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
