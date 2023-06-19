@@ -22,13 +22,9 @@ nsort = lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split('(\d+)
 METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
-BOARD_VERT_SHAPE = (14,20) # this was the shape of the board that is in Dan's lab
-# BOARD_VERT_SHAPE = (18,11) # this was the shape of the finer board printed on sticker paper
-BOARD_SQUARE_SIZE = 0.020245 / 2 # m, this was the size of the board that is in Dan's lab
-# BOARD_SQUARE_SIZE = 15e-3 #0.021004444 # m, this was the size of the board used to calibrate GSI Nikon D810 in MIL
-# BOARD_SQUARE_SIZE = 13.091e-3 # m, this was the size of the finer board printed on sticker paper
-BOARD_ARUCO_SIZE = 0.015 / 2 # m
-# DEFAULT_TARGET_SIZE = 0.02506 # m
+BOARD_VERT_SHAPE = (14,19)
+BOARD_SQUARE_SIZE = 0.01200 # m
+BOARD_ARUCO_SIZE = 0.00882 # m
 DEFAULT_TARGET_SIZE = 0.0249 # m
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
 
@@ -72,6 +68,7 @@ def find_corners_aruco(file: str, aruco_dict=DEFAULT_ARUCO_DICT, refine_subpixel
         parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
         parameters.cornerRefinementMaxIterations = 40 # default 30
         parameters.cornerRefinementMinAccuracy = 0.01 # default 0.1
+        parameters.minMarkerPerimeterRate = 1e-2
     detector = cv2.aruco.ArucoDetector(dictionary, parameters)
     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
 
@@ -131,7 +128,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, board_vert_shape=BOA
 
     detector = cv2.aruco.CharucoDetector(board)
     params = detector.getDetectorParameters()
-    params.minMarkerPerimeterRate = 1e-2
+    params.minMarkerPerimeterRate = 1e-3
     detector.setDetectorParameters(params)
     aruco_corners, aruco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
     charuco_ret, aruco_corners, aruco_ids = cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, gray, board)
@@ -197,7 +194,8 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
         Region of interest, may be used for cropping out blank pixels after
         distortion removal
     '''
-    num_found_thresh = 20
+    theoretical_num_verts = np.multiply(*board_vert_shape)
+    num_found_thresh = 0.9 * theoretical_num_verts
 
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
@@ -218,7 +216,6 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
             else:
                 rets_q.put(ret)
                 if ret:
-                    objpoints_q.put(BOARD_CORNER_LOCS)
                     res2 = cv2.aruco.interpolateCornersCharuco(
                         corners,
                         ids,
@@ -226,24 +223,25 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
                         board
                     )
                     corners2 = res2[1]
-                    # only consider images with substantial portions of board in view
-                    if (res2[2] is not None) and len(res2[2]) >= num_found_thresh:
-                        ids_q.put(res2[2])
                     # only consider images with substantial number of corners found in view
                     if (corners2 is not None) and len(corners2) >= num_found_thresh:
+                        ids_q.put(res2[2])
                         imgpoints_q.put(corners2)
-                    if plot:
-                        im = cv2.aruco.drawDetectedMarkers(
-                            gray,
-                            corners,
-                            ids
-                        )
-                        im_with_corners = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
-                if plot:
-                    plt.figure(figsize=(14,24))
-                    plt.imshow(im_with_corners)
-                    ax = plt.gca()
-                    ax.set_aspect('equal')
+                        objpoints_q.put(BOARD_CORNER_LOCS)
+                    else:
+                        logger.warning(f'file {file} failed threshold check for number of corners found: {len(corners2)} < {num_found_thresh}')
+                #     if plot:
+                #         im = cv2.aruco.drawDetectedMarkers(
+                #             gray,
+                #             corners,
+                #             ids
+                #         )
+                #         im_with_corners = cv2.drawChessboardCorners(gray, BOARD_VERT_SHAPE, corners2, ret)
+                # if plot:
+                #     plt.figure(figsize=(14,24))
+                #     plt.imshow(im_with_corners)
+                #     ax = plt.gca()
+                #     ax.set_aspect('equal')
 
     # Do the actual camera calibration with all the data we gathered.
     # OpenCV likes lists.
@@ -303,6 +301,7 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
     )
 
     if plot:
+        fig_overall, ax_overall = plt.subplots(figsize=(12,7))
         for i in range(len(objpoints)):
             fig, ax = plt.subplots(figsize=(12,7))
             
@@ -310,12 +309,18 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
             reprojected_obj_points = reprojected_obj_points.reshape(-1,2)
             these_imgpoints = imgpoints[i].reshape(-1, 2)
 
-            ax.scatter((reprojected_obj_points)[:,0], (reprojected_obj_points)[:,1], color='k')
-            ax.scatter(these_imgpoints[:,0], these_imgpoints[:,1], color='r')
+            ax.scatter((reprojected_obj_points)[:,0], (reprojected_obj_points)[:,1], s=5, color='k')
+            ax.scatter(these_imgpoints[:,0], these_imgpoints[:,1], s=5, color='r')
+            ax_overall.scatter(these_imgpoints[:,0], these_imgpoints[:,1], s=5, color='b', alpha=0.2)
             ax.set_ylim(0, 3024)
             ax.set_xlim(0, 4032)
             ax.set_aspect('equal')
             fig.show()
+        ax_overall.set_ylim(0, 3024)
+        ax_overall.set_xlim(0, 4032)
+        ax_overall.set_aspect('equal')
+        ax_overall.set_title('Overall sensor coverage')
+        fig_overall.show()
 
     return mtx, dist, optimal_camera_matrix, roi
 
