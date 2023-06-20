@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 import numpy as np
 import os
+import pickle
 import re
 from scipy.spatial.transform import Rotation as R
 import seaborn as sns
@@ -25,7 +26,7 @@ METERS_PER_INCH = 0.0254
 BOARD_VERT_SHAPE = (14,19)
 BOARD_SQUARE_SIZE = 0.01200 # m
 BOARD_ARUCO_SIZE = 0.00882 # m
-DEFAULT_TARGET_SIZE = 0.0249 # m
+DEFAULT_TARGET_SIZE = 0.0250 # m
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
 
 # Locations of chessboard corner coords in the plane of the chessboard
@@ -128,7 +129,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, board_vert_shape=BOA
 
     detector = cv2.aruco.CharucoDetector(board)
     params = detector.getDetectorParameters()
-    params.minMarkerPerimeterRate = 1e-3
+    params.minMarkerPerimeterRate = 1e-2
     detector.setDetectorParameters(params)
     aruco_corners, aruco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
     charuco_ret, aruco_corners, aruco_ids = cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, gray, board)
@@ -153,7 +154,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, board_vert_shape=BOA
     return rvec, tvec
 
 
-def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False):
+def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False, savefig=False):
     '''
     The general idea is to take a set of test images with a chessboard pattern
     (6x9, i.e. 5x8 intersections) to calculate the distortion parameters of the
@@ -170,6 +171,8 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
 
     Parameters
     ----------
+    cal_path
+        path to calibration data (for saving figures)
     image_files
         list of images of a chessboard or charuco board
     board_vert_shape : tuple of ints (optional)
@@ -301,26 +304,49 @@ def calibrate_camera(image_files: list, board_vert_shape=BOARD_VERT_SHAPE, squar
     )
 
     if plot:
+        residuals_x = []
+        residuals_y = []
         fig_overall, ax_overall = plt.subplots(figsize=(12,7))
         for i in range(len(objpoints)):
-            fig, ax = plt.subplots(figsize=(12,7))
+            # fig, ax = plt.subplots(figsize=(12,7))
             
             reprojected_obj_points, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
             reprojected_obj_points = reprojected_obj_points.reshape(-1,2)
             these_imgpoints = imgpoints[i].reshape(-1, 2)
 
-            ax.scatter((reprojected_obj_points)[:,0], (reprojected_obj_points)[:,1], s=5, color='k')
-            ax.scatter(these_imgpoints[:,0], these_imgpoints[:,1], s=5, color='r')
+            # wayyy too hard to deal with ragged imgpoints from charuco
+            if reprojected_obj_points.shape[0] == these_imgpoints.shape[0]:
+                residuals_x += list(reprojected_obj_points[:these_imgpoints.shape[0],0] - these_imgpoints[:,0])
+                residuals_y += list(reprojected_obj_points[:these_imgpoints.shape[0],1] - these_imgpoints[:,1])
+
+            # ax.scatter((reprojected_obj_points)[:,0], (reprojected_obj_points)[:,1], s=5, color='k')
+            # ax.scatter(these_imgpoints[:,0], these_imgpoints[:,1], s=5, color='r')
             ax_overall.scatter(these_imgpoints[:,0], these_imgpoints[:,1], s=5, color='b', alpha=0.2)
-            ax.set_ylim(0, 3024)
-            ax.set_xlim(0, 4032)
-            ax.set_aspect('equal')
-            fig.show()
-        ax_overall.set_ylim(0, 3024)
-        ax_overall.set_xlim(0, 4032)
+            # ax.set_ylim(0, 3024)
+            # ax.set_xlim(0, 4032)
+            # ax.set_aspect('equal')
+            # fig.show()
+
+        ax_overall.set_ylim(0, h)
+        ax_overall.set_xlim(0, w)
+        ax_overall.set_ylabel('Pixels')
+        ax_overall.set_xlabel('Pixels')
         ax_overall.set_aspect('equal')
         ax_overall.set_title('Overall sensor coverage')
         fig_overall.show()
+
+        fig_residuals, ax_residuals = plt.subplots(figsize=(12,7))
+        sns.kdeplot(x=residuals_x, y=residuals_y, fill=True, ax=ax_residuals)
+        ax_residuals.scatter(residuals_x, residuals_y, s=1, color='k', alpha=0.2)
+        ax_residuals.set_title(f'Reprojection Error Residuals (N={len(residuals_x)})')
+        ax_residuals.set_xlabel('X Error (px)')
+        ax_residuals.set_ylabel('Y Error (px)')
+        ax_residuals.set_aspect('equal')
+
+        if savefig:
+            t_str = time.time()
+            fig_overall.savefig(os.path.join(cal_path, f'sensor_coverage_{t_str}.png'), facecolor='white', transparent=False)
+            fig_residuals.savefig(os.path.join(cal_path, f'reprojection_error_residuals_{t_str}.png'), facecolor='white', transparent=False)
 
     return mtx, dist, optimal_camera_matrix, roi
 
@@ -394,8 +420,11 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
             img_data[file][ids[i]] = {}
             img_data[file][ids[i]]['rvec'] = target_rvec_final
             img_data[file][ids[i]]['tvec'] = target_tvec_final
+            img_data[file][ids[i]]['tvec_rel_camera'] = target_tvec_row
 
             img_data[file]['board'] = {}
+            img_data[file]['board']['euler_zyx_deg'] = Rb.as_euler("zyx", degrees=True)
+            img_data[file]['board']['tvec_rel_camera'] = board_tvec_row
             img_data[file]['board']['rvec'] = board_rvec_final
             img_data[file]['board']['tvec'] = board_tvec_final
 
@@ -458,6 +487,11 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
         ArUco ID of a target mounted at a known location relative to the origin
         of the mapper coordinate frame.
     '''
+    t_str = str(time.time())
+    if savefig:
+        with open(os.path.join(out_dir, f'img_data_{t_str}.pickle'), 'wb') as f:
+            pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
     # Reshape command profile assuming a square box is scanned.
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
     assert np.round(np.sqrt(commanded_pts_flat.shape[0])) == np.sqrt(commanded_pts_flat.shape[0]), 'Command profile shape not square. Rewrite alg to handle non-square shapes.'
@@ -480,13 +514,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     queries = np.zeros_like(commanded_pts)
     residuals = np.zeros_like(commanded_pts)
 
-    # Get the per-image data out of the img_data dict
-    # natural sort image data to align with command sequence
-    # Assumes images are numbered something like 1.jpg, 2.jpg, 3.jpg...
-    img_keys = [file for file in sorted(list(img_data.keys()), key=nsort) if os.path.exists(file)]
-
     img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
-
     imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
     for j in range(imgs.shape[0]):
         for k in range(imgs.shape[1]):
@@ -582,7 +610,6 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
-    t_str = str(time.time())
     if savefig:
         plt.savefig(os.path.join(out_dir, f'quiver_{t_str}.png'), facecolor='white', transparent=False)
 
@@ -602,7 +629,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     ax.grid(True)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'magnitudes_{str(time.time())}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'magnitudes_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
