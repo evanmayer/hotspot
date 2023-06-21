@@ -539,6 +539,8 @@ class Executive:
             # calculate new dist to go
             pos_before = self.robot.raft.position
             dist_to_go = np.linalg.norm(np.array(pos_after) - np.array(pos_before))
+            # temporary until streaming commands is fixed
+            wait_time = dist_to_go * const.ENCODER_TICKS_PER_REV / const.LENGTH_PER_REV / const.MAX_SPEED_TICKS
         # Signal ezsteppers to run once we've sent all commands for this move
         logger.debug(f'Final move: {pos_after}')
         send_pos_cmd(pos_after, run=True)
