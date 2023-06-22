@@ -21,8 +21,8 @@ DEG_PER_RAD = 180. / np.pi
 STEP_PER_TICK = 200. * MICROSTEP_NUM / ENCODER_TICKS_PER_REV
 # encoder ticks / sec, experimentally determined. EZStepper driver takes 10-40V
 # more PSU volts = faster current rise time = faster max speed.
-MAX_SPEED_TICKS = 25000
-MAX_ACCEL_TICKS = 400
+MAX_SPEED_TICKS = 300000#20000
+MAX_ACCEL_TICKS = 200
 # Default for EZSteppers and hawkeye driver peripheral
 SERIAL_BAUD = 9600
 # BIG MODE
@@ -32,7 +32,7 @@ SERIAL_TIMEOUT = 0.1
 # time before performing any actions at each position reached
 SETTLE_TIME = 1e-3
 # for long moves, approximate the intermediate path by moves of this maximum length, m
-CHUNK_DIST = 0.005
+CHUNK_DIST = 0.0025
 
 # -----------------------------------------------------------------------------
 # Physical constants

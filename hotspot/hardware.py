@@ -21,6 +21,40 @@ NUM_TRAILING_BYTES = 3
 #   when viewed from the rear.
 
 # -----------------------------------------------------------------------------
+# Helper classes
+# -----------------------------------------------------------------------------
+class CommandBuffer:
+    '''
+    Handles building a string of commands to send over serial.
+
+    Continuous movement requires a sequence of carefully orchestrated
+    absolute angle and velocity commands. In order to avoid serial transfer/
+    ready waiting overhead, it's most efficient to send a long sequence to each
+    stepper controller, and then run them all together.
+
+    All methods deal in strings, not byte objects.
+    '''
+    def __init__(self, addresses):
+        '''Addresses are EZStepper bus addresses, e.g. [2,1,3,4]'''
+        self.buffer_map = {address : '' for address in addresses}
+
+    def put(self, address, command_str):
+        self.buffer_map[address] += command_str
+        logger.debug(f'CommandBuffer:put() {address}: {command_str} -> {self.buffer_map[address]}')
+
+    def empty(self, address):
+        '''Use after sending'''
+        self.buffer_map[address] = ''
+
+    def terminate(self, address):
+        '''Use before sending'''
+        self.buffer_map[address] += '\r\n'
+
+    def get(self, address):
+        return self.buffer_map[address]
+
+
+# -----------------------------------------------------------------------------
 # Stepper functions
 # -----------------------------------------------------------------------------
 def ezstepper_check_status(resp):
@@ -47,13 +81,19 @@ def ezstepper_check_status(resp):
     if 2 == status:
         logger.warning('Bad command error (illegal command was sent)')
         status_good = False
+    if 5 == status:
+        logger.warning('Communications Error (Internal communications error)')
+        status_good = False
     if 9 == status:
         logger.warning('Overload error (Physical system could not keep up with commanded position)')
+        status_good = False
+    if 11 == status:
+        logger.warning('Move not allowed')
         status_good = False
     if 15 == status:
         logger.warning('Command overflow (unit was already executing a command when another command was received)')
         status_good = False
-    if status not in [b'', 0, 2, 9, 15]:
+    if status not in [b'', 0, 2, 9, 11, 15]:
         logger.warning(f'Unrecognized error code {status}. Consult EZStepper documentation.')
     return status_good
 
@@ -100,6 +140,7 @@ def wait_for_ready(ser, address, ready_timeout=10.0):
             logger.debug(f'Ready response: {resp}')
             if resp:
                 ready = ezstepper_check_ready(resp)
+        status_good = ezstepper_check_status(resp)
         logger.debug(f'Waited {time.time() - start_busywait:.4f} sec for ready signal')
         if not ready:
             logger.warning(f'EZStepper {address} was not ready in allotted time {ready_timeout} sec')
@@ -156,11 +197,14 @@ def ezstepper_write(ser: StepperSerial, address, command_str: str):
     ```
     '''
     ser.write((f'/{address}' + command_str).encode())
-    logger.debug('EZStepper cmd: {}{}'.format(address, command_str.rstrip('\r\n')))
-
-    resp = look_for_response(ser.readline())
+    logger.debug('EZStepper cmd: {}'.format((f'/{address}' + command_str).rstrip('\r\n')))
+    # we do not anticipate a response from "all call" commands.
+    if '_' == address:
+        resp = b''
+    else:
+        resp = look_for_response(ser.readline())
+        status_good = ezstepper_check_status(resp)
     logger.debug('EZStepper response: {}'.format(resp.rstrip(b'\r\n')))
-    status_good = ezstepper_check_status(resp)
     return resp
 
 
@@ -191,7 +235,11 @@ def get_encoder_pos(ser: StepperSerial, address):
         resp = ezstepper_write(ser, address, '?8R\r\n')
         retries -= 1
         logger.warning(f'Encoder {address} was slow to respond. Retrying, {retries} remaining.')
-    if not ezstepper_check_status(resp):
+    retries = 10
+    while not ezstepper_check_status(resp) and retries > 0:
+        retries -= 1
+        logger.warning(f'Encoder {address} status was bad: {resp}. Retrying, {retries} remaining.')
+    if retries < 0:
         logger.critical(f'Encoder {address} status bad: {resp}. Is EZStepper/encoder connected?')
         sys.exit(1)
     else:
@@ -253,7 +301,7 @@ def bump_hard_stop(ser: StepperSerial, address: int, ticks: int, speed: int, hol
     return prev_ticks
 
 
-def all_steppers_ez(ser: StepperSerial, addresses, radians: list, run=True):
+def all_steppers_ez(ser: StepperSerial, addresses: list, radians: list, run=True):
     '''
     Send serial commands to AllMotion EZHR17EN driver boards.
     Driver boards should already be in position-correction mode, so will take

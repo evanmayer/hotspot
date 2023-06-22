@@ -36,6 +36,8 @@ MENU_STR = (
     HR
 )
 
+STEPPER_ORDER = ['sw', 'nw', 'ne', 'se'] # just for convenience
+
 
 class Executive:
     '''
@@ -362,6 +364,7 @@ class Executive:
             )
             # set cable length zero point
             time.sleep(1)
+            hw.wait_for_ready(self.stepper_ser, self.steppers[current_axis])
             resp = hw.ezstepper_write(self.stepper_ser, self.steppers[current_axis], 'z0R\r\n')
             time.sleep(1)
             # Check to see that homing operation succeeeded.
@@ -376,8 +379,10 @@ class Executive:
         # home pos)
         for ax in axes:
             address = self.steppers[ax]
+            hw.wait_for_ready(self.stepper_ser, address)
             actual_ticks = hw.get_encoder_pos(self.stepper_ser, address)
             hw.ezstepper_write(self.stepper_ser, address, f'z{actual_ticks}R\r\n')
+            hw.wait_for_ready(self.stepper_ser, address)
             hw.ezstepper_write(self.stepper_ser, address, f'A{actual_ticks}R\r\n')
 
         self.robot.raft.position = self.robot.surf.sw + np.array([0.1, 0.1])
@@ -507,7 +512,7 @@ class Executive:
             '''
             motor_cmds = self.robot.process_input(cmd_tuple)
             # bootleg OrderedDict
-            keys = ['sw', 'nw', 'ne', 'se']
+            keys = STEPPER_ORDER
             angs = [cmd for cmd in [motor_cmds[key] for key in keys]]
             ticks_to_go, err = hw.all_steppers_ez(
                 self.stepper_ser,

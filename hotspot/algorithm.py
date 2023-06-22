@@ -73,7 +73,7 @@ class TestSurface:
             reason = f'Outside shape: {np.abs(ang_tot_rad - 2. * np.pi)}'
 
         if reason:
-            logger.debug(f'Bounds check failed: {reason}')
+            logger.warning(f'Bounds check failed: {reason}')
         return result
 
 
