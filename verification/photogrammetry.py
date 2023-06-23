@@ -4,9 +4,11 @@ import concurrent
 import cv2
 import logging
 import matplotlib.pyplot as plt
+from matplotlib import colors
 import multiprocessing as mp
 import numpy as np
 import os
+import pandas as pd
 import pickle
 import re
 from scipy.spatial.transform import Rotation as R
@@ -364,9 +366,9 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
         ax_residuals.set_aspect('equal')
 
         if savefig:
-            t_str = time.time()
-            fig_overall.savefig(os.path.join(cal_path, f'sensor_coverage_{t_str}.png'), facecolor='white', transparent=False)
-            fig_residuals.savefig(os.path.join(cal_path, f'reprojection_error_residuals_{t_str}.png'), facecolor='white', transparent=False)
+            timestamp = time.time()
+            fig_overall.savefig(os.path.join(cal_path, f'sensor_coverage_{timestamp}.png'), facecolor='white', transparent=False)
+            fig_residuals.savefig(os.path.join(cal_path, f'reprojection_error_residuals_{timestamp}.png'), facecolor='white', transparent=False)
 
     return mtx, dist, optimal_camera_matrix, roi
 
@@ -488,7 +490,7 @@ def estimate_angular_offset(img_data, file, entity0, entity1):
     return theta
 
 
-def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None, savefig=True):
+def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id: int, origin_id=None, timestamp=''):
     '''
     Assume the target images are each of a different point in a raster scan.
     Compare to the commanded profile.
@@ -508,10 +510,10 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
         ArUco ID of a target mounted at a known location relative to the origin
         of the mapper coordinate frame.
     '''
-    t_str = str(time.time())
-    if savefig:
-        with open(os.path.join(out_dir, f'img_data_{t_str}.pickle'), 'wb') as f:
-            pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not timestamp:
+        timestamp = str(time.time())
+    with open(os.path.join(out_dir, f'img_data_{timestamp}.pickle'), 'wb') as f:
+        pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Reshape command profile assuming a square box is scanned.
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
@@ -528,13 +530,9 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
 
     xs = np.unique([pt[0] for pt in commanded_pts_flat])
     ys = np.unique([pt[1] for pt in commanded_pts_flat])
-    
-    fig, ax = plt.subplots(figsize=(7,5))
-    fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
-    queries = np.zeros_like(commanded_pts)
+    measured_pts = np.zeros_like(commanded_pts)
     camera_dist = np.zeros_like(commanded_pts[:,:,0])
-    residuals = np.zeros_like(commanded_pts)
 
     img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
     imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
@@ -549,453 +547,501 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
             query_rvec = img_data[imgs[j][k]][raft_id]['rvec']
             board_tvec = img_data[imgs[j][k]]['board']['tvec']
             camera_dist[j][k] = np.linalg.norm(img_data[imgs[j][k]][raft_id]['tvec_rel_camera'])
-            queries[j][k][0] = query_tvec[0]
-            queries[j][k][1] = query_tvec[1]
-            queries[j][k][2] = query_tvec[2]
+            measured_pts[j][k][0] = query_tvec[0]
+            measured_pts[j][k][1] = query_tvec[1]
+            measured_pts[j][k][2] = query_tvec[2]
 
             if origin_id:
                 if not (origin_id in img_data[imgs[j][k]].keys()):
                     continue
                 origin_tvec = img_data[imgs[j][k]][origin_id]['tvec']
                 origin_rvec = img_data[imgs[j][k]][origin_id]['rvec']
-                queries[j][k][0] -= origin_tvec[0]
-                queries[j][k][1] -= origin_tvec[1]
-                queries[j][k][2] -= origin_tvec[2]
+                measured_pts[j][k][0] -= origin_tvec[0]
+                measured_pts[j][k][1] -= origin_tvec[1]
+                measured_pts[j][k][2] -= origin_tvec[2]
             else:
                 # No reference given, take the first location as perfectly correct.
                 if (j == 0 and k == 0):
-                    fudge_offset = queries[j][k] - commanded_pts[j][k]
-                queries[j][k] -= fudge_offset
+                    fudge_offset = measured_pts[j][k] - commanded_pts[j][k]
+                measured_pts[j][k] -= fudge_offset
+    return xs, ys, commanded_pts, measured_pts, camera_dist
 
-    residuals = queries - commanded_pts
 
+def calc_rmse(commanded_pts, measured_pts):
+    residuals = measured_pts - commanded_pts
+    mags = np.linalg.norm(residuals[:,:,:2], axis=-1)
+    mags_flat = np.ravel(mags)
+    rmse = np.linalg.norm(mags_flat) / np.sqrt(len(mags_flat))
+    return rmse
+
+
+def filter_by_rmse(commanded_pts, measured_pts, n_sigma):
+    residuals = measured_pts - commanded_pts
     # error check: ignore ridiculous residuals
     rmse = None
-    # if residuals.size > 16: # need good stats
-    #     rmse = np.sqrt(np.mean(residuals ** 2.))
-    #     print('RMSE:', rmse)
-    #     sig_thresh = 3. * rmse
-    #     bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
-    #     bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
-    #     queries[bad_x] = commanded_pts[bad_x]
-    #     queries[bad_y] = commanded_pts[bad_y]
-    #     print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
-    #     print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
-    #     residuals = queries - commanded_pts
-    #     rmse = np.sqrt(np.mean(residuals ** 2.))
-    # else:
-    #     bad_x = None
-    #     bad_y = None
-    bad_x = []
-    bad_y = []
+    if residuals.size >= 16: # need good stats
+        rmse = calc_rmse(commanded_pts, measured_pts)
+        logger.info(f'RMSE: {rmse}')
+        sig_thresh = n_sigma * rmse
+        bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
+        bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
+        measured_pts[bad_x] = commanded_pts[bad_x]
+        measured_pts[bad_y] = commanded_pts[bad_y]
+        logger.info(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored.')
+        logger.info(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored.')
+    else:
+        bad_x = []
+        bad_y = []
+    return measured_pts, bad_x, bad_y
 
+
+def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter_results=False, savefig=False, timestamp=''):
+    if not timestamp:
+        timestamp = str(time.time())
+    if filter_results:
+        measured_pts, bad_x, bad_y = filter_by_rmse(commanded_pts, measured_pts, 3)
+    else:
+        bad_x = []
+        bad_y = []
+
+    rmse = calc_rmse(commanded_pts, measured_pts)
+    residuals = measured_pts - commanded_pts
+    residuals_mm = residuals * 1e3
+    residuals_mag = np.linalg.norm(residuals[:,:,:2], axis=-1)
+    residuals_mag_mm = residuals_mag * 1e3
+
+    # -------------------------------------------------------------------------
+    # Quiver plot
+    # -------------------------------------------------------------------------
+    fig, ax = plt.subplots(figsize=(7,5))
+    # fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax.scatter(
         commanded_pts[:,:,0],
         commanded_pts[:,:,1],
         facecolor='none',
         color='k',
-        label=f'Raft Commanded Pos.',
+        label=f'Commanded Position',
         zorder=1
     )
+    ax.scatter(
+        measured_pts[:,:,0] + residuals[:,:,0],
+        measured_pts[:,:,1] + residuals[:,:,1],
+        facecolor='k',
+        label='Measured Position',
+        zorder=1
+    )
+    exag = 10
+    cm = plt.cm.ScalarMappable(
+        norm=colors.Normalize(
+            vmin=0,
+            vmax=np.max(residuals_mag),
+        ),
+        cmap='viridis'
+    )
+    cs = cm.to_rgba(np.sort(residuals_mag.ravel()))
+    viridis_lower = cs[len(cs) // 4]
+    viridis_mid = cs[len(cs) // 2]
+    viridis_upper = cs[3 * len(cs) // 4]
+
     ax.quiver(
-        queries[:,:,0],
-        queries[:,:,1],
-        residuals[:,:,0],
-        residuals[:,:,1],
-        np.linalg.norm(residuals, axis=-1),
+        measured_pts[:,:,0] + residuals[:,:,0] * exag,
+        measured_pts[:,:,1] + residuals[:,:,1] * exag,
+        residuals[:,:,0] * exag,
+        residuals[:,:,1] * exag,
+        residuals_mag,
         pivot='tip',
         angles='xy',
         scale_units='xy',
         scale=1,
         headwidth=2.5,
         headlength=4,
+        color=viridis_mid,
         edgecolors='k',
         linewidth=.5,
         width=4e-3,
-        zorder=2
+        zorder=2,
+        label='10x Errors'
     )
-    ax.scatter(queries[:,:,0], queries[:,:,1], facecolor='k', label='Raft Measured Pos.', zorder=1)
     if any(bad_x):
         ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
     if any(bad_y):
         ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
     
-    plt.xticks(rotation=45)
-    if rmse:
-        ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
-    else:
-        ax.set_title('Profile:\n' + os.path.basename(command_file))
-    ax.set_xlabel('x-distance from SW corner (m)')
-    ax.set_ylabel('y-distance from SW corner (m)')
-    ax.grid(True)
+    plt.xticks(rotation=45, fontsize=14)
+    plt.yticks(rotation=45, fontsize=14)
+    # if rmse:
+    #     ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
+    # else:
+    #     ax.set_title('Profile:\n' + os.path.basename(command_file))
+    ax.set_xlim(0, 24 * 0.0254)
+    ax.set_ylim(0, 24 * 0.0254)
+    ax.set_xlabel('X Position (m)', fontsize=14)
+    ax.set_ylabel('Y Position (m)', fontsize=14)
+    # ax.grid(True)
     ax.set_aspect('equal')
-    ax.set_facecolor('gainsboro')
+    # ax.set_facecolor('gainsboro')
     ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'quiver_{t_str}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_quiver.png'), facecolor='white', transparent=False)
 
-    residuals_mag_mm = np.linalg.norm(residuals[:,:,:2], axis=-1) * 1000.
 
+    # -------------------------------------------------------------------------
+    # Contour plot
+    # -------------------------------------------------------------------------
     plt.figure()
     ax = plt.axes()
-    ax.set_title('Residual Magnitude: Commanded - Measured')
-    levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .5, .5)
+    # ax.set_title('Residual Magnitude: Commanded - Measured')
+    levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .1, .1)
     X,Y = np.meshgrid(xs, ys)
-    im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, vmin=0, vmax=10)
-    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='Magnitude (mm)')
-    ax.set_xticks(xs)
-    plt.xticks(rotation=45)
-    ax.set_yticks(ys)
-    ax.set_xlabel('X-dir Position (m)')
-    ax.set_ylabel('Y-dir Position (m)')
-    ax.grid(True)
+    im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, cmap='viridis')#, vmin=0, vmax=10)
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='X-Y Error Magnitude (mm)')
+    ax.set_xlim(0, 24 * 0.0254)
+    ax.set_ylim(0, 24 * 0.0254)
+    # ax.set_xticks(xs)
+    # ax.set_yticks(ys)
+    plt.xticks(rotation=45, fontsize=11)
+    plt.yticks(rotation=45, fontsize=11)
+    ax.set_xlabel('X position (m)', fontsize=14)
+    ax.set_ylabel('Y position (m)', fontsize=14)
+    ax.set_aspect('equal')
+    # ax.grid(True)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'magnitudes_{t_str}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_magnitudes.png'), facecolor='white', transparent=False)
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Position z-component')
-    sns.kdeplot(1e3 * queries[:,:,2].flatten(), fill=True, ax=ax)
-    sns.rugplot(1e3 * queries[:,:,2].flatten(), ax=ax)
-    ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
-    ax.set_ylabel('Density')
-    ax.grid(True)
+    # -------------------------------------------------------------------------
+    # Corner plot
+    # -------------------------------------------------------------------------
+    residuals_df = pd.DataFrame({
+        'X (mm)': residuals[:,:,0].ravel() * 1e3,
+        'Y (mm)': residuals[:,:,1].ravel() * 1e3,
+        'Z (mm)': residuals[:,:,2].ravel() * 1e3,
+    })
+    sns.pairplot(
+        residuals_df,
+        plot_kws={'color':viridis_mid, 'alpha':0.6},
+        diag_kws={'color':viridis_mid, 'alpha':0.6},
+        kind='scatter',
+        diag_kind='kde',
+        corner=True,
+    )
+    ax = plt.gca()
+    fig = plt.gcf()
+    fig.suptitle('Residuals')
+    plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'zdir_{t_str}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_corner.png'), facecolor='white', transparent=False)
 
-    residuals_mm = np.array(residuals) * 1000.
+    # plt.figure()
+    # ax = plt.axes()
+    # ax.set_title('Position z-component')
+    # sns.kdeplot(1e3 * measured_pts[:,:,2].flatten(), fill=True, ax=ax)
+    # sns.rugplot(1e3 * measured_pts[:,:,2].flatten(), ax=ax)
+    # ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
+    # ax.set_ylabel('Density')
+    # ax.grid(True)
+    # if savefig:
+    #     plt.savefig(os.path.join(out_dir, f'{timestamp}_zdir.png'), facecolor='white', transparent=False)
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Residuals: Commanded - Measured')
-    sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
-    ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    ax.set_xlim(-7,7)
-    ax.set_ylim(-7,7)
-    ax.set_xlabel('X-dir Residuals (mm)')
-    ax.set_ylabel('Y-dir Residuals (mm)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'residuals_{t_str}.png'), facecolor='white', transparent=False)
 
+    # -------------------------------------------------------------------------
+    # X-Y KDE plot
+    # -------------------------------------------------------------------------
+    # plt.figure()
+    # ax = plt.axes()
+    # ax.set_title('Residuals: Commanded - Measured')
+    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
+    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
+    # ax.set_xlim(-7,7)
+    # ax.set_ylim(-7,7)
+    # ax.set_xlabel('X-dir Residuals (mm)')
+    # ax.set_ylabel('Y-dir Residuals (mm)')
+    # ax.grid(True)
+    # ax.set_aspect('equal')
+    # if savefig:
+    #     plt.savefig(os.path.join(out_dir, f'{timestamp}_residuals.png'), facecolor='white', transparent=False)
+
+
+    # -------------------------------------------------------------------------
+    # Error over time plot
+    # -------------------------------------------------------------------------
     residuals_ordered_mm = np.ravel(residuals_mag_mm)
 
     plt.figure(figsize=(12,7))
     ax = plt.axes()
-    ax.set_title('Residuals vs. Position Num.')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-    ax.set_ylim(0, 10)
-    ax.set_xlabel('Scan Order')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    ax.grid(True)
+    # ax.set_title('Residuals vs. Position Num.')
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_mid)
+    # ax.set_ylim(0, 10)
+    ax.set_xlabel('Scan Order', fontsize=14)
+    ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    # ax.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_error_vs_time.png'), facecolor='white', transparent=False)
 
+
+    # -------------------------------------------------------------------------
+    # error vs. camera distance plot
+    # -------------------------------------------------------------------------
     tvecs_mag_mm = camera_dist * 1000.
     tvecs_ordered_mm = np.ravel(tvecs_mag_mm)
 
     plt.figure(figsize=(12,7))
     ax = plt.axes()
-    ax.set_title('Residuals vs. Distance from Camera')
-    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm)
+    # ax.set_title('Residuals vs. Distance from Camera')
+    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm, color=viridis_mid)
     ax.set_ylim(0, 10)
-    ax.set_xlabel('Distance from Camera Center (mm)')
-    ax.set_ylabel('x-y Position Error Magnitude (mm)')
-    ax.grid(True)
+    ax.set_xlabel('Distance from Camera Center (mm)', fontsize=14)
+    ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     # ax.set_aspect('equal')
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'error_vs_cam_dist_{t_str}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_error_vs_cam_dist.png'), facecolor='white', transparent=False)
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Residuals vs. z-dir residual')
-    ax.scatter(residuals_mm[:,:,2].ravel(), residuals_ordered_mm)
-    # ax.set_ylim(0, 10)
-    ax.set_xlabel('Z-dir residual')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
-
-    # Publication-ready figures
-    plt.style.use('seaborn-v0_8-paper')
-
-    # from matplotlib
-    # plt.figure()
-    # ax = plt.axes()
-    # ax.set_title('Residuals: Commanded - Measured')
-    # residuals_mm = np.array(residuals) * 1000.
-    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
-    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    # ax.
-    # ax.set_xlim(-7,7)
-    # ax.set_ylim(-7,7)
-    # ax.set_xlabel('X-dir Residuals (mm)')
-    # ax.set_ylabel('Y-dir Residuals (mm)')
-    # ax.grid(True)
-    # ax.set_aspect('equal')
-    # plt.savefig(os.path.join(out_dir, f'pub_residuals_{t_str}.png'), facecolor='white', transparent=False)
-
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Error vs. Position Number')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-    ax.set_ylim(0, 10)
-    ax.set_xlabel('Scan Order')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'pub_error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
-
-    return commanded_pts, queries, residuals
+    return
 
 
-def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, half_pts=True, origin_id=None, savefig=True):
-    '''
-    Assume the target images are part of a repeatability measurement, moving
-    between two points over and over.
+# def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, half_pts=True, origin_id=None, savefig=True):
+#     '''
+#     Assume the target images are part of a repeatability measurement, moving
+#     between two points over and over.
 
-    Compare to the commanded profile.
+#     Compare to the commanded profile.
 
-    Parameters
-    ----------
-    img_data: dict
-        Return dict of `measure_images`.
-    out_dir: str
-        Location to save plots
-    command_file: str
-        .csv file that was used to run the scan. Should be from the
-        hotspot/data/input/profiles dir.
-    raft_id: int
-        ArUco ID of a target mounted on the center of the end effector.
-    half_pts: bool (optional)
-        Don't include "reset points" in analysis, the points the raft visits in
-        between the point of interest.
-    origin_id: int (optional)
-        ArUco ID of a target mounted at a known location relative to the origin
-        of the mapper coordinate frame.
-    '''
-    t_str = str(time.time())
-    if savefig:
-        with open(os.path.join(out_dir, f'img_data_{t_str}.pickle'), 'wb') as f:
-            pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+#     Parameters
+#     ----------
+#     img_data: dict
+#         Return dict of `measure_images`.
+#     out_dir: str
+#         Location to save plots
+#     command_file: str
+#         .csv file that was used to run the scan. Should be from the
+#         hotspot/data/input/profiles dir.
+#     raft_id: int
+#         ArUco ID of a target mounted on the center of the end effector.
+#     half_pts: bool (optional)
+#         Don't include "reset points" in analysis, the points the raft visits in
+#         between the point of interest.
+#     origin_id: int (optional)
+#         ArUco ID of a target mounted at a known location relative to the origin
+#         of the mapper coordinate frame.
+#     '''
+#     timestamp = str(time.time())
+#     if savefig:
+#         with open(os.path.join(out_dir, f'img_data_{timestamp}.pickle'), 'wb') as f:
+#             pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
-    # add a degenerate z-dir coord for comparison with our data
-    commanded_pts = np.concatenate([commanded_pts_flat, np.zeros_like(commanded_pts_flat[:,:1])], axis=-1)
+#     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
+#     # add a degenerate z-dir coord for comparison with our data
+#     commanded_pts = np.concatenate([commanded_pts_flat, np.zeros_like(commanded_pts_flat[:,:1])], axis=-1)
 
-    xs = [pt[0] for pt in commanded_pts_flat]
-    ys = [pt[1] for pt in commanded_pts_flat]
+#     xs = [pt[0] for pt in commanded_pts_flat]
+#     ys = [pt[1] for pt in commanded_pts_flat]
     
-    fig, ax = plt.subplots(figsize=(7,5))
-    fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
+#     fig, ax = plt.subplots(figsize=(7,5))
+#     fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
-    queries = np.zeros_like(commanded_pts)
-    residuals = np.zeros_like(commanded_pts)
+#     measured_pts = np.zeros_like(commanded_pts)
+#     residuals = np.zeros_like(commanded_pts)
 
-    img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
-    try:
-        imgs = np.array(img_keys).reshape(commanded_pts.shape[:1])
-    except ValueError:
-        logger.warning(
-            (f'Number of images provided ({len(img_keys)}) doesn\'t match ' +
-             f'commanded profile ({commanded_pts.shape[:1][0]}). Don\'t trust results.')
-        )
-        imgs = np.array(img_keys).reshape(commanded_pts[:len(img_keys)].shape[:1])
-    for j in range(imgs.shape[0]):
-        if not isinstance(img_data[imgs[j]], dict):
-            continue
-        if not (raft_id in img_data[imgs[j]].keys()):
-            continue
-        # Measured positions are 3D poses relative to aruco board
-        query_tvec = img_data[imgs[j]][raft_id]['tvec']
-        query_rvec = img_data[imgs[j]][raft_id]['rvec']
-        board_tvec = img_data[imgs[j]]['board']['tvec']
-        queries[j][0] = query_tvec[0]
-        queries[j][1] = query_tvec[1]
-        queries[j][2] = query_tvec[2]
+#     img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
+#     try:
+#         imgs = np.array(img_keys).reshape(commanded_pts.shape[:1])
+#     except ValueError:
+#         logger.warning(
+#             (f'Number of images provided ({len(img_keys)}) doesn\'t match ' +
+#              f'commanded profile ({commanded_pts.shape[:1][0]}). Don\'t trust results.')
+#         )
+#         imgs = np.array(img_keys).reshape(commanded_pts[:len(img_keys)].shape[:1])
+#     for j in range(imgs.shape[0]):
+#         if not isinstance(img_data[imgs[j]], dict):
+#             continue
+#         if not (raft_id in img_data[imgs[j]].keys()):
+#             continue
+#         # Measured positions are 3D poses relative to aruco board
+#         query_tvec = img_data[imgs[j]][raft_id]['tvec']
+#         query_rvec = img_data[imgs[j]][raft_id]['rvec']
+#         board_tvec = img_data[imgs[j]]['board']['tvec']
+#         measured_pts[j][0] = query_tvec[0]
+#         measured_pts[j][1] = query_tvec[1]
+#         measured_pts[j][2] = query_tvec[2]
 
-        if origin_id:
-            if not (origin_id in img_data[imgs[j]].keys()):
-                continue
-            origin_tvec = img_data[imgs[j]][origin_id]['tvec']
-            origin_rvec = img_data[imgs[j]][origin_id]['rvec']
-            queries[j][0] -= origin_tvec[0]
-            queries[j][1] -= origin_tvec[1]
-            queries[j][2] -= origin_tvec[2]
-        else:
-            # No reference given, take the first location as perfectly correct.
-            if j == 0:
-                fudge_offset = queries[j] - commanded_pts[j]
-            queries[j] -= fudge_offset
+#         if origin_id:
+#             if not (origin_id in img_data[imgs[j]].keys()):
+#                 continue
+#             origin_tvec = img_data[imgs[j]][origin_id]['tvec']
+#             origin_rvec = img_data[imgs[j]][origin_id]['rvec']
+#             measured_pts[j][0] -= origin_tvec[0]
+#             measured_pts[j][1] -= origin_tvec[1]
+#             measured_pts[j][2] -= origin_tvec[2]
+#         else:
+#             # No reference given, take the first location as perfectly correct.
+#             if j == 0:
+#                 fudge_offset = measured_pts[j] - commanded_pts[j]
+#             measured_pts[j] -= fudge_offset
 
-    if half_pts:
-        queries = queries[1::2]
-        commanded_pts = commanded_pts[1::2]
+#     if half_pts:
+#         measured_pts = measured_pts[1::2]
+#         commanded_pts = commanded_pts[1::2]
 
-    residuals = queries - commanded_pts
+#     residuals = measured_pts - commanded_pts
 
-    # error check: ignore ridiculous residuals
-    rmse = None
-    # if residuals.size > 16: # need good stats
-    #     rmse = np.sqrt(np.mean(residuals ** 2.))
-    #     print('RMSE:', rmse)
-    #     sig_thresh = 3. * rmse
-    #     bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
-    #     bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
-    #     queries[bad_x] = commanded_pts[bad_x]
-    #     queries[bad_y] = commanded_pts[bad_y]
-    #     print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
-    #     print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
-    #     residuals = queries - commanded_pts
-    #     rmse = np.sqrt(np.mean(residuals ** 2.))
-    # else:
-    #     bad_x = None
-    #     bad_y = None
-    bad_x = []
-    bad_y = []
+#     # error check: ignore ridiculous residuals
+#     rmse = None
+#     bad_x = []
+#     bad_y = []
+#     print('foo')
+#     if residuals.size >= 16: # need good stats
+#         rmse = np.sqrt(np.mean(residuals ** 2.))
+#         print('RMSE:', rmse)
+#         sig_thresh = 3. * rmse
+#         bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
+#         bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
+#         measured_pts[bad_x] = commanded_pts[bad_x]
+#         measured_pts[bad_y] = commanded_pts[bad_y]
+#         print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
+#         print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
+#         residuals = measured_pts - commanded_pts
+#         rmse = np.sqrt(np.mean(residuals ** 2.))
+#     else:
+#         bad_x = None
+#         bad_y = None
 
-    ax.scatter(
-        commanded_pts[:,0],
-        commanded_pts[:,1],
-        facecolor='none',
-        color='k',
-        label=f'Raft Commanded Pos.',
-        zorder=1
-    )
-    ax.quiver(
-        queries[:,0],
-        queries[:,1],
-        residuals[:,0],
-        residuals[:,1],
-        np.linalg.norm(residuals, axis=-1),
-        pivot='tip',
-        angles='xy',
-        scale_units='xy',
-        scale=1,
-        headwidth=2.5,
-        headlength=4,
-        edgecolors='k',
-        linewidth=.5,
-        width=4e-3,
-        zorder=2
-    )
-    ax.scatter(queries[:,0], queries[:,1], facecolor='k', label='Raft Measured Pos.', zorder=1)
-    if any(bad_x):
-        ax.scatter(commanded_pts[bad_x][0], commanded_pts[bad_x][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
-    if any(bad_y):
-        ax.scatter(commanded_pts[bad_y][0], commanded_pts[bad_y][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+#     ax.scatter(
+#         commanded_pts[:,0],
+#         commanded_pts[:,1],
+#         facecolor='none',
+#         color='k',
+#         label=f'Commanded Position',
+#         zorder=1
+#     )
+#     ax.quiver(
+#         measured_pts[:,0],
+#         measured_pts[:,1],
+#         residuals[:,0],
+#         residuals[:,1],
+#         np.linalg.norm(residuals, axis=-1),
+#         pivot='tip',
+#         angles='xy',
+#         scale_units='xy',
+#         scale=1,
+#         headwidth=2.5,
+#         headlength=4,
+#         edgecolors='k',
+#         linewidth=.5,
+#         width=4e-3,
+#         zorder=2
+#     )
+#     ax.scatter(measured_pts[:,0], measured_pts[:,1], facecolor='k', label='Measured Position', zorder=1)
+#     if any(bad_x):
+#         ax.scatter(commanded_pts[bad_x][0], commanded_pts[bad_x][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+#     if any(bad_y):
+#         ax.scatter(commanded_pts[bad_y][0], commanded_pts[bad_y][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
     
-    plt.xticks(rotation=45)
-    if rmse:
-        ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
-    else:
-        ax.set_title('Profile:\n' + os.path.basename(command_file))
-    ax.set_xlabel('x-distance from SW corner (m)')
-    ax.set_ylabel('y-distance from SW corner (m)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    ax.set_facecolor('gainsboro')
-    ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-    plt.subplots_adjust(top=0.9)
-    plt.tight_layout()
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_quiver_{t_str}.png'), facecolor='white', transparent=False)
+#     plt.xticks(rotation=45)
+#     if rmse:
+#         ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
+#     else:
+#         ax.set_title('Profile:\n' + os.path.basename(command_file))
+#     ax.set_xlabel('x-distance from SW corner (m)')
+#     ax.set_ylabel('y-distance from SW corner (m)')
+#     ax.grid(True)
+#     ax.set_aspect('equal')
+#     ax.set_facecolor('gainsboro')
+#     ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+#     plt.subplots_adjust(top=0.9)
+#     plt.tight_layout()
+#     if savefig:
+#         plt.savefig(os.path.join(out_dir, f'repeatability_quiver_{timestamp}.png'), facecolor='white', transparent=False)
 
-    residuals_mag_mm = np.linalg.norm(residuals[:,:2], axis=-1) * 1000.
+#     residuals_mag_mm = np.linalg.norm(residuals[:,:2], axis=-1) * 1000.
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Position z-component')
-    sns.kdeplot(1e3 * queries[:,2].flatten(), fill=True, ax=ax)
-    sns.rugplot(1e3 * queries[:,2].flatten(), ax=ax)
-    ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
-    ax.set_ylabel('Density')
-    ax.grid(True)
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_zdir_{t_str}.png'), facecolor='white', transparent=False)
+#     plt.figure()
+#     ax = plt.axes()
+#     ax.set_title('Position z-component')
+#     sns.kdeplot(1e3 * measured_pts[:,2].flatten(), fill=True, ax=ax)
+#     sns.rugplot(1e3 * measured_pts[:,2].flatten(), ax=ax)
+#     ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
+#     ax.set_ylabel('Density')
+#     ax.grid(True)
+#     if savefig:
+#         plt.savefig(os.path.join(out_dir, f'repeatability_zdir_{timestamp}.png'), facecolor='white', transparent=False)
 
-    residuals_mm = np.array(residuals) * 1000.
+#     residuals_mm = np.array(residuals) * 1000.
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Residuals: Commanded - Measured')
-    sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
-    ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
-    ax.set_xlim(-4,4)
-    ax.set_ylim(-4,4)
-    ax.set_xlabel('X-dir Residuals (mm)')
-    ax.set_ylabel('Y-dir Residuals (mm)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_residuals_{t_str}.png'), facecolor='white', transparent=False)
+#     plt.figure()
+#     ax = plt.axes()
+#     ax.set_title('Residuals: Commanded - Measured')
+#     sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
+#     ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
+#     ax.set_xlim(-4,4)
+#     ax.set_ylim(-4,4)
+#     ax.set_xlabel('X-dir Residuals (mm)')
+#     ax.set_ylabel('Y-dir Residuals (mm)')
+#     ax.grid(True)
+#     ax.set_aspect('equal')
+#     if savefig:
+#         plt.savefig(os.path.join(out_dir, f'repeatability_residuals_{timestamp}.png'), facecolor='white', transparent=False)
 
-    residuals_ordered_mm = np.ravel(residuals_mag_mm)
+#     residuals_ordered_mm = np.ravel(residuals_mag_mm)
 
-    plt.figure(figsize=(12,7))
-    ax = plt.axes()
-    ax.set_title('Residuals vs. Position Num.')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-    ax.set_ylim(0, 10)
-    ax.set_xlabel('Scan Order')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    ax.grid(True)
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
+#     plt.figure(figsize=(12,7))
+#     ax = plt.axes()
+#     ax.set_title('Residuals vs. Position Num.')
+#     ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+#     ax.set_ylim(0, 10)
+#     ax.set_xlabel('Scan Order')
+#     ax.set_ylabel('Position Error Magnitude (mm)')
+#     ax.grid(True)
+#     plt.tight_layout()
+#     plt.subplots_adjust(top=0.85)
+#     if savefig:
+#         plt.savefig(os.path.join(out_dir, f'repeatability_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Residuals vs. z-dir residual')
-    ax.scatter(residuals_mm[:,2].ravel(), residuals_ordered_mm)
-    # ax.set_ylim(0, 10)
-    ax.set_xlabel('Z-dir residual')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    ax.grid(True)
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
+#     plt.figure()
+#     ax = plt.axes()
+#     ax.set_title('Residuals vs. z-dir residual')
+#     ax.scatter(residuals_mm[:,2].ravel(), residuals_ordered_mm)
+#     # ax.set_ylim(0, 10)
+#     ax.set_xlabel('Z-dir residual')
+#     ax.set_ylabel('Position Error Magnitude (mm)')
+#     ax.grid(True)
+#     plt.tight_layout()
+#     plt.subplots_adjust(top=0.85)
 
-    # Publication-ready figures
-    plt.style.use('seaborn-v0_8-paper')
+#     # plt.figure()
+#     # ax = plt.axes()
+#     # ax.set_title('Residuals: Commanded - Measured')
+#     # residuals_mm = np.array(residuals) * 1000.
+#     # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
+#     # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
+#     # ax.
+#     # ax.set_xlim(-7,7)
+#     # ax.set_ylim(-7,7)
+#     # ax.set_xlabel('X-dir Residuals (mm)')
+#     # ax.set_ylabel('Y-dir Residuals (mm)')
+#     # ax.grid(True)
+#     # ax.set_aspect('equal')
+#     # plt.savefig(os.path.join(out_dir, f'repeatability_pub_residuals_{timestamp}.png'), facecolor='white', transparent=False)
 
-    # from matplotlib
-    # plt.figure()
-    # ax = plt.axes()
-    # ax.set_title('Residuals: Commanded - Measured')
-    # residuals_mm = np.array(residuals) * 1000.
-    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
-    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    # ax.
-    # ax.set_xlim(-7,7)
-    # ax.set_ylim(-7,7)
-    # ax.set_xlabel('X-dir Residuals (mm)')
-    # ax.set_ylabel('Y-dir Residuals (mm)')
-    # ax.grid(True)
-    # ax.set_aspect('equal')
-    # plt.savefig(os.path.join(out_dir, f'repeatability_pub_residuals_{t_str}.png'), facecolor='white', transparent=False)
+#     plt.figure()
+#     ax = plt.axes()
+#     ax.set_title('Error vs. Position Number')
+#     ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+#     ax.set_ylim(0, 10)
+#     ax.set_xlabel('Scan Order')
+#     ax.set_ylabel('Position Error Magnitude (mm)')
+#     plt.tight_layout()
+#     plt.subplots_adjust(top=0.85)
+#     if savefig:
+#         plt.savefig(os.path.join(out_dir, f'repeatability_pub_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Error vs. Position Number')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-    ax.set_ylim(0, 10)
-    ax.set_xlabel('Scan Order')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_pub_error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
-
-    return commanded_pts, queries, residuals
+#     return commanded_pts, measured_pts, residuals
