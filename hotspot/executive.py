@@ -116,8 +116,8 @@ class Executive:
                 self.steppers[address],
                 (
                     'n0' + # clear any special modes
-                    'm50' + # set move current limit to 50% = 1 A
-                    'h50' + # set hold current limit to 50% = 1 A
+                    f'm{const.MOVE_CURRENT_PCT}' +
+                    f'h{const.HOLD_CURRENT_PCT}' +
                     f'L{const.MAX_ACCEL_TICKS}' + # acceleration factor
                     'aC200' + # encoder coarse correction deadband, ticks
                     'ac5' + # encoder fine correction deadband, ticks
@@ -372,8 +372,8 @@ class Executive:
                 logger.critical('Encoder failed to set zero point during homing. Aborting.')
                 sys.exit(1)
 
-        resp = hw.ezstepper_write(self.stepper_ser, '_', 'm50R\r\n')
-        resp = hw.ezstepper_write(self.stepper_ser, '_', 'h50R\r\n')
+        resp = hw.ezstepper_write(self.stepper_ser, '_', f'm{const.MOVE_CURRENT_PCT}R\r\n')
+        resp = hw.ezstepper_write(self.stepper_ser, '_', f'h{const.HOLD_CURRENT_PCT}R\r\n')
 
         # Update current encoder position (used for velocity calc in move to
         # home pos)

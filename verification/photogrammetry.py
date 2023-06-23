@@ -45,7 +45,13 @@ def load_to_gray(file, camera_matrix=None, camera_dist=None):
     Load the image `file` and convert to gray, applying de-distortion if
     camera parameters provided
     '''
-    im = cv2.imread(file, flags=(cv2.IMREAD_IGNORE_ORIENTATION + cv2.IMREAD_COLOR))
+    im = cv2.imread(
+        file,
+        flags=(
+            cv2.IMREAD_IGNORE_ORIENTATION +
+            cv2.IMREAD_COLOR
+        )
+    )
     im = np.rot90(im, k=IMG_ROT_NUM) # may not need this, depending on source of images.
     gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     if (camera_matrix is not None) and (camera_dist is not None):
@@ -199,7 +205,7 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
         distortion removal
     '''
     theoretical_num_verts = np.multiply(*board_vert_shape)
-    num_found_thresh = 0.98 * theoretical_num_verts
+    num_found_thresh = 0.95 * theoretical_num_verts#0.98 * theoretical_num_verts
 
     objpoints_q = mp.Queue() # the chessboard vertex locations in the plane of the board
     imgpoints_q = mp.Queue() # the chessboard vertex locations in the image space
@@ -251,7 +257,7 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
 
     # Do the actual camera calibration with all the data we gathered.
     # OpenCV likes lists.
-    timeout = 1
+    timeout = 5
     time.sleep(timeout)
     rets = []
     while not rets_q.empty():
@@ -509,7 +515,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
 
     # Reshape command profile assuming a square box is scanned.
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
-    assert np.floor(np.sqrt(commanded_pts_flat.shape[0])) == np.sqrt(commanded_pts_flat.shape[0]), 'Command profile shape not square. Rewrite alg to handle non-square shapes.'
+    assert int(np.sqrt(commanded_pts_flat.shape[0])) == np.round(np.sqrt(commanded_pts_flat.shape[0])), f'Command profile shape {commanded_pts_flat.shape[0]} not square. Rewrite alg to handle non-square shapes.'
     commanded_pts = commanded_pts_flat.reshape(
         (
             int(np.sqrt(len(commanded_pts_flat))),
@@ -527,6 +533,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
     queries = np.zeros_like(commanded_pts)
+    camera_dist = np.zeros_like(commanded_pts[:,:,0])
     residuals = np.zeros_like(commanded_pts)
 
     img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
@@ -541,6 +548,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
             query_tvec = img_data[imgs[j][k]][raft_id]['tvec']
             query_rvec = img_data[imgs[j][k]][raft_id]['rvec']
             board_tvec = img_data[imgs[j][k]]['board']['tvec']
+            camera_dist[j][k] = np.linalg.norm(img_data[imgs[j][k]][raft_id]['tvec_rel_camera'])
             queries[j][k][0] = query_tvec[0]
             queries[j][k][1] = query_tvec[1]
             queries[j][k][2] = query_tvec[2]
@@ -689,6 +697,22 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id,
     if savefig:
         plt.savefig(os.path.join(out_dir, f'error_vs_time_{t_str}.png'), facecolor='white', transparent=False)
 
+    tvecs_mag_mm = camera_dist * 1000.
+    tvecs_ordered_mm = np.ravel(tvecs_mag_mm)
+
+    plt.figure(figsize=(12,7))
+    ax = plt.axes()
+    ax.set_title('Residuals vs. Distance from Camera')
+    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm)
+    ax.set_ylim(0, 10)
+    ax.set_xlabel('Distance from Camera Center (mm)')
+    ax.set_ylabel('x-y Position Error Magnitude (mm)')
+    ax.grid(True)
+    # ax.set_aspect('equal')
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'error_vs_cam_dist_{t_str}.png'), facecolor='white', transparent=False)
 
     plt.figure()
     ax = plt.axes()
