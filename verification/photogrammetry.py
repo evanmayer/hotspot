@@ -74,10 +74,12 @@ def find_corners_aruco(file: str, gray=None, aruco_dict=DEFAULT_ARUCO_DICT, refi
     dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     parameters = cv2.aruco.DetectorParameters()
     if refine_subpixel:
-        parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+        parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_APRILTAG
+        # parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+        parameters.cornerRefinementWinSize = 4 # default 5 
         parameters.cornerRefinementMaxIterations = 40 # default 30
         parameters.cornerRefinementMinAccuracy = 0.01 # default 0.1
-        parameters.minMarkerPerimeterRate = 1e-2
+        parameters.minMarkerPerimeterRate = 5e-3
     detector = cv2.aruco.ArucoDetector(dictionary, parameters)
     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
 
@@ -139,7 +141,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_ver
     detector = cv2.aruco.CharucoDetector(board)
     params = detector.getDetectorParameters()
     # This allows detection of smaller targets. But...not too small.
-    params.minMarkerPerimeterRate = 5e-3 # default 0.03
+    params.minMarkerPerimeterRate = 7e-3 # default 0.03
     # Added this because of a diversity of marker sizes in the
     # scene. It erroneously detected 17 inside the black space of 998 when 17
     # was obscured, throwing off the interpolation of an entire board.
@@ -562,7 +564,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id:
     '''
     if not timestamp:
         timestamp = str(time.time())
-    with open(os.path.join(out_dir, f'img_data_{timestamp}.pickle'), 'wb') as f:
+    with open(os.path.join(out_dir, f'{timestamp}_img_data.pickle'), 'wb') as f:
         pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Reshape command profile assuming a square box is scanned.
@@ -646,10 +648,15 @@ def filter_by_rmse(commanded_pts, measured_pts, n_sigma):
 
 
 def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter_results=False, savefig=False, timestamp=''):
+
+    requirement = 11.2 * 1e-3
+    goal = requirement / 2
+
     if not timestamp:
         timestamp = str(time.time())
     if filter_results:
-        measured_pts, bad_x, bad_y = filter_by_rmse(commanded_pts, measured_pts, 3)
+        n_sigma = 6
+        measured_pts, bad_x, bad_y = filter_by_rmse(commanded_pts, measured_pts, n_sigma)
     else:
         bad_x = []
         bad_y = []
@@ -659,6 +666,18 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     residuals_mm = residuals * 1e3
     residuals_mag = np.linalg.norm(residuals[:,:,:2], axis=-1)
     residuals_mag_mm = residuals_mag * 1e3
+
+    cm = plt.cm.ScalarMappable(
+        norm=colors.Normalize(
+            vmin=0,
+            vmax=np.max(residuals_mag),
+        ),
+        cmap='viridis'
+    )
+    cs = cm.to_rgba(np.sort(residuals_mag.ravel()))
+    viridis_lower = cs[len(cs) // 4]
+    viridis_mid = cs[len(cs) // 2]
+    viridis_upper = cs[3 * len(cs) // 4]
 
     # -------------------------------------------------------------------------
     # Quiver plot
@@ -681,18 +700,6 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         zorder=1
     )
     exag = 10
-    cm = plt.cm.ScalarMappable(
-        norm=colors.Normalize(
-            vmin=0,
-            vmax=np.max(residuals_mag),
-        ),
-        cmap='viridis'
-    )
-    cs = cm.to_rgba(np.sort(residuals_mag.ravel()))
-    viridis_lower = cs[len(cs) // 4]
-    viridis_mid = cs[len(cs) // 2]
-    viridis_upper = cs[3 * len(cs) // 4]
-
     ax.quiver(
         measured_pts[:,:,0] + residuals[:,:,0] * exag,
         measured_pts[:,:,1] + residuals[:,:,1] * exag,
@@ -713,10 +720,13 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         label='10x Errors'
     )
     if any(bad_x):
-        ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+        ax.scatter(commanded_pts[bad_x][:,0], commanded_pts[bad_x][:,1], facecolor='lightcoral', label=f'Outlier ignored\n(Error >{n_sigma} RMSEs)', zorder=1)
     if any(bad_y):
-        ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
-    
+        if any(bad_x):
+            label = '_'
+        else:
+            label = f'Ignored\n(Error >{n_sigma} RMSEs)'
+        ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='lightcoral', label=label, zorder=1)
     plt.xticks(rotation=45, fontsize=14)
     plt.yticks(rotation=45, fontsize=14)
     # if rmse:
@@ -746,7 +756,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .1, .1)
     X,Y = np.meshgrid(xs, ys)
     im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, cmap='viridis')#, vmin=0, vmax=10)
-    contour_line_levels = [5.6,11.2]
+    contour_line_levels = [goal * 1e3, requirement * 1e3]
     contour_line_colors = ['k', 'k']
     contour_line_styles = ['-', '-']
     plt.contour(im, levels=contour_line_levels, colors=contour_line_colors, linestyles=contour_line_styles, linewidths=(1,))
@@ -824,10 +834,13 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     # -------------------------------------------------------------------------
     residuals_ordered_mm = np.ravel(residuals_mag_mm)
 
-    plt.figure(figsize=(12,7))
+    plt.figure(figsize=(7,5))
     ax = plt.axes()
     # ax.set_title('Residuals vs. Position Num.')
     ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_lower)
+    ax.axhline(requirement * 1e3, color=viridis_lower, linestyle='-', label='Requirement')
+    ax.axhline(goal * 1e3, color=viridis_mid, linestyle='--', label='Goal')
+    ax.legend(loc='best', fontsize=14)
     # ax.set_ylim(0, 10)
     ax.set_xlabel('Scan Order', fontsize=14)
     ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
@@ -864,7 +877,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     return
 
 
-def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None, savefig=True):
+def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None, savefig=False, timestamp=''):
     '''
     Assume the target images are part of a repeatability measurement, moving
     between two points over and over.
@@ -886,20 +899,15 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
         ArUco ID of a target mounted at a known location relative to the origin
         of the mapper coordinate frame.
     '''
-    timestamp = str(time.time())
+    if not timestamp:
+        timestamp = str(time.time())
     if savefig:
-        with open(os.path.join(out_dir, f'img_data_{timestamp}.pickle'), 'wb') as f:
+        with open(os.path.join(out_dir, f'{timestamp}_repeatability_img_data.pickle'), 'wb') as f:
             pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])[2::2]
     # add a degenerate z-dir coord for comparison with our data
     commanded_pts = np.concatenate([commanded_pts_flat, np.zeros_like(commanded_pts_flat[:,:1])], axis=-1)
-
-    xs = [pt[0] for pt in commanded_pts_flat]
-    ys = [pt[1] for pt in commanded_pts_flat]
-    
-    fig, ax = plt.subplots(figsize=(7,5))
-    fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
     measured_pts = np.zeros_like(commanded_pts)
     residuals = np.zeros_like(commanded_pts)
@@ -940,13 +948,36 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
             if j == 0:
                 fudge_offset = measured_pts[j] - commanded_pts[j]
             measured_pts[j] -= fudge_offset
+    return commanded_pts, measured_pts
 
-    bad_x = []
-    bad_y = []
-    rmse = None
+
+def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False, timestamp=''):
+    if not timestamp:
+        timestamp = str(time.time())
 
     residuals = measured_pts - commanded_pts
+    residuals_mm = residuals * 1e3
+    residuals_mag = np.linalg.norm(residuals[:,:2], axis=-1)
+    residuals_mag_mm = residuals_mag * 1e3
 
+    cm = plt.cm.ScalarMappable(
+        norm=colors.Normalize(
+            vmin=0,
+            vmax=np.max(residuals_mag),
+        ),
+        cmap='viridis'
+    )
+
+    cs = cm.to_rgba(np.sort(residuals_mag.ravel()))
+    viridis_lower = cs[len(cs) // 4]
+    viridis_mid = cs[len(cs) // 2]
+    viridis_upper = cs[3 * len(cs) // 4]
+
+    # -------------------------------------------------------------------------
+    # Quiver plot
+    # -------------------------------------------------------------------------
+    fig, ax = plt.subplots(figsize=(7,5))
+    # fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax.scatter(
         commanded_pts[:,0],
         commanded_pts[:,1],
@@ -955,125 +986,106 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
         label=f'Commanded Position',
         zorder=1
     )
-    ax.quiver(
-        measured_pts[:,0],
-        measured_pts[:,1],
-        residuals[:,0],
-        residuals[:,1],
-        np.linalg.norm(residuals, axis=-1),
-        pivot='tip',
-        angles='xy',
-        scale_units='xy',
-        scale=1,
-        headwidth=2.5,
-        headlength=4,
-        edgecolors='k',
-        linewidth=.5,
-        width=4e-3,
-        zorder=2
+    ax.scatter(
+        measured_pts[:,0] + residuals[:,0],
+        measured_pts[:,1] + residuals[:,1],
+        facecolor=viridis_lower,
+        label='Measured Position',
+        zorder=1
     )
-    ax.scatter(measured_pts[:,0], measured_pts[:,1], facecolor='k', label='Measured Position', zorder=1)
-    if any(bad_x):
-        ax.scatter(commanded_pts[bad_x][0], commanded_pts[bad_x][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
-    if any(bad_y):
-        ax.scatter(commanded_pts[bad_y][0], commanded_pts[bad_y][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
-    
-    plt.xticks(rotation=45)
-    if rmse:
-        ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
-    else:
-        ax.set_title('Profile:\n' + os.path.basename(command_file))
-    ax.set_xlabel('x-distance from SW corner (m)')
-    ax.set_ylabel('y-distance from SW corner (m)')
-    ax.grid(True)
+    exag = 1
+    # ax.quiver(
+    #     measured_pts[:,0] + residuals[:,0] * exag,
+    #     measured_pts[:,1] + residuals[:,1] * exag,
+    #     residuals[:,0] * exag,
+    #     residuals[:,1] * exag,
+    #     residuals_mag,
+    #     pivot='tip',
+    #     angles='xy',
+    #     scale_units='xy',
+    #     scale=1,
+    #     headwidth=2.5,
+    #     headlength=4,
+    #     color=viridis_lower,
+    #     edgecolors='k',
+    #     linewidth=.5,
+    #     width=4e-3,
+    #     zorder=2,
+    #     label=f'{int(exag)}x Errors'
+    # )
+    plt.xticks(rotation=45, fontsize=14)
+    plt.yticks(rotation=45, fontsize=14)
+    # ax.set_title('Profile:\n' + os.path.basename(command_file))
+    ax.set_xlabel('X Position (m)', fontsize=14)
+    ax.set_ylabel('Y Position (m)', fontsize=14)
+    # ax.grid(True)
     ax.set_aspect('equal')
-    ax.set_facecolor('gainsboro')
+    # ax.set_facecolor('gainsboro')
     ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_quiver_{timestamp}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_quiver.png'), facecolor='white', transparent=False)
 
-    residuals_mag_mm = np.linalg.norm(residuals[:,:2], axis=-1) * 1000.
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Position z-component')
-    sns.kdeplot(1e3 * measured_pts[:,2].flatten(), fill=True, ax=ax)
-    sns.rugplot(1e3 * measured_pts[:,2].flatten(), ax=ax)
-    ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
-    ax.set_ylabel('Density')
-    ax.grid(True)
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_zdir_{timestamp}.png'), facecolor='white', transparent=False)
-
-    residuals_mm = np.array(residuals) * 1000.
-
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Residuals: Commanded - Measured')
-    sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
-    ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
-    ax.set_xlim(-4,4)
-    ax.set_ylim(-4,4)
-    ax.set_xlabel('X-dir Residuals (mm)')
-    ax.set_ylabel('Y-dir Residuals (mm)')
-    ax.grid(True)
-    ax.set_aspect('equal')
-    if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_residuals_{timestamp}.png'), facecolor='white', transparent=False)
-
-    residuals_ordered_mm = np.ravel(residuals_mag_mm)
-
-    plt.figure(figsize=(12,7))
-    ax = plt.axes()
-    ax.set_title('Residuals vs. Position Num.')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-    ax.set_ylim(0, 10)
-    ax.set_xlabel('Scan Order')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    ax.grid(True)
+    # -------------------------------------------------------------------------
+    # Corner plot
+    # -------------------------------------------------------------------------
+    residuals_df = pd.DataFrame({
+        'X (mm)': residuals[:,0].ravel() * 1e3,
+        'Y (mm)': residuals[:,1].ravel() * 1e3,
+        'Z (mm)': residuals[:,2].ravel() * 1e3,
+    })
+    sns.pairplot(
+        residuals_df,
+        plot_kws={'color':viridis_lower, 'alpha':0.6},
+        diag_kws={'color':viridis_lower, 'alpha':0.6},
+        kind='scatter',
+        diag_kind='kde',
+        corner=True,
+    )
+    ax = plt.gca()
+    fig = plt.gcf()
+    fig.suptitle('Residuals')
     plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_corner.png'), facecolor='white', transparent=False)
 
-    plt.figure()
-    ax = plt.axes()
-    ax.set_title('Residuals vs. z-dir residual')
-    ax.scatter(residuals_mm[:,2].ravel(), residuals_ordered_mm)
-    # ax.set_ylim(0, 10)
-    ax.set_xlabel('Z-dir residual')
-    ax.set_ylabel('Position Error Magnitude (mm)')
-    ax.grid(True)
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
 
+    # -------------------------------------------------------------------------
+    # X-Y KDE plot
+    # -------------------------------------------------------------------------
     # plt.figure()
     # ax = plt.axes()
     # ax.set_title('Residuals: Commanded - Measured')
-    # residuals_mm = np.array(residuals) * 1000.
-    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
-    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    # ax.
-    # ax.set_xlim(-7,7)
-    # ax.set_ylim(-7,7)
+    # sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
+    # ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
+    # ax.set_xlim(-4,4)
+    # ax.set_ylim(-4,4)
     # ax.set_xlabel('X-dir Residuals (mm)')
     # ax.set_ylabel('Y-dir Residuals (mm)')
     # ax.grid(True)
     # ax.set_aspect('equal')
-    # plt.savefig(os.path.join(out_dir, f'repeatability_pub_residuals_{timestamp}.png'), facecolor='white', transparent=False)
+    # if savefig:
+    #     plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_residuals.png'), facecolor='white', transparent=False)
 
-    plt.figure()
+
+    # -------------------------------------------------------------------------
+    # Error over time plot
+    # -------------------------------------------------------------------------
+    residuals_ordered_mm = np.ravel(residuals_mag_mm)
+
+    plt.figure(figsize=(12,7))
     ax = plt.axes()
-    ax.set_title('Error vs. Position Number')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-    ax.set_ylim(0, 10)
-    ax.set_xlabel('Scan Order')
-    ax.set_ylabel('Position Error Magnitude (mm)')
+    # ax.set_title('Residuals vs. Position Num.')
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_lower)
+    # ax.set_ylim(0, 10)
+    ax.set_xlabel('Scan Order', fontsize=14)
+    ax.set_ylabel('Position Error Magnitude (mm)', fontsize=14)
+    # ax.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'repeatability_pub_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_error_vs_time.png'), facecolor='white', transparent=False)
 
-    return commanded_pts, measured_pts, residuals
+    return
