@@ -128,7 +128,7 @@ def generate_charuco_board(board_vert_shape, square_size, aruco_size, aruco_dict
     return board, dictionary
 
 
-def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, fig=None, ax=None, plot=False):
+def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, aruco_dict=DEFAULT_ARUCO_DICT, prev_rvec=None, prev_tvec=None, fig=None, ax=None, plot=False):
     '''
     Thin wrapper for OpenCV aruco detectBoard
     '''
@@ -138,29 +138,66 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_ver
 
     detector = cv2.aruco.CharucoDetector(board)
     params = detector.getDetectorParameters()
-    params.minMarkerPerimeterRate = 5e-3
+    # This allows detection of smaller targets. But...not too small.
+    params.minMarkerPerimeterRate = 5e-3 # default 0.03
+    # Added this because of a diversity of marker sizes in the
+    # scene. It erroneously detected 17 inside the black space of 998 when 17
+    # was obscured, throwing off the interpolation of an entire board.
+    params.maxErroneousBitsInBorderRate = 0.2 # default 0.35
+    # Added this because some FOD in the scene was being detected as markers.
+    # especially 17
+    params.polygonalApproxAccuracyRate = 0.008 # default 0.03
     detector.setDetectorParameters(params)
     aruco_corners, aruco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
     charuco_ret, aruco_corners, aruco_ids = cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, gray, board)
-    ret, rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(aruco_corners, aruco_ids, board, camera_matrix, camera_dist, None, None)
+
+    logger.info(f'Found {len(aruco_ids)} aruco markers on board.')
+
+    if prev_rvec is not None and prev_tvec is not None:
+        ret, raw_rvec, raw_tvec = cv2.aruco.estimatePoseCharucoBoard(
+            aruco_corners,
+            aruco_ids,
+            board,
+            camera_matrix,
+            camera_dist,
+            prev_rvec,
+            prev_tvec,
+            useExtrinsicGuess=True
+        )
+    else:
+        ret, raw_rvec, raw_tvec = cv2.aruco.estimatePoseCharucoBoard(
+            aruco_corners,
+            aruco_ids,
+            board,
+            camera_matrix,
+            camera_dist,
+            None,
+            None
+        )
 
     if not ret:
         logger.critical('failed to find charuco pose')
     # Board z-axis points away from the camera, but we want it pointing
     # toward the camera to align the board axes with the mapper coordinate
     # frame
-    board_rvec_row = rvec.T[0]
+    board_rvec_row = raw_rvec.T[0]
     Rb = R.from_rotvec(board_rvec_row)
     Rb *= R.from_euler('zyx', [-np.pi / 2., 0.0, np.pi])
     rvec = np.array([Rb.as_rotvec()]).T # Repackage like it came out of pose estimator
+    tvec = raw_tvec
 
     if plot:
         if (not fig or not ax):
             fig, ax = plt.subplots(figsize=(20,15))
         im_with_charuco_board = cv2.drawFrameAxes(gray, camera_matrix, camera_dist, rvec, tvec, 0.3)
         ax.imshow(im_with_charuco_board, cmap='bone')
+        marker_sqz = np.squeeze(marker_corners)
+        for i, id in enumerate(np.squeeze(marker_ids)):
+            ax.scatter(marker_sqz[i][:,0], marker_sqz[i][:,1], s=5, color='m')
+            ax.text(marker_sqz[i][0,0], marker_sqz[i][0,1], str(id), color='m')
+        ax.scatter(np.squeeze(aruco_corners)[:,0], np.squeeze(aruco_corners)[:,1], s=5, color='r')
 
-    return rvec, tvec
+    return rvec, tvec, raw_rvec, raw_tvec
 
 
 def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False, savefig=False):
@@ -373,11 +410,13 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
     return mtx, dist, optimal_camera_matrix, roi
 
 
-def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=DEFAULT_TARGET_SIZE, plot=False):
+def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=DEFAULT_TARGET_SIZE, use_extrinsic_priors=True, plot=False):
     '''
     Determine the pose of specified aruco ids relative to the camera.
     '''
     img_data = {}
+    prev_rvec = None
+    prev_tvec = None
     for file in files:
         found, corners, ids, gray = find_corners_aruco(
             file,
@@ -395,13 +434,24 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
 
         img_data[file] = {}
 
-        board_rvec, board_tvec = estimate_pose_charuco(
+        board_rvec, board_tvec, raw_board_rvec, raw_board_tvec = estimate_pose_charuco(
             file,
             camera_matrix,
             camera_dist,
             gray=gray,
+            prev_rvec=prev_rvec,
+            prev_tvec=prev_tvec,
             plot=plot
         )
+        if use_extrinsic_priors:
+            # Use previous board pose as a guess at the next identified pose.
+            # This is valid because we never expect the board to move relative
+            # to the camera in this situation.
+            prev_rvec = raw_board_rvec
+            prev_tvec = raw_board_tvec
+            # Refer to the first estimate.
+            use_extrinsic_priors = False
+
         board_rvec_row = board_rvec.T[0]
         board_tvec_row = board_tvec.T[0]
 
@@ -655,7 +705,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         scale=1,
         headwidth=2.5,
         headlength=4,
-        color=viridis_mid,
+        color=viridis_lower,
         edgecolors='k',
         linewidth=.5,
         width=4e-3,
@@ -696,7 +746,12 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .1, .1)
     X,Y = np.meshgrid(xs, ys)
     im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, cmap='viridis')#, vmin=0, vmax=10)
+    contour_line_levels = [5.6,11.2]
+    contour_line_colors = ['k', 'k']
+    contour_line_styles = ['-', '-']
+    plt.contour(im, levels=contour_line_levels, colors=contour_line_colors, linestyles=contour_line_styles, linewidths=(1,))
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='X-Y Error Magnitude (mm)')
+    [cbar.ax.axhline(level, color='k', linestyle='-') for level in contour_line_levels]
     ax.set_xlim(0, 24 * 0.0254)
     ax.set_ylim(0, 24 * 0.0254)
     # ax.set_xticks(xs)
@@ -721,8 +776,8 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     })
     sns.pairplot(
         residuals_df,
-        plot_kws={'color':viridis_mid, 'alpha':0.6},
-        diag_kws={'color':viridis_mid, 'alpha':0.6},
+        plot_kws={'color':viridis_lower, 'alpha':0.6},
+        diag_kws={'color':viridis_lower, 'alpha':0.6},
         kind='scatter',
         diag_kind='kde',
         corner=True,
@@ -772,7 +827,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     plt.figure(figsize=(12,7))
     ax = plt.axes()
     # ax.set_title('Residuals vs. Position Num.')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_mid)
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_lower)
     # ax.set_ylim(0, 10)
     ax.set_xlabel('Scan Order', fontsize=14)
     ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
@@ -794,7 +849,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     plt.figure(figsize=(12,7))
     ax = plt.axes()
     # ax.set_title('Residuals vs. Distance from Camera')
-    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm, color=viridis_mid)
+    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm, color=viridis_lower)
     ax.set_ylim(0, 10)
     ax.set_xlabel('Distance from Camera Center (mm)', fontsize=14)
     ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
@@ -809,239 +864,216 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     return
 
 
-# def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, half_pts=True, origin_id=None, savefig=True):
-#     '''
-#     Assume the target images are part of a repeatability measurement, moving
-#     between two points over and over.
+def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None, savefig=True):
+    '''
+    Assume the target images are part of a repeatability measurement, moving
+    between two points over and over.
 
-#     Compare to the commanded profile.
+    Compare to the commanded profile.
 
-#     Parameters
-#     ----------
-#     img_data: dict
-#         Return dict of `measure_images`.
-#     out_dir: str
-#         Location to save plots
-#     command_file: str
-#         .csv file that was used to run the scan. Should be from the
-#         hotspot/data/input/profiles dir.
-#     raft_id: int
-#         ArUco ID of a target mounted on the center of the end effector.
-#     half_pts: bool (optional)
-#         Don't include "reset points" in analysis, the points the raft visits in
-#         between the point of interest.
-#     origin_id: int (optional)
-#         ArUco ID of a target mounted at a known location relative to the origin
-#         of the mapper coordinate frame.
-#     '''
-#     timestamp = str(time.time())
-#     if savefig:
-#         with open(os.path.join(out_dir, f'img_data_{timestamp}.pickle'), 'wb') as f:
-#             pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+    Parameters
+    ----------
+    img_data: dict
+        Return dict of `measure_images`.
+    out_dir: str
+        Location to save plots
+    command_file: str
+        .csv file that was used to run the scan. Should be from the
+        hotspot/data/input/profiles dir.
+    raft_id: int
+        ArUco ID of a target mounted on the center of the end effector.
+    origin_id: int (optional)
+        ArUco ID of a target mounted at a known location relative to the origin
+        of the mapper coordinate frame.
+    '''
+    timestamp = str(time.time())
+    if savefig:
+        with open(os.path.join(out_dir, f'img_data_{timestamp}.pickle'), 'wb') as f:
+            pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-#     commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])
-#     # add a degenerate z-dir coord for comparison with our data
-#     commanded_pts = np.concatenate([commanded_pts_flat, np.zeros_like(commanded_pts_flat[:,:1])], axis=-1)
+    commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])[2::2]
+    # add a degenerate z-dir coord for comparison with our data
+    commanded_pts = np.concatenate([commanded_pts_flat, np.zeros_like(commanded_pts_flat[:,:1])], axis=-1)
 
-#     xs = [pt[0] for pt in commanded_pts_flat]
-#     ys = [pt[1] for pt in commanded_pts_flat]
+    xs = [pt[0] for pt in commanded_pts_flat]
+    ys = [pt[1] for pt in commanded_pts_flat]
     
-#     fig, ax = plt.subplots(figsize=(7,5))
-#     fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
+    fig, ax = plt.subplots(figsize=(7,5))
+    fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
 
-#     measured_pts = np.zeros_like(commanded_pts)
-#     residuals = np.zeros_like(commanded_pts)
+    measured_pts = np.zeros_like(commanded_pts)
+    residuals = np.zeros_like(commanded_pts)
 
-#     img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
-#     try:
-#         imgs = np.array(img_keys).reshape(commanded_pts.shape[:1])
-#     except ValueError:
-#         logger.warning(
-#             (f'Number of images provided ({len(img_keys)}) doesn\'t match ' +
-#              f'commanded profile ({commanded_pts.shape[:1][0]}). Don\'t trust results.')
-#         )
-#         imgs = np.array(img_keys).reshape(commanded_pts[:len(img_keys)].shape[:1])
-#     for j in range(imgs.shape[0]):
-#         if not isinstance(img_data[imgs[j]], dict):
-#             continue
-#         if not (raft_id in img_data[imgs[j]].keys()):
-#             continue
-#         # Measured positions are 3D poses relative to aruco board
-#         query_tvec = img_data[imgs[j]][raft_id]['tvec']
-#         query_rvec = img_data[imgs[j]][raft_id]['rvec']
-#         board_tvec = img_data[imgs[j]]['board']['tvec']
-#         measured_pts[j][0] = query_tvec[0]
-#         measured_pts[j][1] = query_tvec[1]
-#         measured_pts[j][2] = query_tvec[2]
+    img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
+    try:
+        imgs = np.array(img_keys).reshape(commanded_pts.shape[:1])
+    except ValueError:
+        logger.warning(
+            (f'Number of images provided ({len(img_keys)}) doesn\'t match ' +
+             f'commanded profile ({commanded_pts.shape[:1][0]}). Don\'t trust results.')
+        )
+        imgs = np.array(img_keys).reshape(commanded_pts[:len(img_keys)].shape[:1])
+    for j in range(imgs.shape[0]):
+        if not isinstance(img_data[imgs[j]], dict):
+            continue
+        if not (raft_id in img_data[imgs[j]].keys()):
+            continue
+        # Measured positions are 3D poses relative to aruco board
+        query_tvec = img_data[imgs[j]][raft_id]['tvec']
+        query_rvec = img_data[imgs[j]][raft_id]['rvec']
+        board_tvec = img_data[imgs[j]]['board']['tvec']
+        measured_pts[j][0] = query_tvec[0]
+        measured_pts[j][1] = query_tvec[1]
+        measured_pts[j][2] = query_tvec[2]
 
-#         if origin_id:
-#             if not (origin_id in img_data[imgs[j]].keys()):
-#                 continue
-#             origin_tvec = img_data[imgs[j]][origin_id]['tvec']
-#             origin_rvec = img_data[imgs[j]][origin_id]['rvec']
-#             measured_pts[j][0] -= origin_tvec[0]
-#             measured_pts[j][1] -= origin_tvec[1]
-#             measured_pts[j][2] -= origin_tvec[2]
-#         else:
-#             # No reference given, take the first location as perfectly correct.
-#             if j == 0:
-#                 fudge_offset = measured_pts[j] - commanded_pts[j]
-#             measured_pts[j] -= fudge_offset
+        if origin_id:
+            if not (origin_id in img_data[imgs[j]].keys()):
+                logger.warning(f'No data for id {origin_id} found in img {imgs[j]}. Skipping...')
+                continue
+            origin_tvec = img_data[imgs[j]][origin_id]['tvec']
+            origin_rvec = img_data[imgs[j]][origin_id]['rvec']
+            measured_pts[j][0] -= origin_tvec[0]
+            measured_pts[j][1] -= origin_tvec[1]
+            measured_pts[j][2] -= origin_tvec[2]
+        else:
+            # No reference given, take the first location as perfectly correct.
+            if j == 0:
+                fudge_offset = measured_pts[j] - commanded_pts[j]
+            measured_pts[j] -= fudge_offset
 
-#     if half_pts:
-#         measured_pts = measured_pts[1::2]
-#         commanded_pts = commanded_pts[1::2]
+    bad_x = []
+    bad_y = []
+    rmse = None
 
-#     residuals = measured_pts - commanded_pts
+    residuals = measured_pts - commanded_pts
 
-#     # error check: ignore ridiculous residuals
-#     rmse = None
-#     bad_x = []
-#     bad_y = []
-#     print('foo')
-#     if residuals.size >= 16: # need good stats
-#         rmse = np.sqrt(np.mean(residuals ** 2.))
-#         print('RMSE:', rmse)
-#         sig_thresh = 3. * rmse
-#         bad_x = np.where(np.abs(residuals[:,:,0]) > sig_thresh)
-#         bad_y = np.where(np.abs(residuals[:,:,1]) > sig_thresh)
-#         measured_pts[bad_x] = commanded_pts[bad_x]
-#         measured_pts[bad_y] = commanded_pts[bad_y]
-#         print(f'{len(bad_x[0])} x-measurements with >3x RMSE ignored (highlighted red).')
-#         print(f'{len(bad_y[0])} y-measurements with >3x RMSE ignored (highlighted red).')
-#         residuals = measured_pts - commanded_pts
-#         rmse = np.sqrt(np.mean(residuals ** 2.))
-#     else:
-#         bad_x = None
-#         bad_y = None
-
-#     ax.scatter(
-#         commanded_pts[:,0],
-#         commanded_pts[:,1],
-#         facecolor='none',
-#         color='k',
-#         label=f'Commanded Position',
-#         zorder=1
-#     )
-#     ax.quiver(
-#         measured_pts[:,0],
-#         measured_pts[:,1],
-#         residuals[:,0],
-#         residuals[:,1],
-#         np.linalg.norm(residuals, axis=-1),
-#         pivot='tip',
-#         angles='xy',
-#         scale_units='xy',
-#         scale=1,
-#         headwidth=2.5,
-#         headlength=4,
-#         edgecolors='k',
-#         linewidth=.5,
-#         width=4e-3,
-#         zorder=2
-#     )
-#     ax.scatter(measured_pts[:,0], measured_pts[:,1], facecolor='k', label='Measured Position', zorder=1)
-#     if any(bad_x):
-#         ax.scatter(commanded_pts[bad_x][0], commanded_pts[bad_x][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
-#     if any(bad_y):
-#         ax.scatter(commanded_pts[bad_y][0], commanded_pts[bad_y][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+    ax.scatter(
+        commanded_pts[:,0],
+        commanded_pts[:,1],
+        facecolor='none',
+        color='k',
+        label=f'Commanded Position',
+        zorder=1
+    )
+    ax.quiver(
+        measured_pts[:,0],
+        measured_pts[:,1],
+        residuals[:,0],
+        residuals[:,1],
+        np.linalg.norm(residuals, axis=-1),
+        pivot='tip',
+        angles='xy',
+        scale_units='xy',
+        scale=1,
+        headwidth=2.5,
+        headlength=4,
+        edgecolors='k',
+        linewidth=.5,
+        width=4e-3,
+        zorder=2
+    )
+    ax.scatter(measured_pts[:,0], measured_pts[:,1], facecolor='k', label='Measured Position', zorder=1)
+    if any(bad_x):
+        ax.scatter(commanded_pts[bad_x][0], commanded_pts[bad_x][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
+    if any(bad_y):
+        ax.scatter(commanded_pts[bad_y][0], commanded_pts[bad_y][1], facecolor='r', label='Ignored\n(Error >3RMSEs)', zorder=1)
     
-#     plt.xticks(rotation=45)
-#     if rmse:
-#         ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
-#     else:
-#         ax.set_title('Profile:\n' + os.path.basename(command_file))
-#     ax.set_xlabel('x-distance from SW corner (m)')
-#     ax.set_ylabel('y-distance from SW corner (m)')
-#     ax.grid(True)
-#     ax.set_aspect('equal')
-#     ax.set_facecolor('gainsboro')
-#     ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-#     plt.subplots_adjust(top=0.9)
-#     plt.tight_layout()
-#     if savefig:
-#         plt.savefig(os.path.join(out_dir, f'repeatability_quiver_{timestamp}.png'), facecolor='white', transparent=False)
+    plt.xticks(rotation=45)
+    if rmse:
+        ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
+    else:
+        ax.set_title('Profile:\n' + os.path.basename(command_file))
+    ax.set_xlabel('x-distance from SW corner (m)')
+    ax.set_ylabel('y-distance from SW corner (m)')
+    ax.grid(True)
+    ax.set_aspect('equal')
+    ax.set_facecolor('gainsboro')
+    ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.subplots_adjust(top=0.9)
+    plt.tight_layout()
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'repeatability_quiver_{timestamp}.png'), facecolor='white', transparent=False)
 
-#     residuals_mag_mm = np.linalg.norm(residuals[:,:2], axis=-1) * 1000.
+    residuals_mag_mm = np.linalg.norm(residuals[:,:2], axis=-1) * 1000.
 
-#     plt.figure()
-#     ax = plt.axes()
-#     ax.set_title('Position z-component')
-#     sns.kdeplot(1e3 * measured_pts[:,2].flatten(), fill=True, ax=ax)
-#     sns.rugplot(1e3 * measured_pts[:,2].flatten(), ax=ax)
-#     ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
-#     ax.set_ylabel('Density')
-#     ax.grid(True)
-#     if savefig:
-#         plt.savefig(os.path.join(out_dir, f'repeatability_zdir_{timestamp}.png'), facecolor='white', transparent=False)
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Position z-component')
+    sns.kdeplot(1e3 * measured_pts[:,2].flatten(), fill=True, ax=ax)
+    sns.rugplot(1e3 * measured_pts[:,2].flatten(), ax=ax)
+    ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
+    ax.set_ylabel('Density')
+    ax.grid(True)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'repeatability_zdir_{timestamp}.png'), facecolor='white', transparent=False)
 
-#     residuals_mm = np.array(residuals) * 1000.
+    residuals_mm = np.array(residuals) * 1000.
 
-#     plt.figure()
-#     ax = plt.axes()
-#     ax.set_title('Residuals: Commanded - Measured')
-#     sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
-#     ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
-#     ax.set_xlim(-4,4)
-#     ax.set_ylim(-4,4)
-#     ax.set_xlabel('X-dir Residuals (mm)')
-#     ax.set_ylabel('Y-dir Residuals (mm)')
-#     ax.grid(True)
-#     ax.set_aspect('equal')
-#     if savefig:
-#         plt.savefig(os.path.join(out_dir, f'repeatability_residuals_{timestamp}.png'), facecolor='white', transparent=False)
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Residuals: Commanded - Measured')
+    sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
+    ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
+    ax.set_xlim(-4,4)
+    ax.set_ylim(-4,4)
+    ax.set_xlabel('X-dir Residuals (mm)')
+    ax.set_ylabel('Y-dir Residuals (mm)')
+    ax.grid(True)
+    ax.set_aspect('equal')
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'repeatability_residuals_{timestamp}.png'), facecolor='white', transparent=False)
 
-#     residuals_ordered_mm = np.ravel(residuals_mag_mm)
+    residuals_ordered_mm = np.ravel(residuals_mag_mm)
 
-#     plt.figure(figsize=(12,7))
-#     ax = plt.axes()
-#     ax.set_title('Residuals vs. Position Num.')
-#     ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-#     ax.set_ylim(0, 10)
-#     ax.set_xlabel('Scan Order')
-#     ax.set_ylabel('Position Error Magnitude (mm)')
-#     ax.grid(True)
-#     plt.tight_layout()
-#     plt.subplots_adjust(top=0.85)
-#     if savefig:
-#         plt.savefig(os.path.join(out_dir, f'repeatability_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
+    plt.figure(figsize=(12,7))
+    ax = plt.axes()
+    ax.set_title('Residuals vs. Position Num.')
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+    ax.set_ylim(0, 10)
+    ax.set_xlabel('Scan Order')
+    ax.set_ylabel('Position Error Magnitude (mm)')
+    ax.grid(True)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'repeatability_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
 
-#     plt.figure()
-#     ax = plt.axes()
-#     ax.set_title('Residuals vs. z-dir residual')
-#     ax.scatter(residuals_mm[:,2].ravel(), residuals_ordered_mm)
-#     # ax.set_ylim(0, 10)
-#     ax.set_xlabel('Z-dir residual')
-#     ax.set_ylabel('Position Error Magnitude (mm)')
-#     ax.grid(True)
-#     plt.tight_layout()
-#     plt.subplots_adjust(top=0.85)
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Residuals vs. z-dir residual')
+    ax.scatter(residuals_mm[:,2].ravel(), residuals_ordered_mm)
+    # ax.set_ylim(0, 10)
+    ax.set_xlabel('Z-dir residual')
+    ax.set_ylabel('Position Error Magnitude (mm)')
+    ax.grid(True)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
 
-#     # plt.figure()
-#     # ax = plt.axes()
-#     # ax.set_title('Residuals: Commanded - Measured')
-#     # residuals_mm = np.array(residuals) * 1000.
-#     # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
-#     # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-#     # ax.
-#     # ax.set_xlim(-7,7)
-#     # ax.set_ylim(-7,7)
-#     # ax.set_xlabel('X-dir Residuals (mm)')
-#     # ax.set_ylabel('Y-dir Residuals (mm)')
-#     # ax.grid(True)
-#     # ax.set_aspect('equal')
-#     # plt.savefig(os.path.join(out_dir, f'repeatability_pub_residuals_{timestamp}.png'), facecolor='white', transparent=False)
+    # plt.figure()
+    # ax = plt.axes()
+    # ax.set_title('Residuals: Commanded - Measured')
+    # residuals_mm = np.array(residuals) * 1000.
+    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
+    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
+    # ax.
+    # ax.set_xlim(-7,7)
+    # ax.set_ylim(-7,7)
+    # ax.set_xlabel('X-dir Residuals (mm)')
+    # ax.set_ylabel('Y-dir Residuals (mm)')
+    # ax.grid(True)
+    # ax.set_aspect('equal')
+    # plt.savefig(os.path.join(out_dir, f'repeatability_pub_residuals_{timestamp}.png'), facecolor='white', transparent=False)
 
-#     plt.figure()
-#     ax = plt.axes()
-#     ax.set_title('Error vs. Position Number')
-#     ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
-#     ax.set_ylim(0, 10)
-#     ax.set_xlabel('Scan Order')
-#     ax.set_ylabel('Position Error Magnitude (mm)')
-#     plt.tight_layout()
-#     plt.subplots_adjust(top=0.85)
-#     if savefig:
-#         plt.savefig(os.path.join(out_dir, f'repeatability_pub_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
+    plt.figure()
+    ax = plt.axes()
+    ax.set_title('Error vs. Position Number')
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm)
+    ax.set_ylim(0, 10)
+    ax.set_xlabel('Scan Order')
+    ax.set_ylabel('Position Error Magnitude (mm)')
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'repeatability_pub_error_vs_time_{timestamp}.png'), facecolor='white', transparent=False)
 
-#     return commanded_pts, measured_pts, residuals
+    return commanded_pts, measured_pts, residuals
