@@ -26,8 +26,10 @@ METERS_PER_INCH = 0.0254
 # These globals may change if you have a chessboard printout of different
 # dimensions/pattern.
 BOARD_VERT_SHAPE = (14,19)
-BOARD_SQUARE_SIZE = 0.01200 # m
-BOARD_ARUCO_SIZE = 0.00882 # m
+BOARD_SQUARE_SIZE = 0.01200 # m, paper board used for final measurements
+# BOARD_SQUARE_SIZE = 15.3425e-3 # m, laser engraved board
+BOARD_ARUCO_SIZE = 0.00882 # m, paper board used for final measurements 
+# BOARD_ARUCO_SIZE = 11.22e-3 # m, laser engraved board
 DEFAULT_TARGET_SIZE = 0.02493 # m, this WILL vary from printer to printer and from target to target on the page!
 DEFAULT_ARUCO_DICT = cv2.aruco.DICT_4X4_1000
 
@@ -81,7 +83,7 @@ def find_corners_aruco(file: str, gray=None, aruco_dict=DEFAULT_ARUCO_DICT, refi
         parameters.cornerRefinementMinAccuracy = 0.01 # default 0.1
         parameters.minMarkerPerimeterRate = 5e-3
     detector = cv2.aruco.ArucoDetector(dictionary, parameters)
-    corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
+    corners, ids, rejected_corners = detector.detectMarkers(gray)
 
     if (ids is not None):
         found = True
@@ -98,7 +100,7 @@ def find_corners_aruco(file: str, gray=None, aruco_dict=DEFAULT_ARUCO_DICT, refi
 
     logger.info(f'ArUco finding in {file}: {found}')
     logger.info(f'ID\'d {len([corners[i] for i in mask])} targets.')
-    return found, np.array([corners[i] for i in mask]), np.array([ids[i][0] for i in mask]), gray
+    return found, np.array([corners[i] for i in mask]), np.array([ids[i][0] for i in mask]), gray, rejected_corners
 
 
 def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, fig=None, ax=None, plot=False):
@@ -112,7 +114,7 @@ def estimate_pose_aruco(file, corners, aruco_size, camera_matrix, camera_dist, f
     return rvec, tvec, obj_points
 
 
-def generate_charuco_board(board_vert_shape, square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DICT, gen_png=False):
+def generate_charuco_board(board_vert_shape, square_size, aruco_size, aruco_dict=DEFAULT_ARUCO_DICT, gen_png=False, invert=False):
     dictionary = cv2.aruco.getPredefinedDictionary(aruco_dict)
     board = cv2.aruco.CharucoBoard(
         (board_vert_shape[0]+1,
@@ -123,9 +125,12 @@ def generate_charuco_board(board_vert_shape, square_size, aruco_size, aruco_dict
     )
     if gen_png:
         # change these parameters for different printers or sheets of paper.
-        dpi = 300
+        dpi = 1200
         img = board.generateImage((int(8.5 * dpi), int(11 * dpi)), marginSize=int(dpi * square_size / METERS_PER_INCH))
-        cv2.imwrite(f'{board_vert_shape[1]+1}x{board_vert_shape[0]+1}_square_{square_size}m_aruco_{aruco_size}m_charuco_dict_{aruco_dict}.png', img)
+        if invert:
+            cv2.imwrite(f'inv_{board_vert_shape[1]+1}x{board_vert_shape[0]+1}_square_{square_size}m_aruco_{aruco_size}m_charuco_dict_{aruco_dict}.png', cv2.bitwise_not(img))
+        else:
+            cv2.imwrite(f'{board_vert_shape[1]+1}x{board_vert_shape[0]+1}_square_{square_size}m_aruco_{aruco_size}m_charuco_dict_{aruco_dict}.png', img)
 
     return board, dictionary
 
@@ -146,7 +151,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_ver
     # scene. It erroneously detected 17 inside the black space of 998 when 17
     # was obscured, throwing off the interpolation of an entire board.
     params.maxErroneousBitsInBorderRate = 0.2 # default 0.35
-    # Added this because some FOD in the scene was being detected as markers.
+    # Added this because some junk in the scene was being detected as markers.
     # especially 17
     params.polygonalApproxAccuracyRate = 0.008 # default 0.03
     detector.setDetectorParameters(params)
@@ -202,7 +207,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_ver
     return rvec, tvec, raw_rvec, raw_tvec
 
 
-def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False, savefig=False):
+def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VERT_SHAPE, square_size=BOARD_SQUARE_SIZE, aruco_size=BOARD_ARUCO_SIZE, guess_intrinsics=False, plot=False, savefig=False, write_mrcal=False):
     '''
     The general idea is to take a set of test images with a chessboard pattern
     (6x9, i.e. 5x8 intersections) to calculate the distortion parameters of the
@@ -261,7 +266,7 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
         for future in concurrent.futures.as_completed(future_to_file):
             file = future_to_file[future]
             try:
-                ret, corners, ids, gray = future.result()
+                ret, corners, ids, gray, rejected_corners = future.result()
             except Exception as e:
                 logger.warning(f'file {file} generated an exception: {e}')
             else:
@@ -281,6 +286,12 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
                         ids_q.put(res2[2])
                         imgpoints_q.put(corners2)
                         objpoints_q.put(BOARD_CORNER_LOCS)
+
+                        if write_mrcal:
+                            with open(cal_path + os.path.sep + 'corners.vnl', 'a') as f:
+                                for corner in corners2:
+                                    f.write(f'{file.replace(" ", "_")} {corner[0][0]} {corner[0][1]}\n')
+
                     else:
                         logger.warning(f'file {file} failed threshold check for number of corners found: {len(corners2)} < {num_found_thresh}')
                 #     if plot:
@@ -399,7 +410,7 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
         fig_residuals, ax_residuals = plt.subplots(figsize=(12,7))
         sns.kdeplot(x=residuals_x, y=residuals_y, fill=True, ax=ax_residuals)
         ax_residuals.scatter(residuals_x, residuals_y, s=1, color='k', alpha=0.2)
-        ax_residuals.set_title(f'Reprojection Error Residuals (N={len(residuals_x)})')
+        ax_residuals.set_title(f'Reprojection Error Residuals\n\nRMS reprojection error: {ret:.6f} px\n(N={len(residuals_x)})')
         ax_residuals.set_xlabel('X Error (px)')
         ax_residuals.set_ylabel('Y Error (px)')
         ax_residuals.set_aspect('equal')
@@ -420,7 +431,7 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
     prev_rvec = None
     prev_tvec = None
     for file in files:
-        found, corners, ids, gray = find_corners_aruco(
+        found, corners, ids, gray, rejected_corners = find_corners_aruco(
             file,
             camera_matrix=camera_matrix,
             camera_dist=camera_dist,
@@ -733,6 +744,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     #     ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
     # else:
     #     ax.set_title('Profile:\n' + os.path.basename(command_file))
+    ax.set_title(f'RMSE: {rmse*1e3:.2f} mm', fontsize=14)
     ax.set_xlim(0, 24 * 0.0254)
     ax.set_ylim(0, 24 * 0.0254)
     ax.set_xlabel('X Position (m)', fontsize=14)
@@ -758,10 +770,10 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, cmap='viridis')#, vmin=0, vmax=10)
     contour_line_levels = [goal * 1e3, requirement * 1e3]
     contour_line_colors = ['k', 'k']
-    contour_line_styles = ['-', '-']
+    contour_line_styles = ['--', '-']
     plt.contour(im, levels=contour_line_levels, colors=contour_line_colors, linestyles=contour_line_styles, linewidths=(1,))
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='X-Y Error Magnitude (mm)')
-    [cbar.ax.axhline(level, color='k', linestyle='-') for level in contour_line_levels]
+    [cbar.ax.axhline(contour_line_levels[i], color=contour_line_colors[i], linestyle=contour_line_styles[i]) for i in range(len(contour_line_levels))]
     ax.set_xlim(0, 24 * 0.0254)
     ax.set_ylim(0, 24 * 0.0254)
     # ax.set_xticks(xs)

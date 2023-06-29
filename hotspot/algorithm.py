@@ -223,7 +223,9 @@ class Robot:
         # sqrt(minor diameter^2 + thread pitch^2)
         # for a single rotation.
         
-        # The implicit assumption here is one of "conservation of string".
+        # The implicit assumption here is one of "conservation of string," and
+        # also of an eyelet distant from the helical drum, invoking the small
+        # angle approximation.
 
         num_revs = lengths_after / const.LENGTH_PER_REV
         angles = 2. * np.pi * num_revs
