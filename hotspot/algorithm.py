@@ -135,13 +135,6 @@ class Robot:
         # Geometry
         self.surf = surf
         self.raft = raft
-        # Keep track of net rotation of each spool in order to compensate for
-        # cable thickness.
-        # Define 0 radians as the point at which each spool has no cable on it.
-        self.spool_angles = np.array(
-            [[0., 0.],
-             [0., 0.]]
-        )
         # Init home to an invalid position until we are homed
         self._home = (-np.inf, -np.inf)
         # Start off pos_cmd in an error state, hoping an error will occur

@@ -150,7 +150,7 @@ def estimate_pose_charuco(file, camera_matrix, camera_dist, gray=None, board_ver
     # Added this because of a diversity of marker sizes in the
     # scene. It erroneously detected 17 inside the black space of 998 when 17
     # was obscured, throwing off the interpolation of an entire board.
-    params.maxErroneousBitsInBorderRate = 0.2 # default 0.35
+    params.maxErroneousBitsInBorderRate = 0.1 # default 0.35
     # Added this because some junk in the scene was being detected as markers.
     # especially 17
     params.polygonalApproxAccuracyRate = 0.008 # default 0.03

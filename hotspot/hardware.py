@@ -378,7 +378,7 @@ def all_steppers_ez(ser: StepperSerial, addresses: list, radians: list, run=True
 # -----------------------------------------------------------------------------
 # Hawkeye functions
 # -----------------------------------------------------------------------------
-def send_hawkeye_byte(ser: HawkeyeSerial, data):
+def send_hawkeye_byte(ser: HawkeyeSerial, data: int):
     '''
     Control three groups of Hawkeye IR sources on the raft. Each of the first
     three bits of the `data` byte turns on one of the three available groups of
