@@ -417,8 +417,8 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
 
         if savefig:
             timestamp = time.time()
-            fig_overall.savefig(os.path.join(cal_path, f'sensor_coverage_{timestamp}.png'), facecolor='white', transparent=False)
-            fig_residuals.savefig(os.path.join(cal_path, f'reprojection_error_residuals_{timestamp}.png'), facecolor='white', transparent=False)
+            fig_overall.savefig(os.path.join(cal_path, f'sensor_coverage_{timestamp}.png'), facecolor='white', transparent=False, bbox_inches='tight')
+            fig_residuals.savefig(os.path.join(cal_path, f'reprojection_error_residuals_{timestamp}.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
     return mtx, dist, optimal_camera_matrix, roi
 
@@ -537,6 +537,21 @@ def measure_images(files, camera_matrix, camera_dist, aruco_ids=[], aruco_size=D
     return img_data
 
 
+def unwind_img_data(img_data, aruco_id, query_key):
+    '''Filter and flatten by indexing into img_data and collecting.'''
+    query_vals = []
+    for file, entities in img_data.items():
+        for id, pose in entities.items():
+            if id != aruco_id:
+                continue
+            for key, val in pose.items():
+                if key != query_key:
+                    continue
+                query_vals.append(val)
+    return np.array(query_vals)
+
+
+
 def estimate_angular_offset(img_data, file, entity0, entity1):
     '''
     Calculate the minimum angle needed to rotate one coordinate system into the other
@@ -574,7 +589,7 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id:
         of the mapper coordinate frame.
     '''
     if not timestamp:
-        timestamp = str(time.time())
+        timestamp = str(time.time()).replace('.', '_')
     with open(os.path.join(out_dir, f'{timestamp}_img_data.pickle'), 'wb') as f:
         pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -599,6 +614,12 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id:
 
     img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
     imgs = np.array(img_keys).reshape(commanded_pts.shape[:2])
+
+    # target positions are calculated relative to the average origin position.
+    if origin_id:
+        origin_vals = unwind_img_data(img_data, origin_id, 'tvec')
+        origin_mean = np.mean(origin_vals, axis=0)
+
     for j in range(imgs.shape[0]):
         for k in range(imgs.shape[1]):
             if not isinstance(img_data[imgs[j][k]], dict):
@@ -615,18 +636,15 @@ def post_process_scan(img_data: dict, out_dir: str , command_file: str, raft_id:
             measured_pts[j][k][2] = query_tvec[2]
 
             if origin_id:
-                if not (origin_id in img_data[imgs[j][k]].keys()):
-                    continue
-                origin_tvec = img_data[imgs[j][k]][origin_id]['tvec']
-                origin_rvec = img_data[imgs[j][k]][origin_id]['rvec']
-                measured_pts[j][k][0] -= origin_tvec[0]
-                measured_pts[j][k][1] -= origin_tvec[1]
-                measured_pts[j][k][2] -= origin_tvec[2]
+                measured_pts[j][k][0] -= origin_mean[0]
+                measured_pts[j][k][1] -= origin_mean[1]
+                measured_pts[j][k][2] -= origin_mean[2]
             else:
                 # No reference given, take the first location as perfectly correct.
                 if (j == 0 and k == 0):
                     fudge_offset = measured_pts[j][k] - commanded_pts[j][k]
                 measured_pts[j][k] -= fudge_offset
+
     return xs, ys, commanded_pts, measured_pts, camera_dist
 
 
@@ -659,12 +677,11 @@ def filter_by_rmse(commanded_pts, measured_pts, n_sigma):
 
 
 def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter_results=False, savefig=False, timestamp=''):
-
-    requirement = 11.2 * 1e-3
+    requirement = 8.7 * 1e-3
     goal = requirement / 2
 
     if not timestamp:
-        timestamp = str(time.time())
+        timestamp = str(time.time()).replace('.', '_')
     if filter_results:
         n_sigma = 6
         measured_pts, bad_x, bad_y = filter_by_rmse(commanded_pts, measured_pts, n_sigma)
@@ -679,22 +696,15 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     residuals_mag_mm = residuals_mag * 1e3
 
     cm = plt.cm.ScalarMappable(
-        norm=colors.Normalize(
-            vmin=0,
-            vmax=np.max(residuals_mag),
-        ),
         cmap='viridis'
     )
-    cs = cm.to_rgba(np.sort(residuals_mag.ravel()))
-    viridis_lower = cs[len(cs) // 4]
-    viridis_mid = cs[len(cs) // 2]
-    viridis_upper = cs[3 * len(cs) // 4]
+    cs = cm.to_rgba(np.arange(0,1.1,.1))
+    color = cs[5]
 
     # -------------------------------------------------------------------------
     # Quiver plot
     # -------------------------------------------------------------------------
     fig, ax = plt.subplots(figsize=(7,5))
-    # fig.suptitle('Commanded vs. Measured Positions', fontsize=18)
     ax.scatter(
         commanded_pts[:,:,0],
         commanded_pts[:,:,1],
@@ -723,7 +733,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         scale=1,
         headwidth=2.5,
         headlength=4,
-        color=viridis_lower,
+        color=color,
         edgecolors='k',
         linewidth=.5,
         width=4e-3,
@@ -740,23 +750,17 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         ax.scatter(commanded_pts[bad_y][:,0], commanded_pts[bad_y][:,1], facecolor='lightcoral', label=label, zorder=1)
     plt.xticks(rotation=45, fontsize=14)
     plt.yticks(rotation=45, fontsize=14)
-    # if rmse:
-    #     ax.set_title('Profile:\n' + os.path.basename(command_file) + '\n' +f'RMSE: {rmse * 1000.:.2f} mm')
-    # else:
-    #     ax.set_title('Profile:\n' + os.path.basename(command_file))
     ax.set_title(f'RMSE: {rmse*1e3:.2f} mm', fontsize=14)
     ax.set_xlim(0, 24 * 0.0254)
     ax.set_ylim(0, 24 * 0.0254)
     ax.set_xlabel('X Position (m)', fontsize=14)
     ax.set_ylabel('Y Position (m)', fontsize=14)
-    # ax.grid(True)
     ax.set_aspect('equal')
-    # ax.set_facecolor('gainsboro')
-    ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    ax.legend(bbox_to_anchor=(1.05, 1.0), fontsize=14, loc='upper left')
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_quiver.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_quiver.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
 
     # -------------------------------------------------------------------------
@@ -764,7 +768,6 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     # -------------------------------------------------------------------------
     plt.figure()
     ax = plt.axes()
-    # ax.set_title('Residual Magnitude: Commanded - Measured')
     levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .1, .1)
     X,Y = np.meshgrid(xs, ys)
     im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, cmap='viridis')#, vmin=0, vmax=10)
@@ -776,17 +779,14 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     [cbar.ax.axhline(contour_line_levels[i], color=contour_line_colors[i], linestyle=contour_line_styles[i]) for i in range(len(contour_line_levels))]
     ax.set_xlim(0, 24 * 0.0254)
     ax.set_ylim(0, 24 * 0.0254)
-    # ax.set_xticks(xs)
-    # ax.set_yticks(ys)
     plt.xticks(rotation=45, fontsize=11)
     plt.yticks(rotation=45, fontsize=11)
     ax.set_xlabel('X position (m)', fontsize=14)
     ax.set_ylabel('Y position (m)', fontsize=14)
     ax.set_aspect('equal')
-    # ax.grid(True)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_magnitudes.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_magnitudes.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
     # -------------------------------------------------------------------------
     # Corner plot
@@ -798,8 +798,8 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     })
     sns.pairplot(
         residuals_df,
-        plot_kws={'color':viridis_lower, 'alpha':0.6},
-        diag_kws={'color':viridis_lower, 'alpha':0.6},
+        plot_kws={'color':color, 'alpha':0.6},
+        diag_kws={'color':color, 'alpha':0.6},
         kind='scatter',
         diag_kind='kde',
         corner=True,
@@ -809,36 +809,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     fig.suptitle('Residuals')
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_corner.png'), facecolor='white', transparent=False)
-
-    # plt.figure()
-    # ax = plt.axes()
-    # ax.set_title('Position z-component')
-    # sns.kdeplot(1e3 * measured_pts[:,:,2].flatten(), fill=True, ax=ax)
-    # sns.rugplot(1e3 * measured_pts[:,:,2].flatten(), ax=ax)
-    # ax.set_xlabel('Z-coordinate relative to Charuco board (mm)')
-    # ax.set_ylabel('Density')
-    # ax.grid(True)
-    # if savefig:
-    #     plt.savefig(os.path.join(out_dir, f'{timestamp}_zdir.png'), facecolor='white', transparent=False)
-
-
-    # -------------------------------------------------------------------------
-    # X-Y KDE plot
-    # -------------------------------------------------------------------------
-    # plt.figure()
-    # ax = plt.axes()
-    # ax.set_title('Residuals: Commanded - Measured')
-    # sns.kdeplot(x=residuals_mm[:,:,0].flatten(), y=residuals_mm[:,:,1].flatten(), fill=True, ax=ax)
-    # ax.scatter(residuals_mm[:,:,0], residuals_mm[:,:,1], color='k', alpha=0.3)
-    # ax.set_xlim(-7,7)
-    # ax.set_ylim(-7,7)
-    # ax.set_xlabel('X-dir Residuals (mm)')
-    # ax.set_ylabel('Y-dir Residuals (mm)')
-    # ax.grid(True)
-    # ax.set_aspect('equal')
-    # if savefig:
-    #     plt.savefig(os.path.join(out_dir, f'{timestamp}_residuals.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_corner.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
 
     # -------------------------------------------------------------------------
@@ -848,21 +819,18 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
 
     plt.figure(figsize=(7,5))
     ax = plt.axes()
-    # ax.set_title('Residuals vs. Position Num.')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_lower)
-    ax.axhline(requirement * 1e3, color=viridis_lower, linestyle='-', label='Requirement')
-    ax.axhline(goal * 1e3, color=viridis_mid, linestyle='--', label='Goal')
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=color)
+    ax.axhline(requirement * 1e3, color=color, linestyle='-', label='Requirement')
+    ax.axhline(goal * 1e3, color=color, linestyle='--', label='Goal')
     ax.legend(loc='best', fontsize=14)
-    # ax.set_ylim(0, 10)
     ax.set_xlabel('Scan Order', fontsize=14)
     ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
-    # ax.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_error_vs_time.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_error_vs_time.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
 
     # -------------------------------------------------------------------------
@@ -874,7 +842,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     plt.figure(figsize=(12,7))
     ax = plt.axes()
     # ax.set_title('Residuals vs. Distance from Camera')
-    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm, color=viridis_lower)
+    ax.scatter(tvecs_ordered_mm, residuals_ordered_mm, color=color)
     ax.set_ylim(0, 10)
     ax.set_xlabel('Distance from Camera Center (mm)', fontsize=14)
     ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
@@ -884,15 +852,14 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_error_vs_cam_dist.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_error_vs_cam_dist.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
     return
 
 
 def post_process_repeatability(img_data: dict, out_dir: str , command_file: str, raft_id, origin_id=None, savefig=False, timestamp=''):
     '''
-    Assume the target images are part of a repeatability measurement, moving
-    between two points over and over.
+    Assume the target images are part of a repeatability measurement
 
     Compare to the commanded profile.
 
@@ -912,7 +879,7 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
         of the mapper coordinate frame.
     '''
     if not timestamp:
-        timestamp = str(time.time())
+        timestamp = str(time.time()).replace('.', '_')
     if savefig:
         with open(os.path.join(out_dir, f'{timestamp}_repeatability_img_data.pickle'), 'wb') as f:
             pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -933,6 +900,12 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
              f'commanded profile ({commanded_pts.shape[:1][0]}). Don\'t trust results.')
         )
         imgs = np.array(img_keys).reshape(commanded_pts[:len(img_keys)].shape[:1])
+
+    # target positions are calculated relative to the average origin position.
+    if origin_id:
+        origin_vals = unwind_img_data(img_data, origin_id, 'tvec')
+        origin_mean = np.mean(origin_vals, axis=0)
+
     for j in range(imgs.shape[0]):
         if not isinstance(img_data[imgs[j]], dict):
             continue
@@ -947,14 +920,10 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
         measured_pts[j][2] = query_tvec[2]
 
         if origin_id:
-            if not (origin_id in img_data[imgs[j]].keys()):
-                logger.warning(f'No data for id {origin_id} found in img {imgs[j]}. Skipping...')
-                continue
-            origin_tvec = img_data[imgs[j]][origin_id]['tvec']
-            origin_rvec = img_data[imgs[j]][origin_id]['rvec']
-            measured_pts[j][0] -= origin_tvec[0]
-            measured_pts[j][1] -= origin_tvec[1]
-            measured_pts[j][2] -= origin_tvec[2]
+            measured_pts[j][0] -= origin_mean[0]
+            measured_pts[j][1] -= origin_mean[1]
+            measured_pts[j][2] -= origin_mean[2]
+
         else:
             # No reference given, take the first location as perfectly correct.
             if j == 0:
@@ -965,7 +934,12 @@ def post_process_repeatability(img_data: dict, out_dir: str , command_file: str,
 
 def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False, timestamp=''):
     if not timestamp:
-        timestamp = str(time.time())
+        timestamp = str(time.time()).replace('.', '_')
+
+    residuals = measured_pts - commanded_pts
+    mags = np.linalg.norm(residuals[:,:2], axis=-1)
+    mags_flat = np.ravel(mags)
+    rmse = np.linalg.norm(mags_flat) / np.sqrt(len(mags_flat))
 
     residuals = measured_pts - commanded_pts
     residuals_mm = residuals * 1e3
@@ -973,17 +947,10 @@ def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False
     residuals_mag_mm = residuals_mag * 1e3
 
     cm = plt.cm.ScalarMappable(
-        norm=colors.Normalize(
-            vmin=0,
-            vmax=np.max(residuals_mag),
-        ),
-        cmap='viridis'
+        cmap='inferno'
     )
-
-    cs = cm.to_rgba(np.sort(residuals_mag.ravel()))
-    viridis_lower = cs[len(cs) // 4]
-    viridis_mid = cs[len(cs) // 2]
-    viridis_upper = cs[3 * len(cs) // 4]
+    cs = cm.to_rgba(np.arange(0,1.1,.1))
+    color = cs[3]
 
     # -------------------------------------------------------------------------
     # Quiver plot
@@ -1001,43 +968,22 @@ def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False
     ax.scatter(
         measured_pts[:,0] + residuals[:,0],
         measured_pts[:,1] + residuals[:,1],
-        facecolor=viridis_lower,
+        facecolor=color,
         label='Measured Position',
         zorder=1
     )
-    exag = 1
-    # ax.quiver(
-    #     measured_pts[:,0] + residuals[:,0] * exag,
-    #     measured_pts[:,1] + residuals[:,1] * exag,
-    #     residuals[:,0] * exag,
-    #     residuals[:,1] * exag,
-    #     residuals_mag,
-    #     pivot='tip',
-    #     angles='xy',
-    #     scale_units='xy',
-    #     scale=1,
-    #     headwidth=2.5,
-    #     headlength=4,
-    #     color=viridis_lower,
-    #     edgecolors='k',
-    #     linewidth=.5,
-    #     width=4e-3,
-    #     zorder=2,
-    #     label=f'{int(exag)}x Errors'
-    # )
+
     plt.xticks(rotation=45, fontsize=14)
     plt.yticks(rotation=45, fontsize=14)
-    # ax.set_title('Profile:\n' + os.path.basename(command_file))
     ax.set_xlabel('X Position (m)', fontsize=14)
     ax.set_ylabel('Y Position (m)', fontsize=14)
-    # ax.grid(True)
+    ax.set_title(f'RMSE: {rmse*1e3:.2f} mm', fontsize=14)
     ax.set_aspect('equal')
-    # ax.set_facecolor('gainsboro')
-    ax.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    ax.legend(bbox_to_anchor=(1.05, 1.0), fontsize=14, loc='upper left')
     plt.subplots_adjust(top=0.9)
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_quiver.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_quiver.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
 
     # -------------------------------------------------------------------------
@@ -1050,8 +996,8 @@ def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False
     })
     sns.pairplot(
         residuals_df,
-        plot_kws={'color':viridis_lower, 'alpha':0.6},
-        diag_kws={'color':viridis_lower, 'alpha':0.6},
+        plot_kws={'color':color, 'alpha':0.6},
+        diag_kws={'color':color, 'alpha':0.6},
         kind='scatter',
         diag_kind='kde',
         corner=True,
@@ -1061,25 +1007,7 @@ def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False
     fig.suptitle('Residuals')
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_corner.png'), facecolor='white', transparent=False)
-
-
-    # -------------------------------------------------------------------------
-    # X-Y KDE plot
-    # -------------------------------------------------------------------------
-    # plt.figure()
-    # ax = plt.axes()
-    # ax.set_title('Residuals: Commanded - Measured')
-    # sns.kdeplot(x=residuals_mm[:,0].flatten(), y=residuals_mm[:,1].flatten(), fill=True, ax=ax)
-    # ax.scatter(residuals_mm[:,0], residuals_mm[:,1], color='k', alpha=0.3)
-    # ax.set_xlim(-4,4)
-    # ax.set_ylim(-4,4)
-    # ax.set_xlabel('X-dir Residuals (mm)')
-    # ax.set_ylabel('Y-dir Residuals (mm)')
-    # ax.grid(True)
-    # ax.set_aspect('equal')
-    # if savefig:
-    #     plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_residuals.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_corner.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
 
     # -------------------------------------------------------------------------
@@ -1089,15 +1017,168 @@ def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False
 
     plt.figure(figsize=(12,7))
     ax = plt.axes()
-    # ax.set_title('Residuals vs. Position Num.')
-    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=viridis_lower)
-    # ax.set_ylim(0, 10)
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=color)
     ax.set_xlabel('Scan Order', fontsize=14)
     ax.set_ylabel('Position Error Magnitude (mm)', fontsize=14)
-    # ax.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_error_vs_time.png'), facecolor='white', transparent=False)
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_repeatability_error_vs_time.png'), facecolor='white', transparent=False, bbox_inches='tight')
 
     return
+
+
+def post_process_origin(img_data: dict, out_dir: str , command_file: str, origin_id, savefig=False, timestamp=''):
+    '''
+    Assume the target images are of the same point, having not moved between images
+
+    Parameters
+    ----------
+    img_data: dict
+        Return dict of `measure_images`.
+    out_dir: str
+        Location to save plots
+    command_file: str
+        .csv file that was used to run the scan. Should be from the
+        hotspot/data/input/profiles dir.
+    raft_id: int
+        ArUco ID of a target mounted on the center of the end effector.
+    origin_id: int (optional)
+        ArUco ID of a target mounted at a known location relative to the origin
+        of the mapper coordinate frame.
+    '''
+    if not timestamp:
+        timestamp = str(time.time()).replace('.', '_')
+    if savefig:
+        with open(os.path.join(out_dir, f'{timestamp}_origin_img_data.pickle'), 'wb') as f:
+            pickle.dump(img_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    commanded_pts_flat = np.genfromtxt(command_file, delimiter=',', skip_header=1, usecols=[-2,-1])[2::2]
+    # add a degenerate z-dir coord for comparison with our data
+    commanded_pts = np.concatenate([commanded_pts_flat, np.zeros_like(commanded_pts_flat[:,:1])], axis=-1)
+    # HACK: origin never moves, and is supposed to be at 0 always:
+    commanded_pts *= 0
+    measured_pts = np.zeros_like(commanded_pts)
+    residuals = np.zeros_like(commanded_pts)
+
+    img_keys = [file for file in list(img_data.keys()) if os.path.exists(file)]
+    try:
+        imgs = np.array(img_keys).reshape(commanded_pts.shape[:1])
+    except ValueError:
+        logger.warning(
+            (f'Number of images provided ({len(img_keys)}) doesn\'t match ' +
+             f'commanded profile ({commanded_pts.shape[:1][0]}). Don\'t trust results.')
+        )
+        imgs = np.array(img_keys).reshape(commanded_pts[:len(img_keys)].shape[:1])
+
+    # target positions are calculated relative to the average origin position.
+    origin_vals = unwind_img_data(img_data, origin_id, 'tvec')
+    origin_mean = np.mean(origin_vals, axis=0)
+
+    for j in range(imgs.shape[0]):
+        if not isinstance(img_data[imgs[j]], dict):
+            continue
+        if not (origin_id in img_data[imgs[j]].keys()):
+            continue
+        # Measured origin positions are 3D poses relative to average
+        query_tvec = img_data[imgs[j]][origin_id]['tvec']
+        measured_pts[j][0] = query_tvec[0] - origin_mean[0]
+        measured_pts[j][1] = query_tvec[1] - origin_mean[1]
+        measured_pts[j][2] = query_tvec[2] - origin_mean[2]
+    return commanded_pts, measured_pts
+
+
+def make_origin_plots(out_dir, commanded_pts, measured_pts, savefig=False, timestamp=''):
+    if not timestamp:
+        timestamp = str(time.time()).replace('.', '_')
+
+    residuals = measured_pts - commanded_pts
+    mags = np.linalg.norm(residuals[:,:2], axis=-1)
+    mags_flat = np.ravel(mags)
+    rmse = np.linalg.norm(mags_flat) / np.sqrt(len(mags_flat))
+
+    residuals = measured_pts - commanded_pts
+    residuals_mm = residuals * 1e3
+    residuals_mag = np.linalg.norm(residuals[:,:2], axis=-1)
+    residuals_mag_mm = residuals_mag * 1e3
+
+    cm = plt.cm.ScalarMappable(
+        cmap='inferno'
+    )
+    cs = cm.to_rgba(np.arange(0,1.1,.1))
+    color = cs[5]
+
+    # -------------------------------------------------------------------------
+    # Quiver plot
+    # -------------------------------------------------------------------------
+    fig, ax = plt.subplots(figsize=(7,5))
+    ax.scatter(
+        commanded_pts[:,0],
+        commanded_pts[:,1],
+        facecolor='none',
+        color='k',
+        label=f'Origin Position',
+        zorder=1
+    )
+    ax.scatter(
+        measured_pts[:,0] + residuals[:,0],
+        measured_pts[:,1] + residuals[:,1],
+        facecolor=color,
+        label='Measured Position',
+        zorder=1
+    )
+
+    plt.xticks(rotation=45, fontsize=14)
+    plt.yticks(rotation=45, fontsize=14)
+    ax.set_xlabel('X Position (m)', fontsize=14)
+    ax.set_ylabel('Y Position (m)', fontsize=14)
+    ax.set_title(f'RMSE: {rmse*1e3:.2f} mm', fontsize=14)
+    ax.set_aspect('equal')
+    ax.legend(bbox_to_anchor=(1.05, 1.0), fontsize=14, loc='upper left')
+    plt.subplots_adjust(top=0.9)
+    plt.tight_layout()
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_origin_quiver.png'), facecolor='white', transparent=False, bbox_inches='tight')
+
+
+    # -------------------------------------------------------------------------
+    # Corner plot
+    # -------------------------------------------------------------------------
+    residuals_df = pd.DataFrame({
+        'X (mm)': residuals[:,0].ravel() * 1e3,
+        'Y (mm)': residuals[:,1].ravel() * 1e3,
+        'Z (mm)': residuals[:,2].ravel() * 1e3,
+    })
+    g = sns.pairplot(
+        residuals_df,
+        plot_kws={'color':color, 'alpha':0.6},
+        diag_kws={'color':color, 'alpha':0.6},
+        kind='scatter',
+        diag_kind='kde',
+        corner=True,
+    )
+    ax = plt.gca()
+    fig = plt.gcf()
+    fig.suptitle('Origin Stability')
+    plt.tight_layout()
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_origin_corner.png'), facecolor='white', transparent=False, bbox_inches='tight')
+
+
+    # -------------------------------------------------------------------------
+    # Error over time plot
+    # -------------------------------------------------------------------------
+    residuals_ordered_mm = np.ravel(residuals_mag_mm)
+
+    plt.figure(figsize=(12,7))
+    ax = plt.axes()
+    ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=color)
+    ax.set_xlabel('Scan Order', fontsize=14)
+    ax.set_ylabel('Position Error Magnitude (mm)', fontsize=14)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    if savefig:
+        plt.savefig(os.path.join(out_dir, f'{timestamp}_origin_error_vs_time.png'), facecolor='white', transparent=False, bbox_inches='tight')
+
+    return
+
