@@ -7,8 +7,7 @@ from context import constants as const
 
 
 EPS = 1e-9
-# hand calcs in this module are already a bear. make them easier by assuming an ideal spool.
-const.RADIUS_M_PER_RAD = 0.
+
 # ------------------------------------------------------------------------------
 # Low-level object testing
 # ------------------------------------------------------------------------------
