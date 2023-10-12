@@ -1,24 +1,21 @@
 name: hotspot
 channels:
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
+  - python>=3.6
+  - pip
   - ipympl
   - ipykernel
   - ipython
-  - jupyterconsole
+  - jupyter_console
   - jupyterlab
-  - python>=3
   - numpy
   - pytest
   - matplotlib
   - h5py
   - pySerial
-  - pip
-  - numba
-  - seaborn
   - pip:
-    - opencv-contrib-python==4.5.5.*
     - pycallgraph2
     - portray
     - prompt-toolkit<=2.0.0

@@ -20,7 +20,7 @@ The mapper motors are controlled by running the `main.py` application on a compu
 
 ## Setting Up the Environment
 
-To run `hotspot`, you must satisfy the dependencies. They are enumerated in `hotspot.yml`, a human-readable file that can be ingested by the `conda` Python package manager.
+To run `hotspot`, you must satisfy the dependencies. They are enumerated in `environment.yml`, a human-readable file that can be ingested by the `conda` Python package manager.
 
 #### Is the environment set up?
 
@@ -40,23 +40,23 @@ If the Python environment/package manager [Anaconda](https://www.anaconda.com/) 
 Once that is done, we are ready to set up the `hotspot` environment. `conda` environments keep a project's dependencies from polluting your computer's environment and make sure they all play nicely together. `conda` allows specifying the dependencies needed in a file with a `.yml` extension. This is done for you. Create the `hotspot` conda env with
 
 ```bash
-conda env create -f hotspot.yml
+conda env create -f environment.yml
 ```
 
-It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as the `pyserial` library for driving the steppers, and the `labjack-ljm` library for controlling the Hawkeye IR sources via the LabJack. There are also packages for documentation.
+It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as the `pyserial` library for driving the steppers. There are also packages for documentation.
 
 ### Keeping things up to date
 
-If you need to install something new later on, remember to update `hotspot.yml` by doing 
+If you need to install something new later on, remember to update `environment.yml` by doing 
 
 ```bash
-conda env export --from-history | tee hotspot.yml
+conda env export --from-history | tee environment.yml
 ```
 
-If your `hotspot.yml` has been updated, and you need to update your env with the new `hotspot.yml`, do
+If your `environment.yml` has been updated, and you need to update your env with the new `environment.yml`, do
 
 ```bash
-conda env update --file hotspot.yml --prune
+conda env update --file environment.yml --prune
 ```
 
 ## Software Testing with `pytest`
