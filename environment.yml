@@ -17,4 +17,4 @@ dependencies:
   - pip:
     - pycallgraph2
     - portray
-    - prompt-toolkit<=2.0.0
+    - prompt-toolkit

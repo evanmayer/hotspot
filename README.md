@@ -8,7 +8,7 @@ Logo by Guochao (Jason) Sun.
 
 Code for driving a cable-driven parallel robot for mapping beams on surfaces.
 
-The robot moves and controls switchable thermal infrared sources to scan a 2D x-y plane, and is capable of absolute accuracy at the ~3 mm level over a workspace ~0.45m x 0.45m.
+The robot moves and controls switchable thermal infrared sources to scan a 2D x-y plane, and is capable of absolute accuracy at the <3 mm level over a workspace ~0.40m x 0.40m.
 
 ## Running
 

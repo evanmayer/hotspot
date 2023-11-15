@@ -454,7 +454,8 @@ class Executive:
 
         Returns
         -------
-        fname (str) the filename of the new scan profile to run on next 'r' command
+        fname
+            the filename of the new scan profile to run on next 'r' command
         '''
         profile_dir = os.path.join(const.TOPLEVEL_DIR, 'data', 'input', 'profiles')
         print(

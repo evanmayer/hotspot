@@ -4,9 +4,9 @@ This doc contains instructions for various tasks related to setting up and runni
 
 #### What is `hotspot`?
 
-![entire system](docs/img/full_system.jpeg)
+![entire system](docs/img/full_system.png)
 
-`hotspot` is a planar cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources by changing the length of cables attached to it. The cables are fixed to an adjustable frame. The frame can clamp to any rectangular surface, but it was designed to clamp to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the APA 12M telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response.
+`hotspot` is a planar cable-driven parallel robot (CDPR), with four stepper motors that move a central raft of hot IR sources by changing the length of cables attached to it. The cables are fixed to an adjustable frame. The frame can clamp to any rectangular surface, but it was designed to clamp to various relay mirrors that couple radiation from the sky to the TIME spectrometer inside the receiver cabin on the ARO 12 meter telescope on Kitt Peak, allowing an electronically controlled, hot, IR-emitting source to be swept across the mirror to observe the detectors' spatial response.
 
 #### What is this document?
 
@@ -45,9 +45,11 @@ conda env create -f environment.yml
 
 It should install things like `numpy` and `matplotlib`, as well as libraries for the hardware, such as the `pyserial` library for driving the steppers. There are also packages for documentation.
 
+> **NOTE:** packages needed for post-processing of photos to measure mapper performance or for producing predicted beam maps using the code in the `verification/` folder are not covered by this `.yml`. Aside from OpenCV they are just standard scientific Python packages, so the requirements should be easy to meet if this code is needed.
+
 ### Keeping things up to date
 
-If you need to install something new later on, remember to update `environment.yml` by doing 
+If you need to install something new later on with `conda install` or `pip`, remember to update `environment.yml` by doing 
 
 ```bash
 conda env export --from-history | tee environment.yml
@@ -86,7 +88,7 @@ The EZStepper drivers are configured in software to draw 50% of the rated 2 A cu
 
 #### Do the Hawkeyes have power?
 
-The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and ground terminals are labeled.
+The Hawkeyes are mounted on a PCB and powered by a power supply connected to the screw terminal. Positive and ground terminals are labeled on the PCB silkscreen (white text).
 
 ![photo of screw terminal](docs/img/screw_terminal.jpeg)
 
@@ -149,7 +151,7 @@ The EZHR17EN stepper drivers receive commands from a control computer running th
 
 > **Note:** Refer to the AllMotion/American Control Electronics EZHR17EN wiring diagram to verify that the RS485 communications connection is correct.
 
-The control computer needs either a 9-pin serial output port, or a USB-to-RS485 adapter to send bytes out over the RS485 bus. The inverting/non-inverting outputs are blue and yellow wires. If you are connecting your adapter to the bus for the first time, you may have to guess incorrectly and swap the wires before it will work.
+The control computer needs either a 9-pin serial output port, or a USB-to-RS485 adapter to send bytes out over the RS485 bus. The inverting/non-inverting outputs are blue and yellow wires. If you are connecting your adapter to the bus for the first time, you may have to [guess incorrectly](https://en.wikipedia.org/wiki/RS-485#Signals) and swap the wires before it will work.
 
 ![photo of USB-RS485 adapter](docs/img/usb_adapter.jpg)
 
@@ -189,7 +191,7 @@ The stepper motors drive winch-like drums directly, to change the length of the 
 
 If they are not already attached, the cable drums should be fixed to the 5 mm stepper motor shaft via one M3 setscrew.
 
-The screws mate to brass threaded inserts that are hot-pressed into the PETG plastic spools.
+The screws mate to steel threaded inserts that are pressed into the PETG plastic spools.
 
 The fishing line is affixed to the each spool by wrapping it around the setscrew and screwing it in to the threaded recess on the spool circumference.
 
@@ -346,13 +348,13 @@ Output files store telemetry for each run in `data/output`. They are timestamped
 
 * Having two people helps.
 
-* _<span style="color:red">**BE VERY CAREFUL** about touching the buttons on the black slide-adjust nuts</span>_
-    * If you are adjusting the mapper spacing and you let them off of the threaded rod, they will disassemble themselves rapidly. You don't want to lose any parts.
-    * If you are loosening or tightening the mapper down to anything, when the mapper is under tension, touching the button could release tension rapidly, potentially causing a fall, which you do not want.
+* _<span style="color:red">**SAFETY ALERT: BE VERY CAREFUL** about touching the buttons on the black slide-adjust nuts</span>_
+    * If you are loosening or tightening the mapper down to anything, when the mapper is under tension, touching the button could release tension rapidly, _**potentially causing a fall**_, potentially on to a _**very expensive mm-wave optic,**_ which you do not want.
+    * If you are adjusting the mapper spacing and you let them off of the threaded rod, *they will disassemble themselves rapidly*. You don't want to lose any parts.
 
 * Bring a USB extension cable to make moving the frame to various mirrors easier. That will extend RS485 connection, allowing you to stand or sit in a more comfortable spot.
 
-* Bring a lot of flat Eccosorb panels. Don't bother trying to tape Eccosorb to anything. It won't stick. Just pinch it in between the mirror and threaded rod. This also helps keep the threaded rod or raft from marring the mirror surface, which is very important.
+* If you can't have the shutter open to let the optical chain see cold sky, bring a lot of flat Eccosorb panels. Don't bother trying to tape Eccosorb to anything. Tape won't stick. Just pinch it in between the mirror and threaded rod. This also helps keep the threaded rod or raft from marring the mirror surface, which is very important.
 
 * Keep as much stuff (power/data cables, hands, heads, ladders) as possible out of the path of the beam.
 
@@ -374,7 +376,7 @@ Should be easy. Remove the anti-head-smasher foam first to get to the bottom cla
 
 ### K3
 
-Pucker factor 11. Gravity is working against you, and you're right above F1, but snug things down good and tight when mounting the mapper and you will be fine. I used a crescent wrench on the black slide-adjust nuts for this one, to get a lot of clamping force. _<span style="color:red">**Be careful not to release the slide-adjust nuts when using the wrench.**</span>_
+Pucker factor 11. Have a friend help you mount the mapper; one person to hold the mapper in place, one to secure the slide-adjust nutes. Gravity is working against you, and you're right above F1, but snug things down good and tight when mounting the mapper and you will be fine. I used a crescent wrench on the black slide-adjust nuts for this one, to get a lot of clamping force. _<span style="color:red">**Be careful not to release the slide-adjust nuts when using the wrench.**</span>_
 
 `python main.py ./data/input/geometry/K3.csv ./data/input/profiles/K3_<profile>.csv`
 
