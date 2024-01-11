@@ -14,7 +14,7 @@ Originally developed to be driven by a microcontroller, with each ring selectabl
 
 | Part Name | Vendor | Part No. | Link | Qty. | Approx. Cost (USD ea.) | Rationale |
 | -- | -- | -- | -- | -- | -- | -- |
-Modulated Infrared Source | Hawkeye Technologies | IR-50 | [Link](http://www.hawkeyetechnologies.com/source-selection/pulsable/#ir5x/) | 13 | 70.00 | Infrared Emitter |
+Modulated Infrared Source | Hawkeye Technologies | IR-50 | [Link](http://www.hawkeyetechnologies.com/source-selection/pulsable/#ir5x/) [Alt.](https://shop.boselec.com/products/ir-50-ir-55) | 13 | 70.00 | Infrared Emitter |
 | Carrier Board | Oshpark | - | [Link](https://oshpark.com/shared_projects/rne2hvI5) | 3 | 10.03 | Assembly/Signal/Power delivery |
 | Power MOSFET | Digikey | IRLD024 (sub. IRLD024PBF) | [Original](https://www.digikey.com/en/products/detail/vishay-siliconix/IRLD024/51139) [Sub.](https://www.digikey.com/en/products/detail/vishay-siliconix/IRLD024PBF/812492) | 3 | 1.88 | Power switching via logic-level inputs |
 | Resistor 1 | Digikey | RMCF1206JT100R | [Link](https://www.digikey.com/en/products/detail/stackpole-electronics-inc/RMCF1206JT100R/1757426) | 3 | 0.10 | Voltage divider upper. Any 100 Ohm 1/4 W SMD 1206 package. |
