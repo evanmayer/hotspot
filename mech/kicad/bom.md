@@ -2,6 +2,12 @@
 
 2024-01-11 Evan C. Mayer
 
+![Front](./img/front.png)
+
+![Back](./img/back.png)
+
+![Built](../../docs//img/hawkeye_board.jpeg)
+
 ## Components
 
 Originally developed to be driven by a microcontroller, with each ring selectable via a shift register circuit. If you send a logic-level square wave to MOSFETs some other way, you may omit the items necessary for the shift register driver circuit, marked with an asterisk.
