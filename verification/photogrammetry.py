@@ -43,10 +43,8 @@ CAMERA_FOCAL_LENGTH_GUESS = 2.7e-3 # m, iPhone 13 mini ultrawide
 CAMERA_PIXEL_SIZE_GUESS = 1.7e-6 # m, iPhone 13 mini ultrawide
 CAMERA_PIXEL_SHAPE = (4032, 3024)
 
-REQUIREMENT_XY = 8.7 * 1e-3
-GOAL_XY = REQUIREMENT_XY / 2
-REQUIREMENT_Z = 9.113 * 1e-3
-GOAL_Z = REQUIREMENT_Z / 2
+REQUIREMENT_XY = 10 * 1e-3
+REQUIREMENT_Z = 5.9 * 1e-3
 
 
 def load_to_gray(file, camera_matrix=None, camera_dist=None):
@@ -324,7 +322,7 @@ def calibrate_camera(cal_path: str, image_files: list, board_vert_shape=BOARD_VE
     board, _ = generate_charuco_board(board_vert_shape, square_size, aruco_size)
 
     # do camera calibration from chessboard images
-    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as pool:
         future_to_file = {pool.submit(find_corners_aruco, file, DEFAULT_ARUCO_DICT) : file for file in image_files}
 
         for future in concurrent.futures.as_completed(future_to_file):
@@ -751,6 +749,7 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     residuals_mag = np.linalg.norm(residuals[:,:,:2], axis=-1)
     residuals_mag_mm = residuals_mag * 1e3
 
+
     cm = plt.cm.ScalarMappable(
         cmap='viridis'
     )
@@ -829,9 +828,9 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     levels = np.arange(np.floor(residuals_mag_mm.min()), np.ceil(residuals_mag_mm.max()) + .1, .1)
     X,Y = np.meshgrid(xs, ys)
     im = ax.contourf(X, Y, residuals_mag_mm, levels=levels, cmap='viridis')#, vmin=0, vmax=10)
-    contour_line_levels = [GOAL_XY * 1e3, REQUIREMENT_XY * 1e3]
-    contour_line_colors = ['k', 'k']
-    contour_line_styles = ['--', '-']
+    contour_line_levels = [REQUIREMENT_XY * 1e3]
+    contour_line_colors = ['k']
+    contour_line_styles = ['-']
     plt.contour(im, levels=contour_line_levels, colors=contour_line_colors, linestyles=contour_line_styles, linewidths=(1,))
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label='X-Y Error Magnitude (mm)')
     [cbar.ax.axhline(contour_line_levels[i], color=contour_line_colors[i], linestyle=contour_line_styles[i]) for i in range(len(contour_line_levels))]
@@ -842,11 +841,20 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     ax.set_xlabel('X Position (m)', fontsize=14)
     ax.set_ylabel('Y Position (m)', fontsize=14)
     ax.set_aspect('equal')
+
+    ax.text(0.1, 0.9, f'Max.: {residuals_mag_mm.max():.2f} mm', transform=ax.transAxes)
+
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_magnitudes.png'), facecolor='white', transparent=False, bbox_inches='tight')
+        plt.savefig(
+            os.path.join(out_dir, f'{timestamp}_magnitudes.png'),
+            facecolor='white',
+            transparent=False,
+            dpi=300,
+            bbox_inches='tight'
+    )
 
-    
+
     # -------------------------------------------------------------------------
     # Contour plot Z err
     # -------------------------------------------------------------------------
@@ -857,21 +865,17 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         print('Removed offset: ', np.mean(residuals_mm[:,:,2]), 'mm')
         contour_line_levels = [
             mean_z_mm - REQUIREMENT_Z * 1e3,
-            mean_z_mm - GOAL_Z * 1e3,
-            mean_z_mm + GOAL_Z * 1e3,
             mean_z_mm + REQUIREMENT_Z * 1e3
         ]
-        contour_line_colors = ['k', 'k', 'k', 'k']
-        contour_line_styles = ['-', '--', '--', '-']
+        contour_line_colors = ['k', 'k']
+        contour_line_styles = ['-', '-']
         label = 'Z-distance from Mean Z (mm)'
     else:
         residuals_z_mm = residuals_mm[:,:,2]
         mean_z_mm = np.mean(residuals_z_mm)
         contour_line_levels = [
             mean_z_mm - REQUIREMENT_Z * 1e3,
-            mean_z_mm - GOAL_Z * 1e3,
             mean_z_mm,
-            mean_z_mm + GOAL_Z * 1e3,
             mean_z_mm + REQUIREMENT_Z * 1e3
         ]
         contour_line_colors = ['k', 'k', 'k', 'k', 'k']
@@ -879,22 +883,42 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
         label = 'Z-distance from Origin (mm)'
 
 
-    max_abs_z_err_mm = np.max(np.abs(residuals_z_mm - mean_z_mm))
-    print('Max. Abs. Z-Err.:', np.max(np.abs(residuals_z_mm - mean_z_mm)))
+    z_deviations_mm = residuals_z_mm - mean_z_mm
+    max_abs_z_err_mm = np.max(np.abs(z_deviations_mm))
+    print('Max. Abs. Z-Err.:', np.max(np.abs(z_deviations_mm)))
+
+    residuals_x_mm = residuals_mm[:,:,0]
+    residuals_y_mm = residuals_mm[:,:,1]
+    rmse_x = np.sqrt(np.mean(residuals_x_mm ** 2))
+    rmse_y = np.sqrt(np.mean(residuals_y_mm ** 2))
+    rmse_z = np.sqrt(np.mean(residuals_z_mm ** 2))
+    print('X-RMSE: ', rmse_x)
+    print('Y-RMSE: ', rmse_y)
+    print('Z-RMSE: ', rmse_z)
+
+    print('x middle 68%:', np.subtract(*np.percentile(residuals_mm[:,:,0], [50-34.1, 50+34.1])[::-1]))
+    print('y middle 68%:', np.subtract(*np.percentile(residuals_mm[:,:,1], [50-34.1, 50+34.1])[::-1]))
+    print('z middle 68%:', np.subtract(*np.percentile(residuals_mm[:,:,2], [50-34.1, 50+34.1])[::-1]))
 
     plt.figure()
     ax = plt.axes()
     # levels = np.arange(np.floor(residuals_z_mm.min()), np.ceil(residuals_z_mm.max()), .1)
     levels = np.arange(
         -max_abs_z_err_mm + mean_z_mm,
-        max_abs_z_err_mm + mean_z_mm,
+        max_abs_z_err_mm + mean_z_mm + .1,
         .1
     )
+    ticks = ([-max_abs_z_err_mm + mean_z_mm] +
+        list(np.arange(0, -max_abs_z_err_mm + mean_z_mm, -1))[::-1] +
+        list(np.arange(1, max_abs_z_err_mm + mean_z_mm, 1)) +
+        [max_abs_z_err_mm + mean_z_mm]
+    )
+
     X,Y = np.meshgrid(xs, ys)
     im = ax.contourf(X, Y, residuals_z_mm, levels=levels, cmap='RdYlBu_r')
 
     plt.contour(im, levels=contour_line_levels, colors=contour_line_colors, linestyles=contour_line_styles, linewidths=(1,))
-    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), label=label)
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=im.norm, cmap=im.cmap), ticks=ticks, label=label)
     [cbar.ax.axhline(contour_line_levels[i], color=contour_line_colors[i], linestyle=contour_line_styles[i]) for i in range(len(contour_line_levels))]
     ax.set_xlim(0, 24 * 0.0254)
     ax.set_ylim(0, 24 * 0.0254)
@@ -903,9 +927,19 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     ax.set_xlabel('X Position (m)', fontsize=14)
     ax.set_ylabel('Y Position (m)', fontsize=14)
     ax.set_aspect('equal')
+
+    ii = np.argmax(np.abs((residuals_z_mm - mean_z_mm).flatten()))
+    ax.text(0.1, 0.9, f'Max. Dev.: {(residuals_z_mm - mean_z_mm).flatten()[ii]:.2f} mm', transform=ax.transAxes)
+
     plt.tight_layout()
     if savefig:
-        plt.savefig(os.path.join(out_dir, f'{timestamp}_z_errors_map.png'), facecolor='white', transparent=False, bbox_inches='tight')
+        plt.savefig(
+            os.path.join(out_dir, f'{timestamp}_z_errors_map.png'),
+            facecolor='white',
+            transparent=False,
+            dpi=300,
+            bbox_inches='tight'
+        )
 
     # -------------------------------------------------------------------------
     # Corner plot
@@ -939,7 +973,6 @@ def make_plots(out_dir, xs, ys, commanded_pts, measured_pts, camera_dist, filter
     ax = plt.axes()
     ax.scatter(range(len(residuals_ordered_mm)), residuals_ordered_mm, color=color)
     ax.axhline(REQUIREMENT_XY * 1e3, color=color, linestyle='-', label='Requirement')
-    ax.axhline(GOAL_XY * 1e3, color=color, linestyle='--', label='Goal')
     ax.legend(loc='best', fontsize=14)
     ax.set_xlabel('Scan Order', fontsize=14)
     ax.set_ylabel('X-Y Plane Error Magnitude (mm)', fontsize=14)
@@ -1091,6 +1124,18 @@ def make_repeatability_plots(out_dir, commanded_pts, measured_pts, savefig=False
     print('x bias:', residuals[:,0].mean())
     print('y bias:', residuals[:,1].mean())
     print('z bias:', residuals[:,2].mean())
+
+    print('x std:', measured_pts[:,0].std())
+    print('y std:', measured_pts[:,1].std())
+    print('z std:', measured_pts[:,2].std())
+
+    print('x iqr:', np.subtract(*np.percentile(measured_pts[:,0], [25, 75])[::-1]))
+    print('y iqr:', np.subtract(*np.percentile(measured_pts[:,1], [25, 75])[::-1]))
+    print('z iqr:', np.subtract(*np.percentile(measured_pts[:,2], [25, 75])[::-1]))
+
+    print('x middle 68%:', np.subtract(*np.percentile(measured_pts[:,0], [50-34.1, 50+34.1])[::-1]))
+    print('y middle 68%:', np.subtract(*np.percentile(measured_pts[:,1], [50-34.1, 50+34.1])[::-1]))
+    print('z middle 68%:', np.subtract(*np.percentile(measured_pts[:,2], [50-34.1, 50+34.1])[::-1]))
 
     print('x max spread:', measured_pts[:,0].max() - measured_pts[:,0].min())
     print('y max spread:', measured_pts[:,1].max() - measured_pts[:,1].min())
