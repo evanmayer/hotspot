@@ -582,8 +582,8 @@ class Executive:
 
         # self.take_image()
 
-        freq = 10. # switching freq, Hz, i.e. flashing freq is 1/2 this
-        num_blinks = 10
+        freq = const.HAWKEYE_FLASH_FREQ_HZ * 2. # switching freq, Hz, i.e. flashing freq is 1/2 this
+        num_blinks = const.HAWKEYE_NUM_FLASHES
         flipflop = 0
         while num_blinks > 0:
             start_time = time.time()

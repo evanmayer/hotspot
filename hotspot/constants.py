@@ -57,6 +57,10 @@ HOMING_OFFSET_Y = -0.0252
 # -----------------------------------------------------------------------------
 # Software constants
 # -----------------------------------------------------------------------------
+# Hawkeye flasher frequency
+HAWKEYE_FLASH_FREQ_HZ = 5.
+# Hawkeye number of flashes
+HAWKEYE_NUM_FLASHES = 10
 # Limits the total number of commands that may be in the command queue at once.
 # Pretty much only limited by memory.
 MAX_QLEN = 2**16
