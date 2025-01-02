@@ -330,14 +330,27 @@ def all_steppers_ez(ser: StepperSerial, addresses: list, radians: list, run=True
         iterable of rounding errors incurred by converting radians to encoder
         ticks
     '''
+    radians = np.array(radians)
+
     # Get the current absolute encoder position
     current_ticks_raw = [get_encoder_pos(ser, address) for address in addresses]
     current_ticks = current_ticks_raw
     logger.debug(f'Current encoder positions before move: {current_ticks}')
 
+    # Account for geometric errors in cable length incurred by spooling extra
+    # thread on during homing
+    s = const.SPOOL_CENTER_TO_EYELET_X
+    p = const.DRUM_PITCH
+    # distance drum will have moved relative to home position
+    delta_theta = radians
+    # additional cable length unspooled by moving to this angular position
+    delta_l = np.sqrt(s ** 2 + (p * delta_theta / 2. / np.pi) ** 2) - s
+    # correct for additional cable length via the angle
+    epsilon_theta = delta_l / const.LENGTH_PER_REV * (2. * np.pi)
+    logger.debug(f'Unspooled cable length correction terms: {delta_l} m, {epsilon_theta} rad')
+
     # Get the final absolute position
-    radians = np.array(radians)
-    ticks_float = radians * const.DEG_PER_RAD / const.DEG_PER_STEP / const.STEP_PER_TICK
+    ticks_float = (radians - epsilon_theta) * const.DEG_PER_RAD / const.DEG_PER_STEP / const.STEP_PER_TICK
     ticks_int = np.round(ticks_float).astype(int)
     ticks_to_go = np.round(ticks_float - current_ticks).astype(int)
     err = (ticks_float - current_ticks) - ticks_to_go
@@ -408,4 +421,3 @@ def send_hawkeye_byte(ser: HawkeyeSerial, data: int):
         data = 0
 
     ser.write(f'{data}\r\n'.encode())
-    return

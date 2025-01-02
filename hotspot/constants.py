@@ -54,6 +54,10 @@ HOMING_OFFSET_X = 0.0276
 # same, but for y
 HOMING_OFFSET_Y = -0.0252
 
+# used for reducing error incurred by spool to eyelet span
+# changing as a function of cable spooled on
+SPOOL_CENTER_TO_EYELET_X = 0.494 # mm
+
 # -----------------------------------------------------------------------------
 # Software constants
 # -----------------------------------------------------------------------------
